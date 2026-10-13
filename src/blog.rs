@@ -305,6 +305,8 @@ impl Resource for CommentResource {
             .form(Schema::new(Section::new("Comment").schema((
                 c.title,
                 c.customer_id.searchable().label("Customer"),
+                c.post_id.searchable().label("Post"),
+                c.product_id.searchable().label("Product"),
                 c.is_visible.label("Public visibility"),
                 c.content.multiline(5),
             ))))
@@ -319,6 +321,10 @@ pub struct CommentForm {
     pub title: Option<String>,
     #[form(relationship = crate::shop::CustomerResource)]
     pub customer_id: Option<u64>,
+    #[form(relationship = PostResource)]
+    pub post_id: Option<u64>,
+    #[form(relationship = crate::shop::ProductResource)]
+    pub product_id: Option<u64>,
     pub is_visible: bool,
     pub content: Option<String>,
 }

@@ -40,10 +40,12 @@ pub struct DemoAuth;
 
 impl DemoAuth {
     /// Loads `user` with every team, as `User::getTenants` answers.
-    async fn signed_in(cx: &Cx, user: User) -> topcoat::Result<SignedIn> {
-        let mut db = tablo::db::db(cx);
+    ///
+    /// Runs on `ex` rather than on a fresh handle: sign-up calls this while its
+    /// transaction holds the connection, and a second one would wait forever.
+    async fn signed_in(user: User, ex: &mut dyn toasty::Executor) -> topcoat::Result<SignedIn> {
         let teams = Team::all()
-            .exec(&mut db)
+            .exec(&mut *ex)
             .await?
             .into_iter()
             .map(|team| Membership::new(team.id, team.name))
@@ -76,7 +78,10 @@ impl Authenticator for DemoAuth {
             return Ok(None);
         }
         match user {
-            Some(user) => Ok(Some(Self::signed_in(cx, user).await?)),
+            Some(user) => {
+                let mut db = tablo::db::db(cx);
+                Ok(Some(Self::signed_in(user, &mut db).await?))
+            }
             None => Ok(None),
         }
     }
@@ -91,7 +96,10 @@ impl Authenticator for DemoAuth {
             .exec(&mut db)
             .await?;
         match user {
-            Some(user) => Ok(Some(Self::signed_in(cx, user).await?)),
+            Some(user) => {
+                let mut db = tablo::db::db(cx);
+                Ok(Some(Self::signed_in(user, &mut db).await?))
+            }
             None => Ok(None),
         }
     }
@@ -133,7 +141,7 @@ impl Registrar for DemoAuth {
 
     async fn register(
         &self,
-        cx: &Cx,
+        _cx: &Cx,
         sign_up: SignUp,
         ex: &mut dyn toasty::Executor,
     ) -> topcoat::Result<SignedIn> {
@@ -144,7 +152,7 @@ impl Registrar for DemoAuth {
         })
         .exec(&mut *ex)
         .await?;
-        Self::signed_in(cx, user).await
+        Self::signed_in(user, ex).await
     }
 }
 

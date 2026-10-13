@@ -77,6 +77,11 @@ pub struct Comment {
     pub updated_at: Timestamp,
 }
 
+/// A money amount, rounded to the two decimals the columns hold.
+pub fn round(amount: f64) -> f64 {
+    (amount * 100.0).round() / 100.0
+}
+
 /// How a money column renders: two decimals behind a dollar sign.
 pub fn money(amount: &f64) -> String {
     format!("${amount:.2}")

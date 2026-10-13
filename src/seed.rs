@@ -9,6 +9,7 @@ use crate::enums::{
     CountryCode, CurrencyCode, EmploymentType, ExpenseCategory, ExpenseStatus, LeaveStatus,
     LeaveType, OrderStatus, PaymentMethod, ProductType, ProjectStatus, TaskPriority, TaskStatus,
 };
+use crate::models::round;
 use crate::models::{
     Address, Author, Brand, Comment, Customer, Department, Employee, Expense, ExpenseLine,
     LeaveRequest, Order, OrderAddress, OrderItem, Payment, Post, PostCategory, Product,
@@ -873,6 +874,7 @@ impl Rng {
 
     /// `count` of `items`, each drawn at most once.
     fn pick_distinct<T: Clone>(&mut self, items: &[T], count: u64) -> Vec<T> {
+        let count = count.min(items.len() as u64);
         let mut out: Vec<T> = Vec::with_capacity(count as usize);
         let mut taken: Vec<usize> = Vec::new();
         for _ in 0..count {
@@ -898,11 +900,6 @@ fn days_ago(now: &Zoned, days: i64) -> Timestamp {
 fn today_back(days: i64) -> Date {
     let today = Zoned::now().date();
     today.checked_sub(Span::new().days(days)).unwrap_or(today)
-}
-
-/// A two-decimal amount.
-fn round(amount: f64) -> f64 {
-    (amount * 100.0).round() / 100.0
 }
 
 /// A URL-safe spelling of `text`.

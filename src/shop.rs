@@ -964,6 +964,8 @@ impl Resource for AddressResource {
                 TextColumn::new(lens!(Address.country)),
             ))))
             .form(Schema::new(Section::new("Address").schema((
+                c.customer_id.searchable().label("Customer"),
+                c.brand_id.searchable().label("Brand"),
                 c.country.searchable(),
                 c.street.label("Street address"),
                 Grid::new(3).schema((
@@ -980,6 +982,10 @@ impl Resource for AddressResource {
 #[derive(tablo::RecordForm)]
 #[form(model = Address)]
 pub struct AddressForm {
+    #[form(relationship = CustomerResource)]
+    pub customer_id: Option<u64>,
+    #[form(relationship = BrandResource)]
+    pub brand_id: Option<u64>,
     #[form(options)]
     pub country: Option<crate::enums::CountryCode>,
     pub street: Option<String>,

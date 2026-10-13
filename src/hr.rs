@@ -15,7 +15,7 @@ use crate::enums::{
 };
 use crate::models::{
     Department, Employee, Expense, ExpenseLine, LeaveRequest, Project, Task, Timesheet,
-    maybe_money, money,
+    maybe_money, money, round,
 };
 
 /// Departments.
@@ -1906,6 +1906,62 @@ impl Resource for ExpenseLineResource {
                 )),
             )))
     }
+
+    /// Stores the amount the quantity and the unit price come to.
+    async fn create_record(
+        _cx: &Cx,
+        form: ExpenseLineForm,
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<ExpenseLine> {
+        let amount = round(form.quantity as f64 * form.unit_price);
+        let line = form.into_create().amount(amount).exec(&mut *ex).await?;
+        refresh_expense_total(line.expense_id, ex).await?;
+        Ok(line)
+    }
+
+    /// Recomputes the amount from the stored quantity and price.
+    async fn update_record(
+        cx: &Cx,
+        record: ExpenseLine,
+        posted: tablo::Posted<ExpenseLineForm>,
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<ExpenseLine> {
+        let mut record = tablo::write_update::<Self>(cx, record, posted, ex).await?;
+        let amount = round(record.quantity as f64 * record.unit_price);
+        if record.amount != amount {
+            record.update().amount(amount).exec(&mut *ex).await?;
+            record.amount = amount;
+        }
+        refresh_expense_total(record.expense_id, ex).await?;
+        Ok(record)
+    }
+
+    /// Removes the line and takes it off the claim it belonged to.
+    async fn delete_record(
+        _cx: &Cx,
+        record: &ExpenseLine,
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<()> {
+        ExpenseLine::filter(ExpenseLine::fields().id().eq(record.id))
+            .delete()
+            .exec(&mut *ex)
+            .await?;
+        refresh_expense_total(record.expense_id, ex).await
+    }
+}
+
+/// Sets a claim's total to what its lines now come to.
+async fn refresh_expense_total(expense_id: u64, ex: &mut dyn toasty::Executor) -> Result<()> {
+    let lines = ExpenseLine::filter(ExpenseLine::fields().expense_id().eq(expense_id))
+        .exec(&mut *ex)
+        .await?;
+    let total: f64 = lines.iter().map(|line| line.amount).sum();
+    Expense::filter(Expense::fields().id().eq(expense_id))
+        .update()
+        .total_amount(round(total))
+        .exec(&mut *ex)
+        .await?;
+    Ok(())
 }
 
 /// The expense line's record form.

@@ -150,15 +150,26 @@ impl Page for ShopDashboard {
             items.len() as f64 / orders.len() as f64
         };
 
-        let revenue_by_month = monthly_total(&orders, 12, |order| {
-            if order.status == OrderStatus::Cancelled {
-                0.0
-            } else {
-                order.total_price.unwrap_or(0.0)
-            }
-        });
-        let orders_by_month = monthly_total(&orders, 12, |_| 1.0);
-        let customers_by_month = monthly_total(&customers, 12, |_| 1.0);
+        let revenue_by_month = monthly_total(
+            &orders,
+            12,
+            |order| month_of(order.created_at),
+            |order| {
+                if order.status == OrderStatus::Cancelled {
+                    0.0
+                } else {
+                    order.total_price.unwrap_or(0.0)
+                }
+            },
+        );
+        let orders_by_month =
+            monthly_total(&orders, 12, |order| month_of(order.created_at), |_| 1.0);
+        let customers_by_month = monthly_total(
+            &customers,
+            12,
+            |customer| month_of(customer.created_at),
+            |_| 1.0,
+        );
         let segments = customer_segments(&orders_per_customer);
         let values = order_value_distribution(&orders);
         let sold_ids: Vec<u64> = sold.iter().map(|order| order.id).collect();
@@ -405,11 +416,12 @@ fn burn_rate(expenses: &[Expense], projects: &[Project]) -> Vec<Point> {
         .filter(|project| project.status == ProjectStatus::Active)
         .map(|project| project.budget)
         .sum();
+    let mut spent = 0.0;
     let mut months: Vec<Point> = (0..12)
         .rev()
         .map(|months_ago| {
             let month = month_key(months_ago);
-            let cost: f64 = expenses
+            spent += expenses
                 .iter()
                 .filter(|expense| {
                     matches!(
@@ -418,8 +430,8 @@ fn burn_rate(expenses: &[Expense], projects: &[Project]) -> Vec<Point> {
                     ) && month_of(expense.created_at) == month
                 })
                 .map(|expense| expense.total_amount)
-                .sum();
-            (month, cost)
+                .sum::<f64>();
+            (month, spent)
         })
         .collect();
     months.push(("Budget".to_string(), budget));
@@ -510,11 +522,24 @@ fn count_by<T>(rows: &[T], key: impl Fn(&T) -> Option<u64>) -> HashMap<Option<u6
     counts
 }
 
-/// What `rows` come to in each of the last `months` months, oldest first.
-fn monthly_total<T>(rows: &[T], months: i64, amount: impl Fn(&T) -> f64) -> Vec<Point> {
+/// What each of the last `months` months' rows come to, oldest first.
+fn monthly_total<T>(
+    rows: &[T],
+    months: i64,
+    month_of_row: impl Fn(&T) -> String,
+    amount: impl Fn(&T) -> f64,
+) -> Vec<Point> {
     (0..months)
         .rev()
-        .map(|ago| (month_key(ago), rows.iter().map(&amount).sum()))
+        .map(|ago| {
+            let month = month_key(ago);
+            let total = rows
+                .iter()
+                .filter(|row| month_of_row(row) == month)
+                .map(&amount)
+                .sum();
+            (month, total)
+        })
         .collect()
 }
 

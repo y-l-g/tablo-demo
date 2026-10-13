@@ -215,6 +215,14 @@ page have no counterpart (the home page states what the demo covers instead).
   `->stackedOnMobile()` and `->reorderable('sort')` (drag to reorder brands) have
   no counterpart.
 - Time is typed and shown as UTC: a `datetime-local` control carries no zone.
-- A `.unique()` check on a form probes through the resource's scoped query, so a
-  unique index wider than that scope is invisible to it. Every unique constraint
-  here is unscoped.
+- **A unique value a hidden row holds answers 500.** The unique check probes
+  through the resource's `query`, so a soft-deleted row is invisible to it, while
+  the index the write then hits is not: reusing a deleted order's number, or a
+  deleted customer's email, fails the insert instead of coming back as "has
+  already been taken". Four resources are affected (orders, customers, employees,
+  projects). Tablo names this case and asks for a constraint scoped like the
+  query, which a soft delete cannot do.
+- **A count over a relation includes hidden rows.** The department list's
+  headcount is `CountColumn`, which counts the related rows directly rather than
+  through the related resource's query, so a soft-deleted employee is still
+  counted there while the employee list hides it.
