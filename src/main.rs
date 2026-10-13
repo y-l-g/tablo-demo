@@ -2,7 +2,7 @@ use toasty::Db;
 
 #[tokio::main]
 async fn main() {
-    let db = Db::builder()
+    let mut db = Db::builder()
         .models(toasty::models!(
             tablo_demo::models::Address,
             tablo_demo::models::Comment,
@@ -18,6 +18,14 @@ async fn main() {
             tablo_demo::models::OrderItem,
             tablo_demo::models::OrderAddress,
             tablo_demo::models::Payment,
+            tablo_demo::models::Department,
+            tablo_demo::models::Employee,
+            tablo_demo::models::LeaveRequest,
+            tablo_demo::models::Project,
+            tablo_demo::models::Task,
+            tablo_demo::models::Timesheet,
+            tablo_demo::models::Expense,
+            tablo_demo::models::ExpenseLine,
             tablo_demo::models::User,
             tablo_demo::models::Team,
             tablo_demo::models::TeamUser,
@@ -27,6 +35,7 @@ async fn main() {
         .await
         .expect("connect");
     db.push_schema().await.expect("push schema");
+    tablo_demo::seed::seed(&mut db).await.expect("seed the demo data");
     let router = tablo_demo::panel::router(db);
     topcoat::start(router).await.expect("serve");
 }

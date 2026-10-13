@@ -67,6 +67,7 @@ pub struct Post {
     pub content: String,
     pub published_at: Option<Date>,
     /// The post's image, where Spatie's media library holds a collection.
+    #[default(String::new())]
     pub image: String,
     /// The post's tags, which Spatie stores in its own polymorphic table.
     pub tags: String,

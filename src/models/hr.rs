@@ -83,7 +83,7 @@ pub struct Employee {
     pub tasks: Deferred<Vec<Task>>,
     #[has_many]
     pub timesheets: Deferred<Vec<Timesheet>>,
-    #[has_many]
+    #[has_many(pair = employee)]
     pub expenses: Deferred<Vec<Expense>>,
 }
 
