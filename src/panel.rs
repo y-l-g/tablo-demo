@@ -2,13 +2,16 @@
 
 use std::path::PathBuf;
 
-use tablo::{Auth, Brand, Panel, RouterBuilderPanelExt};
+use tablo::{Auth, Brand, Page, PageDef, Panel, RouterBuilderPanelExt, membership};
 use toasty::Db;
 use topcoat::{
+    Result,
     asset::{AssetBundle, RouterBuilderAssetExt},
+    context::Cx,
     font::{Font, fontsource::fontsource_font},
     router::{Router, RouterBuilderDiscoverExt},
     tailwind,
+    view::{View, view},
 };
 
 use crate::{
@@ -65,6 +68,46 @@ pub fn app_panel() -> Panel {
         .brand(Brand::new("Filament Demo"))
         .login_hint(LOGIN_HINT)
         .home::<Dashboard>()
+        .page::<Settings>()
+}
+
+/// The tenant panel's settings page, which the Filament demo leaves empty.
+pub struct Settings;
+
+impl Page for Settings {
+    fn declare() -> PageDef {
+        PageDef::new().icon(tablo::ui::icons::FILE_TEXT)
+    }
+
+    async fn render(cx: &Cx) -> Result<impl View> {
+        let team = membership(cx).map(|membership| membership.name.clone());
+        Ok(view! {
+            cx =>
+            tablo::ui::page(
+                tablo::ui::page_header(
+                    tablo::ui::page_title("Settings")
+                    tablo::ui::page_description(
+                        "The Filament demo renders an empty page here."
+                    )
+                )
+                tablo::ui::page_content(
+                    tablo::ui::card(
+                        tablo::ui::card_header(
+                            tablo::ui::card_title("Team")
+                            tablo::ui::card_description(
+                                "The tenant this session acts for."
+                            )
+                        )
+                        tablo::ui::card_content(
+                            <p class="text-sm">
+                                (team.unwrap_or_else(|| "No team selected.".to_string()))
+                            </p>
+                        )
+                    )
+                )
+            )
+        })
+    }
 }
 
 /// The directory uploaded images are written to.

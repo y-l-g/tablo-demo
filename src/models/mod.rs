@@ -83,6 +83,11 @@ pub fn money(amount: &f64) -> String {
     format!("${amount:.2}")
 }
 
+/// How a whole-dollar amount renders.
+pub fn dollars(amount: f64) -> String {
+    format!("${amount:.0}")
+}
+
 /// How a nullable money column renders: a dash stands in for nothing stored.
 pub fn maybe_money(amount: &Option<f64>) -> String {
     amount.map_or_else(|| "—".to_string(), |amount| money(&amount))
