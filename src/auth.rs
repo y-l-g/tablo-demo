@@ -96,10 +96,7 @@ impl Authenticator for DemoAuth {
             .exec(&mut db)
             .await?;
         match user {
-            Some(user) => {
-                let mut db = tablo::db::db(cx);
-                Ok(Some(Self::signed_in(user, &mut db).await?))
-            }
+            Some(user) => Ok(Some(Self::signed_in(user, &mut db).await?)),
             None => Ok(None),
         }
     }

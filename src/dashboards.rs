@@ -113,7 +113,13 @@ impl Page for ShopDashboard {
         let customers: Vec<Customer> = Customer::filter(Customer::fields().deleted_at().is_none())
             .exec(&mut db)
             .await?;
-        let items: Vec<OrderItem> = OrderItem::all().exec(&mut db).await?;
+        let visible: Vec<u64> = orders.iter().map(|order| order.id).collect();
+        let items: Vec<OrderItem> = OrderItem::all()
+            .exec(&mut db)
+            .await?
+            .into_iter()
+            .filter(|item| item.order_id.is_some_and(|id| visible.contains(&id)))
+            .collect();
         let products: Vec<Product> = Product::all().exec(&mut db).await?;
 
         let orders_per_customer = count_by(&orders, |order| order.customer_id);
@@ -200,7 +206,7 @@ impl Page for ShopDashboard {
                         (bar_chart(cx, "Revenue by month", &revenue_by_month, crate::models::dollars))
                         (bar_chart(cx, "Orders by month", &orders_by_month, |value| format!("{value:.0}")))
                         (bar_chart(cx, "New customers by month", &customers_by_month, |value| format!("{value:.0}")))
-                        (bar_chart(cx, "Order value", &values, |value| format!("{value:.0}")))
+                        (bar_chart(cx, "Order value distribution", &values, |value| format!("{value:.0}")))
                         (bar_chart(cx, "Customers by order count", &segments, |value| format!("{value:.0}")))
                         (table_card(cx, "Top products by revenue", &top_products))
                     </div>
@@ -387,7 +393,7 @@ fn project_health(projects: &[Project]) -> Vec<Point> {
     points
 }
 
-/// The share of the last eight weeks' hours that were billable.
+/// The share of a full-time week's hours that were billable, week by week.
 fn utilization_by_week(timesheets: &[Timesheet], capacity: f64) -> Vec<Point> {
     let today = Zoned::now().date();
     (0..12)
@@ -465,7 +471,7 @@ fn customer_segments(orders_per_customer: &HashMap<Option<u64>, usize>) -> Vec<P
     segments
 }
 
-/// The eight products that took the most money.
+/// The ten products that took the most money.
 fn top_products_by_revenue<'a>(
     items: impl Iterator<Item = &'a OrderItem>,
     products: &[Product],
@@ -496,20 +502,24 @@ fn top_products_by_revenue<'a>(
 /// How many orders fall in each band of order value.
 fn order_value_distribution(orders: &[Order]) -> Vec<Point> {
     let mut bands = vec![
-        ("Under $100".to_string(), 0.0),
+        ("Under $50".to_string(), 0.0),
+        ("$50 to $100".to_string(), 0.0),
         ("$100 to $250".to_string(), 0.0),
         ("$250 to $500".to_string(), 0.0),
         ("$500 to $1000".to_string(), 0.0),
         ("$1000 and up".to_string(), 0.0),
     ];
     for order in orders {
-        let total = order.total_price.unwrap_or(0.0);
+        let Some(total) = order.total_price else {
+            continue;
+        };
         let band = match total {
-            total if total < 100.0 => 0,
-            total if total < 250.0 => 1,
-            total if total < 500.0 => 2,
-            total if total < 1000.0 => 3,
-            _ => 4,
+            total if total < 50.0 => 0,
+            total if total < 100.0 => 1,
+            total if total < 250.0 => 2,
+            total if total < 500.0 => 3,
+            total if total < 1000.0 => 4,
+            _ => 5,
         };
         bands[band].1 += 1.0;
     }

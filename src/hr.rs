@@ -1926,13 +1926,17 @@ impl Resource for ExpenseLineResource {
         posted: tablo::Posted<ExpenseLineForm>,
         ex: &mut dyn toasty::Executor,
     ) -> Result<ExpenseLine> {
+        let previous = record.expense_id;
         let mut record = tablo::write_update::<Self>(cx, record, posted, ex).await?;
         let amount = round(record.quantity as f64 * record.unit_price);
         if record.amount != amount {
             record.update().amount(amount).exec(&mut *ex).await?;
             record.amount = amount;
         }
-        refresh_expense_total(record.expense_id, ex).await?;
+        refresh_expense_total(previous, ex).await?;
+        if record.expense_id != previous {
+            refresh_expense_total(record.expense_id, ex).await?;
+        }
         Ok(record)
     }
 

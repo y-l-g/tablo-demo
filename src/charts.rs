@@ -5,7 +5,7 @@
 //! point. The columns are plain markup, so a chart needs no script and no
 //! client-side charting library.
 
-use jiff::{Span, Timestamp, Zoned, tz::TimeZone};
+use jiff::{Span, Timestamp, tz::TimeZone};
 use topcoat::{
     context::Cx,
     view::{BoxView, ViewExt, view},
@@ -13,7 +13,7 @@ use topcoat::{
 
 /// The name of the month `months_ago` months back.
 pub fn month_key(months_ago: i64) -> String {
-    let today = Zoned::now().date();
+    let today = Timestamp::now().to_zoned(TimeZone::UTC).date();
     let date = today
         .checked_sub(Span::new().months(months_ago))
         .unwrap_or(today);
