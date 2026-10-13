@@ -180,9 +180,10 @@ fn flagged_orders<'a>(cx: &'a Cx, orders: &[Order]) -> BoxView<'a> {
     let mut flagged: Vec<(String, f64)> = orders
         .iter()
         .filter(|order| {
+            // A timestamp's span counts seconds, whatever its length.
             let age = now
                 .since(order.created_at)
-                .map(|span| span.get_days())
+                .map(|span| span.get_seconds() / 86_400)
                 .unwrap_or(0);
             match order.status {
                 OrderStatus::New => age >= 3,
@@ -330,7 +331,7 @@ fn project_health(projects: &[Project]) -> Vec<Point> {
 /// The share of the last eight weeks' hours that were billable.
 fn utilization_by_week(timesheets: &[Timesheet]) -> Vec<Point> {
     let today = Zoned::now().date();
-    let mut weeks: Vec<Point> = (0..8)
+    let weeks: Vec<Point> = (0..8)
         .rev()
         .map(|weeks_ago| {
             let end = today
@@ -361,7 +362,6 @@ fn utilization_by_week(timesheets: &[Timesheet]) -> Vec<Point> {
             )
         })
         .collect();
-    weeks.reverse();
     weeks
 }
 

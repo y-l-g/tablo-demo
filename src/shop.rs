@@ -457,9 +457,6 @@ impl Resource for CustomerResource {
             .relation(Relation::has_many::<AddressResource>(
                 Address::fields().customer_id(),
             ))
-            .relation(Relation::has_many::<PaymentResource>(
-                Payment::fields().order_id(),
-            ))
             .action::<SendCustomerEmail>()
     }
 
