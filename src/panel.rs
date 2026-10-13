@@ -47,6 +47,14 @@ pub fn admin_panel() -> Panel {
         .resource::<crate::shop::OrderItemResource>()
         .resource::<crate::shop::PaymentResource>()
         .resource::<crate::shop::AddressResource>()
+        .resource::<crate::hr::DepartmentResource>()
+        .resource::<crate::hr::EmployeeResource>()
+        .resource::<crate::hr::LeaveRequestResource>()
+        .resource::<crate::hr::ExpenseResource>()
+        .resource::<crate::hr::ExpenseLineResource>()
+        .resource::<crate::hr::ProjectResource>()
+        .resource::<crate::hr::TaskResource>()
+        .resource::<crate::hr::TimesheetResource>()
         .uploads_dir(UPLOAD_URL_PREFIX, upload_dir())
 }
 

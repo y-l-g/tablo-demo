@@ -273,7 +273,8 @@ pub struct Expense {
     pub approved_by: Option<u64>,
     #[belongs_to(key = approved_by, references = id)]
     pub approved_by_employee: Deferred<Option<Employee>>,
-    pub receipt_path: Option<String>,
+    #[default(String::new())]
+    pub receipt_path: String,
     pub notes: Option<String>,
     #[default(Timestamp::now())]
     pub created_at: Timestamp,
