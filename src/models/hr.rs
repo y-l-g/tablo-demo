@@ -1,7 +1,10 @@
 //! The HR domain: departments, employees, leave, projects, tasks, timesheets
 //! and expenses.
 
-use jiff::{Timestamp, civil::{Date, Time}};
+use jiff::{
+    Timestamp,
+    civil::{Date, Time},
+};
 use serde_json::Value;
 use toasty::{Deferred, Json};
 

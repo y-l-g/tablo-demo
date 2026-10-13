@@ -114,7 +114,13 @@ impl Page for ShopDashboard {
         let orders_per_customer = count_by(&orders, |order| order.customer_id);
         let repeat = customers
             .iter()
-            .filter(|customer| orders_per_customer.get(&Some(customer.id)).copied().unwrap_or(0) >= 2)
+            .filter(|customer| {
+                orders_per_customer
+                    .get(&Some(customer.id))
+                    .copied()
+                    .unwrap_or(0)
+                    >= 2
+            })
             .count();
         let revenue: f64 = orders.iter().filter_map(|order| order.total_price).sum();
         let cancelled = orders
@@ -150,13 +156,13 @@ impl Page for ShopDashboard {
                 )
                 tablo::ui::page_content(
                     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        (stat_card(cx, "Repeat customer rate", percent(repeat_rate), &format!("{repeat} of {} customers", customers.len())))
-                        (stat_card(cx, "Avg items / order", format!("{items_per_order:.1}"), &format!("{} items, {} orders", items.len(), orders.len())))
-                        (stat_card(cx, "Cancellation rate", percent(cancellation_rate), &format!("{cancelled} cancelled orders")))
-                        (stat_card(cx, "Revenue / customer", crate::models::money(&revenue_per_customer), &format!("{} total revenue", crate::models::dollars(revenue))))
+                        (stat_card(cx, "Repeat customer rate", percent(repeat_rate), format!("{repeat} of {} customers", customers.len())))
+                        (stat_card(cx, "Avg items / order", format!("{items_per_order:.1}"), format!("{} items, {} orders", items.len(), orders.len())))
+                        (stat_card(cx, "Cancellation rate", percent(cancellation_rate), format!("{cancelled} cancelled orders")))
+                        (stat_card(cx, "Revenue / customer", crate::models::money(&revenue_per_customer), format!("{} total revenue", crate::models::dollars(revenue))))
                     </div>
                     <div class="grid gap-6 lg:grid-cols-2">
-                        (bar_chart(cx, "Revenue by month", &revenue_by_month, |value| crate::models::dollars(value)))
+                        (bar_chart(cx, "Revenue by month", &revenue_by_month, crate::models::dollars))
                         (bar_chart(cx, "New customers by month", &customers_by_month, |value| format!("{value:.0}")))
                         (bar_chart(cx, "Customers by order count", &segments, |value| format!("{value:.0}")))
                         (table_card(cx, "Top products by revenue", &top_products))
@@ -174,7 +180,10 @@ fn flagged_orders<'a>(cx: &'a Cx, orders: &[Order]) -> BoxView<'a> {
     let mut flagged: Vec<(String, f64)> = orders
         .iter()
         .filter(|order| {
-            let age = now.since(order.created_at).map(|span| span.get_days()).unwrap_or(0);
+            let age = now
+                .since(order.created_at)
+                .map(|span| span.get_days())
+                .unwrap_or(0);
             match order.status {
                 OrderStatus::New => age >= 3,
                 OrderStatus::Processing => age >= 7,
@@ -213,16 +222,32 @@ impl Page for HrDashboard {
         let today = Zoned::now().date();
         let tenure: f64 = employees
             .iter()
-            .map(|employee| today.since(employee.hire_date).map(|span| span.get_days()).unwrap_or(0) as f64 / 365.0)
+            .map(|employee| {
+                today
+                    .since(employee.hire_date)
+                    .map(|span| span.get_days())
+                    .unwrap_or(0) as f64
+                    / 365.0
+            })
             .sum::<f64>()
             / employees.len().max(1) as f64;
-        let inactive = employees.iter().filter(|employee| !employee.is_active).count();
+        let inactive = employees
+            .iter()
+            .filter(|employee| !employee.is_active)
+            .count();
         let contractors = employees
             .iter()
             .filter(|employee| employee.employment_type == EmploymentType::Contractor)
             .count();
-        let capacity: i64 = departments.iter().map(|department| department.headcount_limit).sum();
-        let open_capacity = capacity - employees.iter().filter(|employee| employee.is_active).count() as i64;
+        let capacity: i64 = departments
+            .iter()
+            .map(|department| department.headcount_limit)
+            .sum();
+        let open_capacity = capacity
+            - employees
+                .iter()
+                .filter(|employee| employee.is_active)
+                .count() as i64;
 
         let leave_by_department = leave_by_department(&leave, &employees, &departments);
         let project_health = project_health(&projects);
@@ -240,16 +265,16 @@ impl Page for HrDashboard {
                 )
                 tablo::ui::page_content(
                     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        (stat_card(cx, "Avg tenure", format!("{tenure:.1} yrs"), &format!("{} employees", employees.len())))
-                        (stat_card(cx, "Turnover rate", percent(share(inactive, employees.len())), &format!("{inactive} inactive")))
-                        (stat_card(cx, "Open capacity", open_capacity.to_string(), &format!("{capacity} seats, {} filled", employees.len() - inactive)))
-                        (stat_card(cx, "Contractor ratio", percent(share(contractors, employees.len())), &format!("{contractors} contractors")))
+                        (stat_card(cx, "Avg tenure", format!("{tenure:.1} yrs"), format!("{} employees", employees.len())))
+                        (stat_card(cx, "Turnover rate", percent(share(inactive, employees.len())), format!("{inactive} inactive")))
+                        (stat_card(cx, "Open capacity", open_capacity.to_string(), format!("{capacity} seats, {} filled", employees.len() - inactive)))
+                        (stat_card(cx, "Contractor ratio", percent(share(contractors, employees.len())), format!("{contractors} contractors")))
                     </div>
                     <div class="grid gap-6 lg:grid-cols-2">
                         (bar_chart(cx, "Leave days by department", &leave_by_department, |value| format!("{value:.0}")))
-                        (bar_chart(cx, "Budget used by project", &project_health, |value| percent(value)))
-                        (bar_chart(cx, "Billable utilization by week", &utilization, |value| percent(value)))
-                        (bar_chart(cx, "Cumulative spend", &burn, |value| crate::models::dollars(value)))
+                        (bar_chart(cx, "Budget used by project", &project_health, percent))
+                        (bar_chart(cx, "Billable utilization by week", &utilization, percent))
+                        (bar_chart(cx, "Cumulative spend", &burn, crate::models::dollars))
                     </div>
                     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                         (stat_card(cx, "Tasks", tasks.len().to_string(), "across every project"))
@@ -317,13 +342,22 @@ fn utilization_by_week(timesheets: &[Timesheet]) -> Vec<Point> {
                 .filter(|timesheet| timesheet.date >= start && timesheet.date <= end)
                 .fold((0.0, 0.0), |(billable, total), timesheet| {
                     (
-                        billable + if timesheet.is_billable { timesheet.hours } else { 0.0 },
+                        billable
+                            + if timesheet.is_billable {
+                                timesheet.hours
+                            } else {
+                                0.0
+                            },
                         total + timesheet.hours,
                     )
                 });
             (
                 start.strftime("%b %d").to_string(),
-                if total > 0.0 { billable / total * 100.0 } else { 0.0 },
+                if total > 0.0 {
+                    billable / total * 100.0
+                } else {
+                    0.0
+                },
             )
         })
         .collect();

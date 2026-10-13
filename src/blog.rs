@@ -145,16 +145,18 @@ impl Resource for PostCategoryResource {
             .navigation_group("Blog")
             .navigation_order(1)
             .policy(Allow)
-            .table(
-                Table::new((
-                    TextColumn::new(lens!(PostCategory.name)).searchable().sortable(),
-                    TextColumn::new(lens!(PostCategory.slug)).searchable().sortable(),
-                    BooleanColumn::new(lens!(PostCategory.is_visible)).label("Visibility"),
-                    TextColumn::new(lens!(PostCategory.updated_at))
-                        .label("Last modified at")
-                        .sortable(),
-                ))
-            )
+            .table(Table::new((
+                TextColumn::new(lens!(PostCategory.name))
+                    .searchable()
+                    .sortable(),
+                TextColumn::new(lens!(PostCategory.slug))
+                    .searchable()
+                    .sortable(),
+                BooleanColumn::new(lens!(PostCategory.is_visible)).label("Visibility"),
+                TextColumn::new(lens!(PostCategory.updated_at))
+                    .label("Last modified at")
+                    .sortable(),
+            )))
             .detail(Detail::new(Section::new("Category").columns((
                 TextColumn::new(lens!(PostCategory.name)),
                 TextColumn::new(lens!(PostCategory.slug)),
@@ -223,17 +225,15 @@ impl Resource for AuthorResource {
             .navigation_group("Blog")
             .navigation_order(2)
             .policy(Allow)
-            .table(
-                Table::new((
-                    TextColumn::new(lens!(Author.name)).searchable().sortable(),
-                    TextColumn::new(lens!(Author.email))
-                        .label("Email address")
-                        .searchable()
-                        .sortable(),
-                    TextColumn::new(lens!(Author.github_handle)).label("GitHub handle"),
-                    TextColumn::new(lens!(Author.twitter_handle)).label("Twitter handle"),
-                ))
-            )
+            .table(Table::new((
+                TextColumn::new(lens!(Author.name)).searchable().sortable(),
+                TextColumn::new(lens!(Author.email))
+                    .label("Email address")
+                    .searchable()
+                    .sortable(),
+                TextColumn::new(lens!(Author.github_handle)).label("GitHub handle"),
+                TextColumn::new(lens!(Author.twitter_handle)).label("Twitter handle"),
+            )))
             .detail(Detail::new(Section::new("Author").columns((
                 TextColumn::new(lens!(Author.name)),
                 TextColumn::new(lens!(Author.email)).label("Email address"),
@@ -281,21 +281,25 @@ impl Resource for CommentResource {
             .navigation_group("Shop")
             .navigation_order(9)
             .policy(Allow)
-            .table(
-                Table::new((
-                    TextColumn::new(lens!(Comment.title)).searchable().sortable(),
-                    RelationColumn::of::<crate::shop::CustomerResource>(relation!(Comment.customer))
-                        .label("Customer"),
-                    BooleanColumn::new(lens!(Comment.is_visible)).label("Public visibility"),
-                ))
-            )
-            .detail(Detail::new(Section::new("Comment").columns((
-                TextColumn::new(lens!(Comment.title)),
+            .table(Table::new((
+                TextColumn::new(lens!(Comment.title))
+                    .searchable()
+                    .sortable(),
                 RelationColumn::of::<crate::shop::CustomerResource>(relation!(Comment.customer))
                     .label("Customer"),
                 BooleanColumn::new(lens!(Comment.is_visible)).label("Public visibility"),
-                TextColumn::new(lens!(Comment.content)),
-            ))))
+            )))
+            .detail(Detail::new(
+                Section::new("Comment").columns((
+                    TextColumn::new(lens!(Comment.title)),
+                    RelationColumn::of::<crate::shop::CustomerResource>(relation!(
+                        Comment.customer
+                    ))
+                    .label("Customer"),
+                    BooleanColumn::new(lens!(Comment.is_visible)).label("Public visibility"),
+                    TextColumn::new(lens!(Comment.content)),
+                )),
+            ))
             .form(Schema::new(Section::new("Comment").schema((
                 c.title,
                 c.customer_id.searchable().label("Customer"),

@@ -35,7 +35,9 @@ async fn main() {
         .await
         .expect("connect");
     db.push_schema().await.expect("push schema");
-    tablo_demo::seed::seed(&mut db).await.expect("seed the demo data");
+    tablo_demo::seed::seed(&mut db)
+        .await
+        .expect("seed the demo data");
     let router = tablo_demo::panel::router(db);
     topcoat::start(router).await.expect("serve");
 }

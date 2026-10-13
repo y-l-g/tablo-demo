@@ -148,13 +148,22 @@ async fn seed_products(
     let categories: Vec<ProductCategory> = ProductCategory::all().exec(db).await?;
     let mut products = Vec::new();
     for (index, name) in PRODUCTS.iter().enumerate() {
-        let price = rng.float(8.0, 500.0);
-        let qty = rng.between(0, 200);
-        products.push(create_product(db, rng, name, index, brands, today, price, qty).await?);
+        let draft = ProductDraft {
+            name,
+            price: rng.float(8.0, 500.0),
+            qty: rng.between(0, 200),
+            index,
+        };
+        products.push(create_product(db, rng, brands, today, draft).await?);
     }
     for (offset, (name, price, qty)) in PRICE_ANOMALIES.iter().enumerate() {
-        let index = PRODUCTS.len() + offset;
-        products.push(create_product(db, rng, name, index, brands, today, *price, *qty).await?);
+        let draft = ProductDraft {
+            name,
+            price: *price,
+            qty: *qty,
+            index: PRODUCTS.len() + offset,
+        };
+        products.push(create_product(db, rng, brands, today, draft).await?);
     }
 
     for product in &products {
@@ -183,21 +192,33 @@ async fn seed_products(
     Ok(products)
 }
 
-/// One product of `brands`, at `price` and `qty`.
+/// What one seeded product is made of.
+struct ProductDraft<'a> {
+    name: &'a str,
+    price: f64,
+    qty: u64,
+    /// Its place in the demo's product list, which its SKU and barcode spell.
+    index: usize,
+}
+
+/// One product of `brands`.
 async fn create_product(
     db: &mut Db,
     rng: &mut Rng,
-    name: &str,
-    index: usize,
     brands: &[Brand],
     today: Date,
-    price: f64,
-    qty: u64,
+    draft: ProductDraft<'_>,
 ) -> toasty::Result<Product> {
+    let ProductDraft {
+        name,
+        price,
+        qty,
+        index,
+    } = draft;
     let brand = rng.pick(brands);
     let name = format!("{name} {}", rng.pick(PRODUCT_QUALIFIERS));
     let created_at = days_ago(&Zoned::now(), rng.below(700) as i64);
-    Ok(toasty::create!(Product {
+    toasty::create!(Product {
         brand_id: Some(brand.id),
         name: name.clone(),
         slug: Some(slug(&name)),
@@ -228,7 +249,7 @@ async fn create_product(
         updated_at: created_at,
     })
     .exec(db)
-    .await?)
+    .await
 }
 
 /// Orders, each with its lines, its payments and its shipping address.
@@ -407,7 +428,8 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
     }
     for name in SUBDEPARTMENTS {
         let parent = rng.pick(&departments);
-        let (parent_id, parent_slug, parent_name) = (parent.id, parent.slug.clone(), parent.name.clone());
+        let (parent_id, parent_slug, parent_name) =
+            (parent.id, parent.slug.clone(), parent.name.clone());
         departments.push(
             toasty::create!(Department {
                 parent_id: Some(parent_id),
@@ -430,9 +452,11 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
         employees.push(create_employee(db, rng, &departments, index, None).await?);
     }
     // Salaries that stand out on the workforce charts.
-    for (offset, salary) in [168_000.0, 158_000.0, 45_000.0, 42_000.0, 41_000.0, 170_000.0]
-        .into_iter()
-        .enumerate()
+    for (offset, salary) in [
+        168_000.0, 158_000.0, 45_000.0, 42_000.0, 41_000.0, 170_000.0,
+    ]
+    .into_iter()
+    .enumerate()
     {
         let index = EMPLOYEES + offset as u64;
         employees.push(create_employee(db, rng, &departments, index, Some(salary)).await?);
@@ -465,8 +489,11 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
             status,
             start_date,
             end_date,
-            days_requested: (end_date.since(start_date).map(|span| span.get_days()).unwrap_or(0) + 1)
-                as f64,
+            days_requested: (end_date
+                .since(start_date)
+                .map(|span| span.get_days())
+                .unwrap_or(0)
+                + 1) as f64,
             reason: rng.pick(LEAVE_REASONS).to_string(),
             reviewer_notes: (status != LeaveStatus::Pending)
                 .then(|| rng.pick(REVIEW_NOTES).to_string()),
@@ -507,7 +534,9 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
                 estimated_hours,
                 actual_hours: round(rng.float(0.0, estimated_hours * 1.3)),
                 start_date,
-                end_date: rng.boolean(70).then(|| today_back(-(rng.below(365) as i64))),
+                end_date: rng
+                    .boolean(70)
+                    .then(|| today_back(-(rng.below(365) as i64))),
                 plan: Some(
                     json!([{
                         "type": "milestone",
@@ -698,7 +727,7 @@ async fn create_employee(
     ]);
     let skill_count = rng.between(2, 6);
     let skills = rng.pick_distinct(SKILLS, skill_count);
-    Ok(toasty::create!(Employee {
+    toasty::create!(Employee {
         department_id: Some(rng.pick(departments).id),
         name: name.clone(),
         email: format!("{}.{}@example.com", slug(&name), index + 1),
@@ -730,7 +759,7 @@ async fn create_employee(
         created_at: days_ago(&Zoned::now(), rng.below(700) as i64),
     })
     .exec(db)
-    .await?)
+    .await
 }
 
 /// The five fields an address is made of, wherever it is stored.
@@ -772,7 +801,7 @@ impl AddressFields {
         brand_id: Option<u64>,
         customer_id: Option<u64>,
     ) -> toasty::Result<Address> {
-        Ok(toasty::create!(Address {
+        toasty::create!(Address {
             brand_id,
             customer_id,
             country: self.country,
@@ -782,12 +811,12 @@ impl AddressFields {
             zip: self.zip,
         })
         .exec(db)
-        .await?)
+        .await
     }
 
     /// Stores this address as `order`'s shipping address.
     async fn create_for_order(self, db: &mut Db, order_id: u64) -> toasty::Result<OrderAddress> {
-        Ok(toasty::create!(OrderAddress {
+        toasty::create!(OrderAddress {
             order_id: Some(order_id),
             country: self.country,
             street: self.street,
@@ -796,7 +825,7 @@ impl AddressFields {
             zip: self.zip,
         })
         .exec(db)
-        .await?)
+        .await
     }
 }
 
@@ -868,9 +897,7 @@ fn days_ago(now: &Zoned, days: i64) -> Timestamp {
 /// The date `days` before today, or after it when `days` is negative.
 fn today_back(days: i64) -> Date {
     let today = Zoned::now().date();
-    today
-        .checked_sub(Span::new().days(days))
-        .unwrap_or(today)
+    today.checked_sub(Span::new().days(days)).unwrap_or(today)
 }
 
 /// A two-decimal amount.
@@ -1280,14 +1307,7 @@ const EXPENSE_LINES: &[&str] = &[
 const STREETS: &[&str] = &["Main St", "Oak Ave", "Cedar Lane", "Market St", "Hill Rd"];
 
 const CITIES: &[&str] = &[
-    "Portland",
-    "Austin",
-    "Denver",
-    "Boston",
-    "Seattle",
-    "Chicago",
-    "Toronto",
-    "Dublin",
+    "Portland", "Austin", "Denver", "Boston", "Seattle", "Chicago", "Toronto", "Dublin",
 ];
 
 const STATES: &[&str] = &["CA", "TX", "CO", "MA", "WA", "IL", "ON", "D"];

@@ -2,9 +2,9 @@
 
 use jiff::{Span, Timestamp, Zoned};
 use tablo::{
-    Action, ActionInput, Allow, BooleanColumn, ColumnWidth, ComputedColumn, CountColumn, DateFilter,
-    Detail, FileColumn, Grid, Places, Relation, RelationColumn, Resource, ResourceDef, Schema,
-    RecordForm, Section, SelectFilter, Table, TextColumn, TernaryFilter, lens, relation,
+    Action, ActionInput, Allow, BooleanColumn, ColumnWidth, ComputedColumn, CountColumn,
+    DateFilter, Detail, FileColumn, Grid, Places, RecordForm, Relation, RelationColumn, Resource,
+    ResourceDef, Schema, Section, SelectFilter, Table, TernaryFilter, TextColumn, lens, relation,
 };
 use toasty::stmt::{List, Query};
 use topcoat::{Result, context::Cx};
@@ -14,8 +14,8 @@ use crate::enums::{
     TaskPriority, TaskStatus,
 };
 use crate::models::{
-    Department, Employee, Expense, ExpenseLine, LeaveRequest, Project, Task, Timesheet, money,
-    maybe_money,
+    Department, Employee, Expense, ExpenseLine, LeaveRequest, Project, Task, Timesheet,
+    maybe_money, money,
 };
 
 /// Departments.
@@ -32,32 +32,32 @@ impl Resource for DepartmentResource {
             .navigation_group("HR")
             .navigation_order(1)
             .policy(Allow)
-            .table(
-                Table::new((
-                    TextColumn::new(lens!(Department.name))
-                        .searchable()
-                        .sortable(),
-                    RelationColumn::of::<DepartmentResource>(relation!(Department.parent))
-                        .label("Parent"),
-                    CountColumn::new(relation!(Department.employees)).label("Headcount"),
-                    TextColumn::new(lens!(Department.budget))
-                        .format(money)
-                        .sortable(),
-                    TextColumn::new(lens!(Department.color)).width(ColumnWidth::Narrow),
-                    BooleanColumn::new(lens!(Department.is_active)).label("Active"),
-                ))
-            )
-            .detail(Detail::new(Section::new("Department").columns((
-                TextColumn::new(lens!(Department.name)),
-                TextColumn::new(lens!(Department.slug)),
+            .table(Table::new((
+                TextColumn::new(lens!(Department.name))
+                    .searchable()
+                    .sortable(),
                 RelationColumn::of::<DepartmentResource>(relation!(Department.parent))
                     .label("Parent"),
-                TextColumn::new(lens!(Department.description)),
-                TextColumn::new(lens!(Department.budget)).format(money),
-                TextColumn::new(lens!(Department.headcount_limit)),
-                TextColumn::new(lens!(Department.color)),
+                CountColumn::new(relation!(Department.employees)).label("Headcount"),
+                TextColumn::new(lens!(Department.budget))
+                    .format(money)
+                    .sortable(),
+                TextColumn::new(lens!(Department.color)).width(ColumnWidth::Narrow),
                 BooleanColumn::new(lens!(Department.is_active)).label("Active"),
-            ))))
+            )))
+            .detail(Detail::new(
+                Section::new("Department").columns((
+                    TextColumn::new(lens!(Department.name)),
+                    TextColumn::new(lens!(Department.slug)),
+                    RelationColumn::of::<DepartmentResource>(relation!(Department.parent))
+                        .label("Parent"),
+                    TextColumn::new(lens!(Department.description)),
+                    TextColumn::new(lens!(Department.budget)).format(money),
+                    TextColumn::new(lens!(Department.headcount_limit)),
+                    TextColumn::new(lens!(Department.color)),
+                    BooleanColumn::new(lens!(Department.is_active)).label("Active"),
+                )),
+            ))
             .form(Schema::new(Section::new("Department").schema((
                 Grid::new(2).schema((c.name, c.slug)),
                 c.parent_id.label("Parent department"),
@@ -174,21 +174,23 @@ impl Resource for EmployeeResource {
             .navigation_order(0)
             .policy(Allow)
             .table(employee_table())
-            .detail(Detail::new(Section::new("Employee").columns((
-                Grid::new(2).columns((
-                    TextColumn::new(lens!(Employee.name)),
-                    TextColumn::new(lens!(Employee.email)),
-                    TextColumn::new(lens!(Employee.phone)),
-                    RelationColumn::of::<DepartmentResource>(relation!(Employee.department))
-                        .label("Department"),
-                    TextColumn::new(lens!(Employee.job_title)),
-                    TextColumn::new(lens!(Employee.employment_type)),
-                    TextColumn::new(lens!(Employee.salary)).format(maybe_money),
-                    TextColumn::new(lens!(Employee.hire_date)),
-                    BooleanColumn::new(lens!(Employee.is_active)).label("Active"),
+            .detail(Detail::new(
+                Section::new("Employee").columns((
+                    Grid::new(2).columns((
+                        TextColumn::new(lens!(Employee.name)),
+                        TextColumn::new(lens!(Employee.email)),
+                        TextColumn::new(lens!(Employee.phone)),
+                        RelationColumn::of::<DepartmentResource>(relation!(Employee.department))
+                            .label("Department"),
+                        TextColumn::new(lens!(Employee.job_title)),
+                        TextColumn::new(lens!(Employee.employment_type)),
+                        TextColumn::new(lens!(Employee.salary)).format(maybe_money),
+                        TextColumn::new(lens!(Employee.hire_date)),
+                        BooleanColumn::new(lens!(Employee.is_active)).label("Active"),
+                    )),
+                    TextColumn::new(lens!(Employee.team_color)),
                 )),
-                TextColumn::new(lens!(Employee.team_color)),
-            ))))
+            ))
             .form(Schema::new((
                 Section::new("Personal").schema(Grid::new(2).schema((
                     c.name,
@@ -229,11 +231,17 @@ impl Resource for EmployeeResource {
 /// The employee list.
 fn employee_table() -> Table<Employee> {
     Table::new((
-        TextColumn::new(lens!(Employee.name)).searchable().sortable(),
-        TextColumn::new(lens!(Employee.email)).searchable().sortable(),
+        TextColumn::new(lens!(Employee.name))
+            .searchable()
+            .sortable(),
+        TextColumn::new(lens!(Employee.email))
+            .searchable()
+            .sortable(),
         RelationColumn::of::<DepartmentResource>(relation!(Employee.department))
             .label("Department"),
-        TextColumn::new(lens!(Employee.job_title)).searchable().sortable(),
+        TextColumn::new(lens!(Employee.job_title))
+            .searchable()
+            .sortable(),
         TextColumn::new(lens!(Employee.employment_type)),
         TextColumn::new(lens!(Employee.salary))
             .format(maybe_money)
@@ -450,19 +458,21 @@ impl Resource for LeaveRequestResource {
                 )),
             )
             .detail(Detail::new((
-                Section::new("Leave details").columns(Grid::new(3).columns((
-                    RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.employee))
-                        .label("Employee"),
-                    TextColumn::new(lens!(LeaveRequest.kind)).label("Type"),
-                    TextColumn::new(lens!(LeaveRequest.status)),
-                    TextColumn::new(lens!(LeaveRequest.start_date)),
-                    TextColumn::new(lens!(LeaveRequest.end_date)),
-                    TextColumn::new(lens!(LeaveRequest.days_requested))
-                        .format(|days| format!("{days:.1} days")),
-                    TextColumn::new(lens!(LeaveRequest.start_time)),
-                    TextColumn::new(lens!(LeaveRequest.end_time)),
-                    TextColumn::new(lens!(LeaveRequest.reason)),
-                ))),
+                Section::new("Leave details").columns(
+                    Grid::new(3).columns((
+                        RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.employee))
+                            .label("Employee"),
+                        TextColumn::new(lens!(LeaveRequest.kind)).label("Type"),
+                        TextColumn::new(lens!(LeaveRequest.status)),
+                        TextColumn::new(lens!(LeaveRequest.start_date)),
+                        TextColumn::new(lens!(LeaveRequest.end_date)),
+                        TextColumn::new(lens!(LeaveRequest.days_requested))
+                            .format(|days| format!("{days:.1} days")),
+                        TextColumn::new(lens!(LeaveRequest.start_time)),
+                        TextColumn::new(lens!(LeaveRequest.end_time)),
+                        TextColumn::new(lens!(LeaveRequest.reason)),
+                    )),
+                ),
                 Section::new("Review").columns((
                     RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.approver))
                         .label("Approver"),
@@ -718,8 +728,12 @@ impl Resource for ProjectResource {
                     TextColumn::new(lens!(Project.priority)),
                     RelationColumn::of::<DepartmentResource>(relation!(Project.department))
                         .label("Department"),
-                    TextColumn::new(lens!(Project.budget)).format(money).sortable(),
-                    TextColumn::new(lens!(Project.spent)).format(money).sortable(),
+                    TextColumn::new(lens!(Project.budget))
+                        .format(money)
+                        .sortable(),
+                    TextColumn::new(lens!(Project.spent))
+                        .format(money)
+                        .sortable(),
                     ComputedColumn::new("Progress", |project: &Project| progress(project)),
                     TextColumn::new(lens!(Project.start_date)).sortable(),
                     TextColumn::new(lens!(Project.end_date)).sortable(),
@@ -732,26 +746,30 @@ impl Resource for ProjectResource {
                 )),
             )
             .detail(Detail::new((
-                Section::new("Overview").columns(Grid::new(2).columns((
-                    TextColumn::new(lens!(Project.name)),
-                    TextColumn::new(lens!(Project.slug)),
-                    RelationColumn::of::<DepartmentResource>(relation!(Project.department))
-                        .label("Department"),
-                    TextColumn::new(lens!(Project.status)),
-                    TextColumn::new(lens!(Project.priority)),
-                    TextColumn::new(lens!(Project.color)),
-                    TextColumn::new(lens!(Project.start_date)),
-                    TextColumn::new(lens!(Project.end_date)),
-                    TextColumn::new(lens!(Project.description)),
-                ))),
-                Section::new("Budget").columns(Grid::new(2).columns((
-                    TextColumn::new(lens!(Project.budget)).format(money),
-                    TextColumn::new(lens!(Project.spent)).format(money),
-                    TextColumn::new(lens!(Project.estimated_hours))
-                        .format(|hours| format!("{hours:.1} hours")),
-                    TextColumn::new(lens!(Project.actual_hours))
-                        .format(|hours| format!("{hours:.1} hours")),
-                ))),
+                Section::new("Overview").columns(
+                    Grid::new(2).columns((
+                        TextColumn::new(lens!(Project.name)),
+                        TextColumn::new(lens!(Project.slug)),
+                        RelationColumn::of::<DepartmentResource>(relation!(Project.department))
+                            .label("Department"),
+                        TextColumn::new(lens!(Project.status)),
+                        TextColumn::new(lens!(Project.priority)),
+                        TextColumn::new(lens!(Project.color)),
+                        TextColumn::new(lens!(Project.start_date)),
+                        TextColumn::new(lens!(Project.end_date)),
+                        TextColumn::new(lens!(Project.description)),
+                    )),
+                ),
+                Section::new("Budget").columns(
+                    Grid::new(2).columns((
+                        TextColumn::new(lens!(Project.budget)).format(money),
+                        TextColumn::new(lens!(Project.spent)).format(money),
+                        TextColumn::new(lens!(Project.estimated_hours))
+                            .format(|hours| format!("{hours:.1} hours")),
+                        TextColumn::new(lens!(Project.actual_hours))
+                            .format(|hours| format!("{hours:.1} hours")),
+                    )),
+                ),
             )))
             .form(Schema::new((
                 Section::new("Overview").schema(Grid::new(2).schema((
@@ -773,7 +791,9 @@ impl Resource for ProjectResource {
                 ))),
             )))
             .record_title(lens!(Project.name))
-            .relation(Relation::has_many::<TaskResource>(Task::fields().project_id()))
+            .relation(Relation::has_many::<TaskResource>(
+                Task::fields().project_id(),
+            ))
             .relation(Relation::has_many::<TimesheetResource>(
                 Timesheet::fields().project_id(),
             ))
@@ -996,21 +1016,24 @@ impl Resource for TaskResource {
                 ))
                 .group_by(lens!(Task.status)),
             )
-            .detail(Detail::new(Section::new("Task").columns((
-                Grid::new(2).columns((
-                    TextColumn::new(lens!(Task.title)),
-                    RelationColumn::of::<ProjectResource>(relation!(Task.project)).label("Project"),
-                    RelationColumn::of::<EmployeeResource>(relation!(Task.assignee))
-                        .label("Assignee"),
-                    TextColumn::new(lens!(Task.status)),
-                    TextColumn::new(lens!(Task.priority)),
-                    TextColumn::new(lens!(Task.estimated_hours)),
-                    TextColumn::new(lens!(Task.actual_hours)),
-                    TextColumn::new(lens!(Task.due_date)),
-                    TextColumn::new(lens!(Task.completed_at)),
+            .detail(Detail::new(
+                Section::new("Task").columns((
+                    Grid::new(2).columns((
+                        TextColumn::new(lens!(Task.title)),
+                        RelationColumn::of::<ProjectResource>(relation!(Task.project))
+                            .label("Project"),
+                        RelationColumn::of::<EmployeeResource>(relation!(Task.assignee))
+                            .label("Assignee"),
+                        TextColumn::new(lens!(Task.status)),
+                        TextColumn::new(lens!(Task.priority)),
+                        TextColumn::new(lens!(Task.estimated_hours)),
+                        TextColumn::new(lens!(Task.actual_hours)),
+                        TextColumn::new(lens!(Task.due_date)),
+                        TextColumn::new(lens!(Task.completed_at)),
+                    )),
+                    TextColumn::new(lens!(Task.description)),
                 )),
-                TextColumn::new(lens!(Task.description)),
-            ))))
+            ))
             .form(Schema::new(Section::new("Task details").schema(
                 Grid::new(2).schema((
                     c.title,
@@ -1332,20 +1355,22 @@ impl Resource for TimesheetResource {
                 ))
                 .group_by(lens!(Timesheet.date)),
             )
-            .detail(Detail::new(Section::new("Timesheet").columns((
-                RelationColumn::of::<EmployeeResource>(relation!(Timesheet.employee))
-                    .label("Employee"),
-                RelationColumn::of::<ProjectResource>(relation!(Timesheet.project))
-                    .label("Project"),
-                RelationColumn::of::<TaskResource>(relation!(Timesheet.task)).label("Task"),
-                TextColumn::new(lens!(Timesheet.date)),
-                TextColumn::new(lens!(Timesheet.hours)),
-                TextColumn::new(lens!(Timesheet.minutes)),
-                BooleanColumn::new(lens!(Timesheet.is_billable)).label("Billable"),
-                TextColumn::new(lens!(Timesheet.hourly_rate)).format(money),
-                TextColumn::new(lens!(Timesheet.total_cost)).format(money),
-                TextColumn::new(lens!(Timesheet.description)),
-            ))))
+            .detail(Detail::new(
+                Section::new("Timesheet").columns((
+                    RelationColumn::of::<EmployeeResource>(relation!(Timesheet.employee))
+                        .label("Employee"),
+                    RelationColumn::of::<ProjectResource>(relation!(Timesheet.project))
+                        .label("Project"),
+                    RelationColumn::of::<TaskResource>(relation!(Timesheet.task)).label("Task"),
+                    TextColumn::new(lens!(Timesheet.date)),
+                    TextColumn::new(lens!(Timesheet.hours)),
+                    TextColumn::new(lens!(Timesheet.minutes)),
+                    BooleanColumn::new(lens!(Timesheet.is_billable)).label("Billable"),
+                    TextColumn::new(lens!(Timesheet.hourly_rate)).format(money),
+                    TextColumn::new(lens!(Timesheet.total_cost)).format(money),
+                    TextColumn::new(lens!(Timesheet.description)),
+                )),
+            ))
             .form(Schema::new(Section::new("Timesheet entry").schema(
                 Grid::new(2).schema((
                     c.employee_id.searchable().label("Employee"),
@@ -1545,24 +1570,25 @@ impl Resource for ExpenseResource {
                 )),
             )
             .detail(Detail::new((
-                Section::new("Expense details").columns(Grid::new(3).columns((
-                    TextColumn::new(lens!(Expense.expense_number)),
-                    RelationColumn::of::<EmployeeResource>(relation!(Expense.employee))
-                        .label("Employee"),
-                    TextColumn::new(lens!(Expense.category)),
-                    TextColumn::new(lens!(Expense.status)),
-                    TextColumn::new(lens!(Expense.total_amount)).format(money),
-                    TextColumn::new(lens!(Expense.currency)),
-                    RelationColumn::of::<ProjectResource>(relation!(Expense.project))
-                        .label("Project"),
-                    TextColumn::new(lens!(Expense.submitted_at)),
-                    TextColumn::new(lens!(Expense.approved_at)),
-                    TextColumn::new(lens!(Expense.description)),
-                    TextColumn::new(lens!(Expense.notes)),
-                ))),
-                Section::new("Receipt").columns(
-                    FileColumn::new(lens!(Expense.receipt_path)).label("Receipt"),
+                Section::new("Expense details").columns(
+                    Grid::new(3).columns((
+                        TextColumn::new(lens!(Expense.expense_number)),
+                        RelationColumn::of::<EmployeeResource>(relation!(Expense.employee))
+                            .label("Employee"),
+                        TextColumn::new(lens!(Expense.category)),
+                        TextColumn::new(lens!(Expense.status)),
+                        TextColumn::new(lens!(Expense.total_amount)).format(money),
+                        TextColumn::new(lens!(Expense.currency)),
+                        RelationColumn::of::<ProjectResource>(relation!(Expense.project))
+                            .label("Project"),
+                        TextColumn::new(lens!(Expense.submitted_at)),
+                        TextColumn::new(lens!(Expense.approved_at)),
+                        TextColumn::new(lens!(Expense.description)),
+                        TextColumn::new(lens!(Expense.notes)),
+                    )),
                 ),
+                Section::new("Receipt")
+                    .columns(FileColumn::new(lens!(Expense.receipt_path)).label("Receipt")),
             )))
             .form(Schema::new((
                 Section::new("Details").schema(Grid::new(2).schema((
@@ -1806,26 +1832,26 @@ impl Resource for ExpenseLineResource {
             .navigation_group("HR")
             .navigation_order(4)
             .policy(Allow)
-            .table(
-                Table::new((
-                    RelationColumn::of::<ExpenseResource>(relation!(ExpenseLine.expense))
-                        .label("Expense"),
-                    TextColumn::new(lens!(ExpenseLine.description)).searchable(),
-                    TextColumn::new(lens!(ExpenseLine.quantity)),
-                    TextColumn::new(lens!(ExpenseLine.unit_price)).format(money),
-                    TextColumn::new(lens!(ExpenseLine.amount)).format(money),
-                    TextColumn::new(lens!(ExpenseLine.date)),
-                ))
-            )
-            .detail(Detail::new(Section::new("Expense line").columns((
+            .table(Table::new((
                 RelationColumn::of::<ExpenseResource>(relation!(ExpenseLine.expense))
                     .label("Expense"),
-                TextColumn::new(lens!(ExpenseLine.description)),
+                TextColumn::new(lens!(ExpenseLine.description)).searchable(),
                 TextColumn::new(lens!(ExpenseLine.quantity)),
                 TextColumn::new(lens!(ExpenseLine.unit_price)).format(money),
                 TextColumn::new(lens!(ExpenseLine.amount)).format(money),
                 TextColumn::new(lens!(ExpenseLine.date)),
-            ))))
+            )))
+            .detail(Detail::new(
+                Section::new("Expense line").columns((
+                    RelationColumn::of::<ExpenseResource>(relation!(ExpenseLine.expense))
+                        .label("Expense"),
+                    TextColumn::new(lens!(ExpenseLine.description)),
+                    TextColumn::new(lens!(ExpenseLine.quantity)),
+                    TextColumn::new(lens!(ExpenseLine.unit_price)).format(money),
+                    TextColumn::new(lens!(ExpenseLine.amount)).format(money),
+                    TextColumn::new(lens!(ExpenseLine.date)),
+                )),
+            ))
             .form(Schema::new(Section::new("Expense line").schema(
                 Grid::new(2).schema((
                     c.expense_id.searchable().label("Expense"),

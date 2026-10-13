@@ -11,9 +11,7 @@ use toasty::Deferred;
 use crate::enums::CountryCode;
 
 pub use blog::{Author, Post, PostCategory};
-pub use hr::{
-    Department, Employee, Expense, ExpenseLine, LeaveRequest, Project, Task, Timesheet,
-};
+pub use hr::{Department, Employee, Expense, ExpenseLine, LeaveRequest, Project, Task, Timesheet};
 pub use shop::{
     Brand, Customer, Order, OrderAddress, OrderItem, Payment, Product, ProductCategory,
     ProductCategoryLink,
