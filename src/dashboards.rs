@@ -62,10 +62,10 @@ impl Page for Dashboard {
                             )
                             tablo::ui::card_content(
                                 <ul class="flex flex-col gap-2 text-sm">
-                                    <li><strong>"Blog"</strong>" — authors, categories and posts, with the comments on each post."</li>
-                                    <li><strong>"Shop"</strong>" — brands, categories, products, customers and orders, with payments."</li>
-                                    <li><strong>"HR"</strong>" — departments, employees, leave requests and expenses."</li>
-                                    <li><strong>"Projects"</strong>" — projects, their tasks and their timesheets."</li>
+                                    <li><strong>"Blog"</strong>": authors, categories and posts, with the comments on each post."</li>
+                                    <li><strong>"Shop"</strong>": brands, categories, products, customers and orders, with payments."</li>
+                                    <li><strong>"HR"</strong>": departments, employees, leave requests and expenses."</li>
+                                    <li><strong>"Projects"</strong>": projects, their tasks and their timesheets."</li>
                                 </ul>
                             )
                         )
