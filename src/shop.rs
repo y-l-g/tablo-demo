@@ -2,8 +2,8 @@
 
 use tablo::{
     Action, ActionInput, Allow, BooleanColumn, ColumnWidth, ComputedColumn, DateFilter, Detail,
-    FieldErrors, FileColumn, Grid, PanelUser, Places, Relation, RelationColumn, Resource,
-    ResourceDef, Schema, Section, SelectFilter, Table, TernaryFilter, TextColumn, lens, relation,
+    FieldErrors, FileColumn, Grid, Places, Relation, RelationColumn, Resource, ResourceDef, Schema,
+    Section, SelectFilter, Table, TernaryFilter, TextColumn, lens, relation,
 };
 use toasty::stmt::{List, Query};
 use topcoat::{Result, context::Cx};
@@ -529,11 +529,8 @@ impl Action<CustomerResource> for SendCustomerEmail {
         Ok(())
     }
 
-    fn success(cx: &Cx, count: usize) -> String {
-        let name = tablo::auth::user::<crate::auth::SignedIn>(cx)
-            .map(|user| user.display_name().to_string())
-            .unwrap_or_default();
-        format!("Email sent ({count} record(s)) for {name}")
+    fn success(_cx: &Cx, count: usize) -> String {
+        format!("Email sent to {count} customer(s)")
     }
 }
 

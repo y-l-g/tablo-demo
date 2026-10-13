@@ -69,6 +69,7 @@ pub struct Comment {
     pub product: Deferred<Option<Product>>,
     pub title: Option<String>,
     pub content: Option<String>,
+    #[default(false)]
     pub is_visible: bool,
     #[default(Timestamp::now())]
     pub created_at: Timestamp,

@@ -18,23 +18,26 @@ use crate::{
     auth::DemoAuth,
     blog::{AuthorResource, CommentResource, PostCategoryResource, PostResource},
     dashboards::{Dashboard, HrDashboard, ShopDashboard},
+    seed,
 };
 
 /// The theme's sans font, which the Filament demo names `Albert Sans`.
 const ALBERT_SANS: Font = fontsource_font!(ALBERT_SANS, host: Asset);
 
-/// Where uploaded images are written.
+/// The URL prefix uploaded images are served under.
 pub const UPLOAD_URL_PREFIX: &str = "/uploads";
 
-/// The login hint both panels show, with the demo account.
-pub const LOGIN_HINT: &str = "admin@filamentphp.com / demo.Filament@2021!";
+/// The login hint both panels show, with the demo account the seed creates.
+pub fn login_hint() -> String {
+    format!("{} / {}", seed::ADMIN_EMAIL, seed::ADMIN_PASSWORD)
+}
 
 /// The admin panel: every resource of the demo.
 pub fn admin_panel() -> Panel {
     Panel::new("admin")
         .auth(Auth::custom(DemoAuth))
         .brand(Brand::new("Filament Demo"))
-        .login_hint(LOGIN_HINT)
+        .login_hint(login_hint())
         .home::<Dashboard>()
         .page::<ShopDashboard>()
         .page::<HrDashboard>()
@@ -67,7 +70,7 @@ pub fn app_panel() -> Panel {
     Panel::new("app")
         .auth(Auth::custom(DemoAuth).registration(DemoAuth))
         .brand(Brand::new("Filament Demo"))
-        .login_hint(LOGIN_HINT)
+        .login_hint(login_hint())
         .home::<Dashboard>()
         .page::<Settings>()
 }

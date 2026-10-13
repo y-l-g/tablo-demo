@@ -144,16 +144,7 @@ impl Registrar for DemoAuth {
         })
         .exec(&mut *ex)
         .await?;
-        // Matches `User::getTenants`, which lists every team rather than the
-        // user's `team_user` rows.
-        let mut db = tablo::db::db(cx);
-        let teams = Team::all()
-            .exec(&mut db)
-            .await?
-            .into_iter()
-            .map(|team| Membership::new(team.id, team.name))
-            .collect();
-        Ok(SignedIn { user, teams })
+        Self::signed_in(cx, user).await
     }
 }
 

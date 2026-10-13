@@ -27,6 +27,7 @@ pub struct Department {
     #[unique]
     pub slug: String,
     pub description: Option<String>,
+    #[default(0.0)]
     pub budget: f64,
     #[default(0)]
     pub headcount_limit: i64,
@@ -62,6 +63,7 @@ pub struct Employee {
     pub date_of_birth: Option<Date>,
     pub hire_date: Date,
     pub job_title: String,
+    #[default(EmploymentType::FullTime)]
     pub employment_type: EmploymentType,
     pub salary: Option<f64>,
     pub hourly_rate: Option<f64>,
@@ -106,6 +108,7 @@ pub struct LeaveRequest {
     pub approver: Deferred<Option<Employee>>,
     #[column("type")]
     pub kind: LeaveType,
+    #[default(LeaveStatus::Pending)]
     pub status: LeaveStatus,
     pub start_date: Date,
     pub end_date: Date,
@@ -136,11 +139,17 @@ pub struct Project {
     pub slug: String,
     pub description: Option<String>,
     pub color: Option<String>,
+    #[default(ProjectStatus::Planning)]
     pub status: ProjectStatus,
+    #[default(TaskPriority::Medium)]
     pub priority: TaskPriority,
+    #[default(0.0)]
     pub budget: f64,
+    #[default(0.0)]
     pub spent: f64,
+    #[default(0.0)]
     pub estimated_hours: f64,
+    #[default(0.0)]
     pub actual_hours: f64,
     pub start_date: Date,
     pub end_date: Option<Date>,
@@ -177,7 +186,9 @@ pub struct Task {
     pub assignee: Deferred<Option<Employee>>,
     pub title: String,
     pub description: Option<String>,
+    #[default(TaskStatus::Backlog)]
     pub status: TaskStatus,
+    #[default(TaskPriority::Medium)]
     pub priority: TaskPriority,
     pub estimated_hours: Option<f64>,
     #[default(0.0)]
@@ -217,9 +228,12 @@ pub struct Timesheet {
     pub project: Deferred<Project>,
     pub date: Date,
     pub hours: f64,
+    #[default(0)]
     pub minutes: i64,
     pub description: Option<String>,
+    #[default(true)]
     pub is_billable: bool,
+    #[default(0.0)]
     pub hourly_rate: f64,
     pub total_cost: f64,
     #[default(Timestamp::now())]
@@ -240,6 +254,7 @@ pub struct ExpenseLine {
     pub expense: Deferred<Expense>,
     pub description: String,
     pub amount: f64,
+    #[default(1)]
     pub quantity: i64,
     pub unit_price: f64,
     pub date: Date,
@@ -265,10 +280,12 @@ pub struct Expense {
     pub project: Deferred<Option<Project>>,
     #[unique]
     pub expense_number: String,
+    #[default(ExpenseStatus::Draft)]
     pub status: ExpenseStatus,
     pub category: ExpenseCategory,
     pub description: String,
     pub total_amount: f64,
+    #[default("USD".to_string())]
     pub currency: String,
     pub submitted_at: Option<Timestamp>,
     pub approved_at: Option<Timestamp>,

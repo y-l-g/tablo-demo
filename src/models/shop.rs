@@ -23,7 +23,7 @@ pub struct Brand {
     pub is_visible: bool,
     pub seo_title: Option<String>,
     pub seo_description: Option<String>,
-    /// The brand's place in the list's manual order.
+    /// The brand's place in the list's manual order, which nothing reorders.
     pub sort: Option<i64>,
     #[default(Timestamp::now())]
     pub created_at: Timestamp,
@@ -105,18 +105,23 @@ pub struct Product {
     pub published_at: Option<Date>,
     pub seo_title: Option<String>,
     pub seo_description: Option<String>,
+    #[default(Some(0.0))]
     pub weight_value: Option<f64>,
     #[default("kg".to_string())]
     pub weight_unit: String,
+    #[default(Some(0.0))]
     pub height_value: Option<f64>,
     #[default("cm".to_string())]
     pub height_unit: String,
+    #[default(Some(0.0))]
     pub width_value: Option<f64>,
     #[default("cm".to_string())]
     pub width_unit: String,
+    #[default(Some(0.0))]
     pub depth_value: Option<f64>,
     #[default("cm".to_string())]
     pub depth_unit: String,
+    #[default(Some(0.0))]
     pub volume_value: Option<f64>,
     #[default("l".to_string())]
     pub volume_unit: String,
@@ -181,7 +186,7 @@ pub struct OrderItem {
     #[key]
     #[auto]
     pub id: u64,
-    /// The line's place in the order, which the form's repeater sets.
+    /// The line's place in the order.
     #[default(0)]
     pub sort: u32,
     #[index]

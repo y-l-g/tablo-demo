@@ -11,7 +11,7 @@ use topcoat::{
 };
 
 use crate::{
-    charts::{Point, bar_chart, month_key, month_of, stat_card, table_card},
+    charts::{Point, bar_chart, date_of, month_key, month_of, stat_card, table_card},
     enums::{EmploymentType, OrderStatus, ProjectStatus},
     models::{
         Customer, Department, Employee, Expense, LeaveRequest, Order, OrderItem, Product, Project,
@@ -122,7 +122,12 @@ impl Page for ShopDashboard {
                     >= 2
             })
             .count();
-        let revenue: f64 = orders.iter().filter_map(|order| order.total_price).sum();
+        // A cancelled order is not revenue, and it sells nothing.
+        let sold: Vec<&Order> = orders
+            .iter()
+            .filter(|order| order.status != OrderStatus::Cancelled)
+            .collect();
+        let revenue: f64 = sold.iter().filter_map(|order| order.total_price).sum();
         let cancelled = orders
             .iter()
             .filter(|order| order.status == OrderStatus::Cancelled)
@@ -140,10 +145,22 @@ impl Page for ShopDashboard {
             items.len() as f64 / orders.len() as f64
         };
 
-        let revenue_by_month = monthly_sum(&orders, 12, |order| order.total_price.unwrap_or(0.0));
-        let customers_by_month = monthly_count(&customers, 12);
+        let revenue_by_month = monthly_total(&orders, 12, |order| {
+            if order.status == OrderStatus::Cancelled {
+                0.0
+            } else {
+                order.total_price.unwrap_or(0.0)
+            }
+        });
+        let customers_by_month = monthly_total(&customers, 12, |_| 1.0);
         let segments = customer_segments(&orders_per_customer);
-        let top_products = top_products_by_revenue(&items, &products);
+        let sold_ids: Vec<u64> = sold.iter().map(|order| order.id).collect();
+        let top_products = top_products_by_revenue(
+            items
+                .iter()
+                .filter(|item| item.order_id.is_some_and(|id| sold_ids.contains(&id))),
+            &products,
+        );
 
         Ok(view! {
             cx =>
@@ -374,7 +391,7 @@ fn burn_rate(timesheets: &[Timesheet], expenses: &[Expense], projects: &[Project
             let month = month_key(months_ago);
             let cost: f64 = timesheets
                 .iter()
-                .filter(|timesheet| month_of(timesheet.created_at) == month)
+                .filter(|timesheet| date_of(timesheet.date) == month)
                 .map(|timesheet| timesheet.total_cost)
                 .sum::<f64>()
                 + expenses
@@ -397,7 +414,10 @@ fn customer_segments(orders_per_customer: &HashMap<Option<u64>, usize>) -> Vec<P
         ("Regular (4-9)".to_string(), 0.0),
         ("VIP (10+)".to_string(), 0.0),
     ];
-    for count in orders_per_customer.values() {
+    for count in orders_per_customer
+        .iter()
+        .filter_map(|(customer, count)| customer.is_some().then_some(count))
+    {
         let bucket = match count {
             0 => continue,
             1 => 0,
@@ -411,7 +431,10 @@ fn customer_segments(orders_per_customer: &HashMap<Option<u64>, usize>) -> Vec<P
 }
 
 /// The eight products that took the most money.
-fn top_products_by_revenue(items: &[OrderItem], products: &[Product]) -> Vec<Point> {
+fn top_products_by_revenue<'a>(
+    items: impl Iterator<Item = &'a OrderItem>,
+    products: &[Product],
+) -> Vec<Point> {
     let names: HashMap<u64, &str> = products
         .iter()
         .map(|product| (product.id, product.name.as_str()))
@@ -444,34 +467,11 @@ fn count_by<T>(rows: &[T], key: impl Fn(&T) -> Option<u64>) -> HashMap<Option<u6
     counts
 }
 
-/// The money `orders` took in each of the last `months` months.
-fn monthly_sum(orders: &[Order], months: i64, amount: impl Fn(&Order) -> f64) -> Vec<Point> {
+/// What `rows` come to in each of the last `months` months, oldest first.
+fn monthly_total<T>(rows: &[T], months: i64, amount: impl Fn(&T) -> f64) -> Vec<Point> {
     (0..months)
         .rev()
-        .map(|ago| {
-            let month = crate::charts::month_key(ago);
-            let total: f64 = orders
-                .iter()
-                .filter(|order| month_of(order.created_at) == month)
-                .map(&amount)
-                .sum();
-            (month, total)
-        })
-        .collect()
-}
-
-/// How many customers joined in each of the last `months` months.
-fn monthly_count(customers: &[Customer], months: i64) -> Vec<Point> {
-    (0..months)
-        .rev()
-        .map(|ago| {
-            let month = crate::charts::month_key(ago);
-            let count = customers
-                .iter()
-                .filter(|customer| month_of(customer.created_at) == month)
-                .count();
-            (month, count as f64)
-        })
+        .map(|ago| (month_key(ago), rows.iter().map(&amount).sum()))
         .collect()
 }
 

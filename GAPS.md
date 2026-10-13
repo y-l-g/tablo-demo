@@ -18,7 +18,7 @@ the demo either omits the feature or uses the closest declaration it does have.
 | Spatie media library (`media` table, collections, conversions) | one `image` column holding the uploaded path | Tablo's file field binds one `String` column |
 | Spatie tags (`tags` + `taggables`, JSON names) | `posts.tags`, a comma-separated string | there is no tag input and no polymorphic pivot |
 | Soft deletes | a nullable `deleted_at` column, scoped out in the resource's `query`, set by `delete_record` | kept, but without the filter and the actions below |
-| `full_address`, a virtual column | a `ComputedColumn` on the list | Toasty declares no generated columns |
+| `full_address`, a generated column | dropped | Toasty declares no generated column; the demo used it only as a relation manager's record title |
 | `hasManyThrough` (`Customer::payments`) | not rendered | Toasty has no through relation |
 | Pivot columns (`id`, timestamps on `product_category_product`, `team_user`) | dropped; a join model is keyed by its two foreign keys | a link Tablo writes sets the two keys and nothing else |
 | Auto-increment team ids | `Team.id` is a UUID | Tablo's tenant id is a `uuid::Uuid` |

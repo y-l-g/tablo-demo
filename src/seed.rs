@@ -451,7 +451,7 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
     for index in 0..EMPLOYEES {
         employees.push(create_employee(db, rng, &departments, index, None).await?);
     }
-    // Salaries that stand out on the workforce charts.
+    // Salaries that stand out beside the rest of the workforce.
     for (offset, salary) in [
         168_000.0, 158_000.0, 45_000.0, 42_000.0, 41_000.0, 170_000.0,
     ]
@@ -732,7 +732,7 @@ async fn create_employee(
         name: name.clone(),
         email: format!("{}.{}@example.com", slug(&name), index + 1),
         phone: Some(phone(rng)),
-        date_of_birth: Some(today_back(rng.below(20_000) as i64)),
+        date_of_birth: Some(today_back(rng.between(9_000, 20_000) as i64)),
         hire_date: today_back(rng.below(1800) as i64),
         job_title: rng.pick(JOB_TITLES).to_string(),
         employment_type,
