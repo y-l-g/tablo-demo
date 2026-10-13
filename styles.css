@@ -1,1 +1,14 @@
 @source "./src/**/*.rs";
+
+/* The Filament demo's theme: Albert Sans, and its blue primary. */
+@theme {
+  --font-sans: "Albert Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --primary: oklch(0.62 0.19 259);
+}
+
+.dark {
+  --primary: oklch(0.68 0.16 259);
+}
