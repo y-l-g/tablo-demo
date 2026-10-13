@@ -1,16 +1,16 @@
 # Tablo demo
 
 The [Filament demo](https://github.com/filamentphp/demo) rebuilt on
-[Tablo](../filament-topcoat/tablo): the same models, relations, resources,
+[Tablo](https://github.com/y-l-g/tablo): the same models, relations, resources,
 tables, forms, actions and dashboards, served by Topcoat and persisted with
 Toasty.
 
 Two panels are mounted, as in the Filament demo:
 
-| Panel | URL | What it is |
-| --- | --- | --- |
+| Panel   | URL      | What it is                                                                           |
+| ------- | -------- | ------------------------------------------------------------------------------------ |
 | `admin` | `/admin` | every resource: the blog, the shop, HR and projects, plus the shop and HR dashboards |
-| `app` | `/app` | the tenant panel: sign-up, a team switcher and the settings page |
+| `app`   | `/app`   | the tenant panel: sign-up, a team switcher and the settings page                     |
 
 Sign in with `admin@filamentphp.com` / `demo.Filament@2021!`.
 
