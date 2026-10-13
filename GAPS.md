@@ -80,12 +80,20 @@ Details worth knowing:
 - **No query builder.** The product list's `QueryBuilder` with arbitrary
   constraints becomes a fixed set of select, ternary and date filters. Search
   still covers the string columns.
+- **One grouping per table.** Filament declares several groupings on the task
+  and timesheet lists (project, status, priority, assignee; employee, project,
+  date); a Tablo table groups by one lens, so the demo keeps the first.
+- **No `->required()` over a nullable column.** A Tablo field is required when
+  it has no blank answer, which an `Option` column always has, so the columns
+  Filament marks required but declares nullable (a product's slug, SKU and
+  barcode, an order's shipping price) stay optional here. `.unique()` is kept on
+  the three email addresses.
 - **No `TrashedFilter`.** A filter narrows a query, so it cannot re-include the
   rows `query()` hides. For the same reason there is no Restore or ForceDelete
   action: a hidden row has no page to run one from.
-- **No has-many-through in a relation table.** A customer's relation tables are
-  addresses and (via the order's own relation) payments; the through relation
-  itself is not declared.
+- **No has-many-through in a relation table.** A customer's relation table is
+  its addresses; payments hang off the order they belong to, so a customer's
+  payments are reachable only through that order's page.
 - **No reactive fields.** Filament derives the slug from the title, the days from
   the dates, the cost from hours × rate and the line amount from quantity × price
   in the browser. Tablo has no `Set`/`Get` pair, so slugs are typed, and the
@@ -118,9 +126,10 @@ Details worth knowing:
 - **No dependent predicate.** A Tablo dependent choice narrows by another field's
   value; "only a top-level category may be a parent" is a predicate, so every
   category is offered as a parent.
-- **No `->hidden()`, `->placeholder()` or `->format()` on a form field**, no
-  `helperText` (`.help()` is the equivalent), no `prefix`/`suffix`,
-  `minValue`/`maxValue` or `rules()`; ranges belong in `validate_record`.
+- **No `->hidden()` or `->format()` on a form field**, no `prefix`/`suffix`,
+  `minValue`/`maxValue` or `rules()`; ranges belong in `validate_record`. A
+  placeholder is available (`.placeholder(..)`) but is not set on every field
+  Filament sets one on.
 - **File fields are single-file.** `multiple()`, `maxFiles(5)` and `reorderable()`
   on the product images are not translated; a product has one image.
 
@@ -154,6 +163,10 @@ Details worth knowing:
   Filament demo behaves the same way in practice, and the demo's screenshots use
   one panel at a time.
 - **No password reset and no email verification**, and no per-tenant panel access.
+- **No tenant registration page.** Filament's `->tenantRegistration()` asks for a
+  team after sign-up; Tablo's registrar creates the panel user in one step, so
+  the demo's sign-up form creates the account and the tenant switcher lists the
+  teams that exist.
 - **The shell is Tablo's.** `->spa()`, `->topbar(false)`, `->colors()`, a Vite
   theme and brand logos are not translated. The demo sets the brand, the login
   hint, the Albert Sans font and the blue primary colour.
@@ -180,9 +193,16 @@ widgets become sections on it:
 - a **chart** is a column chart of one series, rendered as markup with no script
   and no charting library. The year-over-year line becomes two series' worth of
   points side by side, and the doughnut becomes bars;
-- a **table widget** is a card listing its rows (flagged orders);
+- a **table widget** is a card listing its rows (flagged orders, the five oldest
+  first, as a label and a value rather than the widget's six columns);
 - a widget that follows the list's table state or the dashboard's filter form has
   no equivalent: a page cannot read either.
+
+The figures themselves follow the widgets they come from, with three deliberate
+differences: revenue and the product ranking leave out cancelled orders, which
+the widgets count; the shop's revenue series is money rather than the widget's
+order count; and the product-margin scatter and the feature index on the home
+page have no counterpart (the home page states what the demo covers instead).
 
 ## Smaller differences
 

@@ -726,13 +726,13 @@ async fn review(
     ex: &mut dyn toasty::Executor,
 ) -> Result<()> {
     for request in requests {
-        LeaveRequest::filter(LeaveRequest::fields().id().eq(request.id))
-            .update()
-            .status(status)
-            .reviewer_notes(notes.clone())
-            .reviewed_at(Some(Timestamp::now()))
-            .exec(&mut *ex)
-            .await?;
+        let mut update = LeaveRequest::filter(LeaveRequest::fields().id().eq(request.id)).update();
+        update = update.status(status).reviewed_at(Some(Timestamp::now()));
+        // Approving keeps whatever notes the request already carries.
+        if let Some(notes) = notes.clone() {
+            update = update.reviewer_notes(Some(notes));
+        }
+        update.exec(&mut *ex).await?;
     }
     Ok(())
 }
@@ -1644,7 +1644,7 @@ impl Resource for ExpenseResource {
                 ))),
                 Section::new("Summary").schema(Grid::new(2).schema((
                     c.total_amount,
-                    c.currency,
+                    c.currency.choice().options(["USD"]),
                     c.receipt_path,
                     c.notes.multiline(3),
                 ))),

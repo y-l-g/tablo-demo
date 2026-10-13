@@ -11,8 +11,8 @@ use topcoat::{
 };
 
 use crate::{
-    charts::{Point, bar_chart, date_of, month_key, month_of, stat_card, table_card},
-    enums::{EmploymentType, OrderStatus, ProjectStatus},
+    charts::{Point, bar_chart, month_key, month_of, stat_card, table_card},
+    enums::{EmploymentType, ExpenseStatus, LeaveStatus, OrderStatus, ProjectStatus},
     models::{
         Customer, Department, Employee, Expense, LeaveRequest, Order, OrderItem, Product, Project,
         Task, Timesheet,
@@ -25,6 +25,7 @@ pub struct Dashboard;
 impl Page for Dashboard {
     fn declare() -> PageDef {
         PageDef::new()
+            .label("Welcome")
             .icon(tablo::ui::icons::LAYOUT_DASHBOARD)
             .navigation_order(-2)
     }
@@ -106,8 +107,12 @@ impl Page for ShopDashboard {
 
     async fn render(cx: &Cx) -> Result<impl View> {
         let mut db = db(cx);
-        let orders: Vec<Order> = Order::all().exec(&mut db).await?;
-        let customers: Vec<Customer> = Customer::all().exec(&mut db).await?;
+        let orders: Vec<Order> = Order::filter(Order::fields().deleted_at().is_none())
+            .exec(&mut db)
+            .await?;
+        let customers: Vec<Customer> = Customer::filter(Customer::fields().deleted_at().is_none())
+            .exec(&mut db)
+            .await?;
         let items: Vec<OrderItem> = OrderItem::all().exec(&mut db).await?;
         let products: Vec<Product> = Product::all().exec(&mut db).await?;
 
@@ -152,8 +157,10 @@ impl Page for ShopDashboard {
                 order.total_price.unwrap_or(0.0)
             }
         });
+        let orders_by_month = monthly_total(&orders, 12, |_| 1.0);
         let customers_by_month = monthly_total(&customers, 12, |_| 1.0);
         let segments = customer_segments(&orders_per_customer);
+        let values = order_value_distribution(&orders);
         let sold_ids: Vec<u64> = sold.iter().map(|order| order.id).collect();
         let top_products = top_products_by_revenue(
             items
@@ -180,7 +187,9 @@ impl Page for ShopDashboard {
                     </div>
                     <div class="grid gap-6 lg:grid-cols-2">
                         (bar_chart(cx, "Revenue by month", &revenue_by_month, crate::models::dollars))
+                        (bar_chart(cx, "Orders by month", &orders_by_month, |value| format!("{value:.0}")))
                         (bar_chart(cx, "New customers by month", &customers_by_month, |value| format!("{value:.0}")))
+                        (bar_chart(cx, "Order value", &values, |value| format!("{value:.0}")))
                         (bar_chart(cx, "Customers by order count", &segments, |value| format!("{value:.0}")))
                         (table_card(cx, "Top products by revenue", &top_products))
                     </div>
@@ -211,7 +220,7 @@ fn flagged_orders<'a>(cx: &'a Cx, orders: &[Order]) -> BoxView<'a> {
         .map(|order| (order.number.clone(), order.total_price.unwrap_or(0.0)))
         .collect();
     flagged.sort_by(|left, right| left.0.cmp(&right.0));
-    flagged.truncate(8);
+    flagged.truncate(5);
     table_card(cx, "Flagged orders (oldest first)", &flagged)
 }
 
@@ -229,17 +238,23 @@ impl Page for HrDashboard {
 
     async fn render(cx: &Cx) -> Result<impl View> {
         let mut db = db(cx);
-        let employees: Vec<Employee> = Employee::all().exec(&mut db).await?;
+        let employees: Vec<Employee> = Employee::filter(Employee::fields().deleted_at().is_none())
+            .exec(&mut db)
+            .await?;
         let departments: Vec<Department> = Department::all().exec(&mut db).await?;
-        let projects: Vec<Project> = Project::all().exec(&mut db).await?;
+        let projects: Vec<Project> = Project::filter(Project::fields().deleted_at().is_none())
+            .exec(&mut db)
+            .await?;
         let leave: Vec<LeaveRequest> = LeaveRequest::all().exec(&mut db).await?;
         let timesheets: Vec<Timesheet> = Timesheet::all().exec(&mut db).await?;
         let expenses: Vec<Expense> = Expense::all().exec(&mut db).await?;
         let tasks: Vec<Task> = Task::all().exec(&mut db).await?;
 
         let today = Zoned::now().date();
-        let tenure: f64 = employees
-            .iter()
+        let active = employees.iter().filter(|employee| employee.is_active);
+        let active_count = active.clone().count();
+        let tenure: f64 = active
+            .clone()
             .map(|employee| {
                 today
                     .since(employee.hire_date)
@@ -248,29 +263,31 @@ impl Page for HrDashboard {
                     / 365.0
             })
             .sum::<f64>()
-            / employees.len().max(1) as f64;
+            / active_count.max(1) as f64;
         let inactive = employees
             .iter()
             .filter(|employee| !employee.is_active)
             .count();
-        let contractors = employees
-            .iter()
+        let contractors = active
+            .clone()
             .filter(|employee| employee.employment_type == EmploymentType::Contractor)
             .count();
         let capacity: i64 = departments
             .iter()
+            .filter(|department| department.is_active)
             .map(|department| department.headcount_limit)
             .sum();
-        let open_capacity = capacity
-            - employees
-                .iter()
-                .filter(|employee| employee.is_active)
-                .count() as i64;
+        let open_capacity = (capacity - active_count as i64).max(0);
 
         let leave_by_department = leave_by_department(&leave, &employees, &departments);
         let project_health = project_health(&projects);
-        let utilization = utilization_by_week(&timesheets);
-        let burn = burn_rate(&timesheets, &expenses, &projects);
+        // A full-time week is forty hours, which is what the widget divides by.
+        let full_time = active
+            .clone()
+            .filter(|employee| employee.employment_type == EmploymentType::FullTime)
+            .count();
+        let utilization = utilization_by_week(&timesheets, (full_time * 40).max(1) as f64);
+        let burn = burn_rate(&expenses, &projects);
 
         Ok(view! {
             cx =>
@@ -283,10 +300,10 @@ impl Page for HrDashboard {
                 )
                 tablo::ui::page_content(
                     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        (stat_card(cx, "Avg tenure", format!("{tenure:.1} yrs"), format!("{} employees", employees.len())))
-                        (stat_card(cx, "Turnover rate", percent(share(inactive, employees.len())), format!("{inactive} inactive")))
-                        (stat_card(cx, "Open capacity", open_capacity.to_string(), format!("{capacity} seats, {} filled", employees.len() - inactive)))
-                        (stat_card(cx, "Contractor ratio", percent(share(contractors, employees.len())), format!("{contractors} contractors")))
+                        (stat_card(cx, "Avg tenure", format!("{tenure:.1} yrs"), format!("{active_count} active employees")))
+                        (stat_card(cx, "Turnover rate", percent(share(inactive, employees.len())), format!("{inactive} of {} inactive", employees.len())))
+                        (stat_card(cx, "Open capacity", open_capacity.to_string(), format!("{capacity} seats across the active departments")))
+                        (stat_card(cx, "Contractor ratio", percent(share(contractors, active_count)), format!("{contractors} contractors")))
                     </div>
                     <div class="grid gap-6 lg:grid-cols-2">
                         (bar_chart(cx, "Leave days by department", &leave_by_department, |value| format!("{value:.0}")))
@@ -316,8 +333,14 @@ fn leave_by_department(
         .iter()
         .filter_map(|employee| employee.department_id.map(|id| (employee.id, id)))
         .collect();
+    let year = Zoned::now().date().year();
     let mut days: HashMap<u64, f64> = HashMap::new();
     for request in leave {
+        if request.start_date.year() != year
+            || !matches!(request.status, LeaveStatus::Approved | LeaveStatus::Taken)
+        {
+            continue;
+        }
         if let Some(department) = department_of.get(&request.employee_id) {
             *days.entry(*department).or_default() += request.days_requested;
         }
@@ -337,68 +360,65 @@ fn leave_by_department(
 fn project_health(projects: &[Project]) -> Vec<Point> {
     let mut points: Vec<Point> = projects
         .iter()
-        .filter(|project| project.budget > 0.0 && project.status != ProjectStatus::Cancelled)
-        .map(|project| (project.name.clone(), project.spent / project.budget * 100.0))
+        .filter(|project| project.budget > 0.0 && project.status == ProjectStatus::Active)
+        .map(|project| {
+            (
+                project.name.clone(),
+                (project.spent / project.budget * 100.0).min(200.0),
+            )
+        })
         .collect();
-    points.sort_by(|left, right| right.1.total_cmp(&left.1));
-    points.truncate(8);
+    points.sort_by(|left, right| left.0.cmp(&right.0));
+    points.truncate(10);
     points
 }
 
 /// The share of the last eight weeks' hours that were billable.
-fn utilization_by_week(timesheets: &[Timesheet]) -> Vec<Point> {
+fn utilization_by_week(timesheets: &[Timesheet], capacity: f64) -> Vec<Point> {
     let today = Zoned::now().date();
-    let weeks: Vec<Point> = (0..8)
+    (0..12)
         .rev()
         .map(|weeks_ago| {
             let end = today
                 .checked_sub(Span::new().days(weeks_ago * 7))
                 .unwrap_or(today);
             let start = end.checked_sub(Span::new().days(6)).unwrap_or(end);
-            let (billable, total) = timesheets
+            let billable: f64 = timesheets
                 .iter()
-                .filter(|timesheet| timesheet.date >= start && timesheet.date <= end)
-                .fold((0.0, 0.0), |(billable, total), timesheet| {
-                    (
-                        billable
-                            + if timesheet.is_billable {
-                                timesheet.hours
-                            } else {
-                                0.0
-                            },
-                        total + timesheet.hours,
-                    )
-                });
+                .filter(|timesheet| {
+                    timesheet.date >= start && timesheet.date <= end && timesheet.is_billable
+                })
+                .map(|timesheet| timesheet.hours)
+                .sum();
             (
                 start.strftime("%b %d").to_string(),
-                if total > 0.0 {
-                    billable / total * 100.0
-                } else {
-                    0.0
-                },
+                billable / capacity * 100.0,
             )
         })
-        .collect();
-    weeks
+        .collect()
 }
 
 /// What the projects have cost so far, month by month, against their budgets.
-fn burn_rate(timesheets: &[Timesheet], expenses: &[Expense], projects: &[Project]) -> Vec<Point> {
-    let budget: f64 = projects.iter().map(|project| project.budget).sum();
-    let mut months: Vec<Point> = (0..6)
+fn burn_rate(expenses: &[Expense], projects: &[Project]) -> Vec<Point> {
+    let budget: f64 = projects
+        .iter()
+        .filter(|project| project.status == ProjectStatus::Active)
+        .map(|project| project.budget)
+        .sum();
+    let mut months: Vec<Point> = (0..12)
         .rev()
         .map(|months_ago| {
             let month = month_key(months_ago);
-            let cost: f64 = timesheets
+            let cost: f64 = expenses
                 .iter()
-                .filter(|timesheet| date_of(timesheet.date) == month)
-                .map(|timesheet| timesheet.total_cost)
-                .sum::<f64>()
-                + expenses
-                    .iter()
-                    .filter(|expense| month_of(expense.created_at) == month)
-                    .map(|expense| expense.total_amount)
-                    .sum::<f64>();
+                .filter(|expense| {
+                    matches!(
+                        expense.status,
+                        ExpenseStatus::Approved | ExpenseStatus::Reimbursed
+                    ) && month_of(expense.created_at) == month
+                })
+                .map(|expense| expense.total_amount)
+                .sum();
             (month, cost)
         })
         .collect();
@@ -454,8 +474,31 @@ fn top_products_by_revenue<'a>(
         })
         .collect();
     points.sort_by(|left, right| right.1.total_cmp(&left.1));
-    points.truncate(8);
+    points.truncate(10);
     points
+}
+
+/// How many orders fall in each band of order value.
+fn order_value_distribution(orders: &[Order]) -> Vec<Point> {
+    let mut bands = vec![
+        ("Under $100".to_string(), 0.0),
+        ("$100 to $250".to_string(), 0.0),
+        ("$250 to $500".to_string(), 0.0),
+        ("$500 to $1000".to_string(), 0.0),
+        ("$1000 and up".to_string(), 0.0),
+    ];
+    for order in orders {
+        let total = order.total_price.unwrap_or(0.0);
+        let band = match total {
+            total if total < 100.0 => 0,
+            total if total < 250.0 => 1,
+            total if total < 500.0 => 2,
+            total if total < 1000.0 => 3,
+            _ => 4,
+        };
+        bands[band].1 += 1.0;
+    }
+    bands
 }
 
 /// How many rows of `rows` carry each key.

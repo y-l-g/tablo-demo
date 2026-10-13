@@ -58,7 +58,8 @@ fn post_table() -> Table<Post> {
         TextColumn::new(lens!(Post.slug)).searchable().sortable(),
         RelationColumn::of::<AuthorResource>(relation!(Post.author)).label("Author"),
         ComputedColumn::new("Status", |post: &Post| post.status().to_string()),
-        RelationColumn::of::<PostCategoryResource>(relation!(Post.post_category)).label("Category"),
+        RelationColumn::of::<PostCategoryResource>(relation!(Post.post_category))
+            .label("Post category"),
         TextColumn::new(lens!(Post.published_at))
             .label("Publishing date")
             .sortable(),
@@ -140,7 +141,8 @@ impl Resource for PostCategoryResource {
     fn declare() -> ResourceDef<Self> {
         let c = PostCategoryForm::controls();
         ResourceDef::new()
-            .label("Category")
+            .label("Post category")
+            .plural_label("Post categories")
             .icon(tablo::ui::icons::TAG)
             .navigation_group("Blog")
             .navigation_order(1)

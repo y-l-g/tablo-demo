@@ -78,6 +78,7 @@ impl Resource for ProductResource {
                 Comment::fields().product_id(),
             ))
             .action::<ToggleProductVisibility>()
+            .action::<BulkSetProductVisibility>()
             .action::<AdjustProductPrice>()
             .action::<AdjustProductStock>()
     }
@@ -148,7 +149,7 @@ pub struct ToggleProductVisibility;
 impl Action<ProductResource> for ToggleProductVisibility {
     type Input = ();
     const NAME: &'static str = "toggle-visibility";
-    const PLACES: Places = Places::ROW.with(Places::BULK);
+    const PLACES: Places = Places::ROW;
 
     async fn run(
         _cx: &Cx,
@@ -164,6 +165,54 @@ impl Action<ProductResource> for ToggleProductVisibility {
                 .await?;
         }
         Ok(())
+    }
+}
+
+/// What showing or hiding the selection asks for.
+#[derive(ActionInput)]
+pub struct VisibilityChoice {
+    #[form(options = VisibilityOptions, label = "Visibility")]
+    pub is_visible: bool,
+}
+
+/// The two answers a visibility choice offers.
+pub struct VisibilityOptions;
+
+impl tablo::Options for VisibilityOptions {
+    fn options() -> Vec<(String, String)> {
+        vec![
+            ("true".to_string(), "Visible".to_string()),
+            ("false".to_string(), "Hidden".to_string()),
+        ]
+    }
+}
+
+/// Shows or hides every product in the selection.
+pub struct BulkSetProductVisibility;
+
+impl Action<ProductResource> for BulkSetProductVisibility {
+    type Input = VisibilityChoice;
+    const NAME: &'static str = "set-visibility";
+    const PLACES: Places = Places::BULK;
+
+    async fn run(
+        _cx: &Cx,
+        products: &[Product],
+        choice: VisibilityChoice,
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<()> {
+        for product in products {
+            Product::filter(Product::fields().id().eq(product.id))
+                .update()
+                .is_visible(choice.is_visible)
+                .exec(&mut *ex)
+                .await?;
+        }
+        Ok(())
+    }
+
+    fn label(_cx: &Cx) -> String {
+        "Set visibility".to_string()
     }
 }
 
@@ -332,8 +381,8 @@ impl Resource for ProductCategoryResource {
     fn declare() -> ResourceDef<Self> {
         let c = ProductCategoryForm::controls();
         ResourceDef::new()
-            .label("Category")
-            .plural_label("Categories")
+            .label("Product category")
+            .plural_label("Product categories")
             .icon(tablo::ui::icons::TAG)
             .navigation_group("Shop")
             .navigation_order(4)
