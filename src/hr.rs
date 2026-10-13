@@ -518,6 +518,21 @@ impl Resource for LeaveRequestResource {
             .action::<BulkRejectLeaveRequests>()
     }
 
+    /// Refuses a range that ends before it starts.
+    fn validate_record(
+        _cx: &Cx,
+        form: &LeaveRequestForm,
+    ) -> tablo::FieldErrors<LeaveRequestFormField> {
+        let mut errors = tablo::FieldErrors::new();
+        if form.end_date < form.start_date {
+            errors.add(
+                LeaveRequestFormField::EndDate,
+                "The end date cannot be before the start date",
+            );
+        }
+        errors
+    }
+
     /// Stores the day count the submitted dates cover.
     async fn create_record(
         _cx: &Cx,

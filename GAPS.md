@@ -25,6 +25,9 @@ the demo either omits the feature or uses the closest declaration it does have.
 | `decimal(10,2)` money columns | `f64` | Tablo binds no decimal type in a form or a table, and an app cannot add one: `TypedValue` is foreign to both `rust_decimal` and the app |
 | `json` columns | `Vec<String>` for skills and labels, `Json<Value>` for metadata and the project plan | Toasty stores lists and JSON directly |
 | `email_verified_at`, `remember_token` | carried, unused | Tablo ships no email verification or "remember me" |
+| `failed_jobs`, `job_batches`, `personal_access_tokens`, `settings` | dropped | infrastructure tables: the demo queues nothing, exposes no API and stores no settings |
+| Spatie's media relation on `Brand` and `ProductCategory` | dropped | neither registers a collection and no form, table or factory uploads for them |
+| `expenses.receipt_path`, `employees.skills`, `tasks.labels` nullable | not null, defaulting to empty | a Tablo file field binds a `String`, and a list column is always present |
 
 Details worth knowing:
 
