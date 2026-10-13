@@ -467,6 +467,20 @@ impl Resource for CustomerResource {
     fn query(_cx: &Cx) -> Query<List<Customer>> {
         Query::<List<Customer>>::all().filter(Customer::fields().deleted_at().is_none())
     }
+
+    /// Hides the row instead of removing it, as `SoftDeletes` does.
+    async fn delete_record(
+        _cx: &Cx,
+        record: &Customer,
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<()> {
+        Customer::filter(Customer::fields().id().eq(record.id))
+            .update()
+            .deleted_at(Some(jiff::Timestamp::now()))
+            .exec(ex)
+            .await?;
+        Ok(())
+    }
 }
 
 /// The first address's country, as the list's country column reads it.
@@ -581,6 +595,16 @@ impl Resource for OrderResource {
     /// Hides the orders a delete has removed.
     fn query(_cx: &Cx) -> Query<List<Order>> {
         Query::<List<Order>>::all().filter(Order::fields().deleted_at().is_none())
+    }
+
+    /// Hides the row instead of removing it, as `SoftDeletes` does.
+    async fn delete_record(_cx: &Cx, record: &Order, ex: &mut dyn toasty::Executor) -> Result<()> {
+        Order::filter(Order::fields().id().eq(record.id))
+            .update()
+            .deleted_at(Some(jiff::Timestamp::now()))
+            .exec(ex)
+            .await?;
+        Ok(())
     }
 }
 

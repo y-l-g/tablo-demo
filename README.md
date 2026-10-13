@@ -41,7 +41,7 @@ beside the executable.
 
 ## What it covers
 
-- **Resources** for sixteen models across four domains, each with a list, a
+- **Resources** for twenty tables across four domains, each with a list, a
   record form, a detail page and its relations.
 - **Tables** with search, sort, filters, grouping, pagination and CSV export.
 - **Forms** with choice enums, relationship choices, dependent choices,

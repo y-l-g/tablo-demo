@@ -48,6 +48,21 @@ Details worth knowing:
 
 ## Resources
 
+- **Five extra sidebar entries.** Tablo renders a relation as the related
+  resource's own table, so the related resource must be registered, and every
+  registered resource gets a sidebar entry. Filament needs no resource for a
+  relation manager, so the demo there has no Comments, Addresses, Payments,
+  Order items or Expense lines pages; here they exist, in the Shop and HR
+  groups.
+- **Every resource has a detail page.** A Tablo resource has a list, a detail
+  page and a form unless it declares `Detail::empty()`, so `Brand`, `Customer`,
+  `Order`, `Product`, `Employee`, `Task` and `Timesheet` gain a read-only page
+  the Filament demo does not have. The demo keeps them: that page is where a
+  record's related tables render, which Filament shows on the edit page instead.
+- **Relations render on the detail page, not on the edit page.** Filament puts a
+  relation manager on whatever page declares it, usually edit; a Tablo related
+  table is on the detail page, because a change to one reruns the page and would
+  reset the form's unsaved fields.
 - **Nested slugs.** Filament mounts `blog/posts`, `shop/orders`, `hr/employees`.
   A Tablo slug is one URL segment, so every list lives directly under the panel
   prefix: `/admin/posts`, `/admin/orders`, `/admin/employees`.

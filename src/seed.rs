@@ -4,6 +4,7 @@ use jiff::{Span, Timestamp, Zoned, civil::Date};
 use serde_json::json;
 use toasty::Db;
 
+use crate::auth::create_user;
 use crate::enums::{
     CountryCode, CurrencyCode, EmploymentType, ExpenseCategory, ExpenseStatus, LeaveStatus,
     LeaveType, OrderStatus, PaymentMethod, ProductType, ProjectStatus, TaskPriority, TaskStatus,
@@ -13,7 +14,6 @@ use crate::models::{
     LeaveRequest, Order, OrderAddress, OrderItem, Payment, Post, PostCategory, Product,
     ProductCategory, ProductCategoryLink, Project, Task, Team, TeamUser, Timesheet,
 };
-use crate::{auth::create_user, models::User};
 
 /// The demo administrator's email address.
 pub const ADMIN_EMAIL: &str = "admin@filamentphp.com";
@@ -28,7 +28,7 @@ pub async fn seed(db: &mut Db) -> toasty::Result<()> {
     let today = now.date();
 
     let admin = create_user(db, "Demo User", ADMIN_EMAIL, ADMIN_PASSWORD).await?;
-    let teams = seed_teams(db, &admin).await?;
+    let teams = seed_teams(db).await?;
     let (brands, customers) = seed_shop(db, &mut rng, &now).await?;
     let products = seed_products(db, &mut rng, &brands, &customers, today).await?;
     seed_orders(db, &mut rng, &now, &customers, &products).await?;
@@ -48,7 +48,7 @@ pub async fn seed(db: &mut Db) -> toasty::Result<()> {
 }
 
 /// The teams the `app` panel switches between.
-async fn seed_teams(db: &mut Db, _admin: &User) -> toasty::Result<Vec<Team>> {
+async fn seed_teams(db: &mut Db) -> toasty::Result<Vec<Team>> {
     let mut teams = Vec::new();
     for name in ["Acme Inc.", "Globex"] {
         teams.push(

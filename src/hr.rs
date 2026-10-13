@@ -226,6 +226,20 @@ impl Resource for EmployeeResource {
     fn query(_cx: &Cx) -> Query<List<Employee>> {
         Query::<List<Employee>>::all().filter(Employee::fields().deleted_at().is_none())
     }
+
+    /// Hides the row instead of removing it, as `SoftDeletes` does.
+    async fn delete_record(
+        _cx: &Cx,
+        record: &Employee,
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<()> {
+        Employee::filter(Employee::fields().id().eq(record.id))
+            .update()
+            .deleted_at(Some(Timestamp::now()))
+            .exec(ex)
+            .await?;
+        Ok(())
+    }
 }
 
 /// The employee list.
@@ -806,6 +820,20 @@ impl Resource for ProjectResource {
     /// Hides the projects a delete has removed.
     fn query(_cx: &Cx) -> Query<List<Project>> {
         Query::<List<Project>>::all().filter(Project::fields().deleted_at().is_none())
+    }
+
+    /// Hides the row instead of removing it, as `SoftDeletes` does.
+    async fn delete_record(
+        _cx: &Cx,
+        record: &Project,
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<()> {
+        Project::filter(Project::fields().id().eq(record.id))
+            .update()
+            .deleted_at(Some(Timestamp::now()))
+            .exec(ex)
+            .await?;
+        Ok(())
     }
 }
 
@@ -1658,9 +1686,9 @@ impl Action<ExpenseResource> for SubmitExpense {
     ) -> Result<()> {
         for expense in expenses {
             if expense.total_amount <= 0.0 {
-                return Err(topcoat::Error::from(std::io::Error::other(
+                return Err(topcoat::Error::msg(
                     "Cannot submit an expense with no amount",
-                )));
+                ));
             }
             Expense::filter(Expense::fields().id().eq(expense.id))
                 .update()
