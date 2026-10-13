@@ -214,7 +214,7 @@ impl Page for ShopDashboard {
 /// The orders no one has picked up yet, oldest first.
 fn flagged_orders<'a>(cx: &'a Cx, orders: &[Order]) -> BoxView<'a> {
     let now = Timestamp::now();
-    let mut flagged: Vec<(String, f64)> = orders
+    let mut flagged: Vec<&Order> = orders
         .iter()
         .filter(|order| {
             // A timestamp's span counts seconds, whatever its length.
@@ -228,11 +228,14 @@ fn flagged_orders<'a>(cx: &'a Cx, orders: &[Order]) -> BoxView<'a> {
                 _ => false,
             }
         })
+        .collect();
+    flagged.sort_by_key(|order| order.created_at);
+    let rows: Vec<Point> = flagged
+        .into_iter()
+        .take(5)
         .map(|order| (order.number.clone(), order.total_price.unwrap_or(0.0)))
         .collect();
-    flagged.sort_by(|left, right| left.0.cmp(&right.0));
-    flagged.truncate(5);
-    table_card(cx, "Flagged orders (oldest first)", &flagged)
+    table_card(cx, "Flagged orders (oldest first)", &rows)
 }
 
 /// The HR dashboard.

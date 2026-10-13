@@ -1,0 +1,602 @@
+commit 16575be0061485ea5d8a55d207f6e442e04b791f
+Author: youenn <youenn@example.com>
+Date:   Tue Oct 13 18:54:57 2026 +0200
+
+    Answer the fidelity review: actions, labels, navigation order and dashboard figures
+
+diff --git a/GAPS.md b/GAPS.md
+index 0de22d1..0965723 100644
+--- a/GAPS.md
++++ b/GAPS.md
+@@ -80,12 +80,20 @@ Details worth knowing:
+ - **No query builder.** The product list's `QueryBuilder` with arbitrary
+   constraints becomes a fixed set of select, ternary and date filters. Search
+   still covers the string columns.
++- **One grouping per table.** Filament declares several groupings on the task
++  and timesheet lists (project, status, priority, assignee; employee, project,
++  date); a Tablo table groups by one lens, so the demo keeps the first.
++- **No `->required()` over a nullable column.** A Tablo field is required when
++  it has no blank answer, which an `Option` column always has, so the columns
++  Filament marks required but declares nullable (a product's slug, SKU and
++  barcode, an order's shipping price) stay optional here. `.unique()` is kept on
++  the three email addresses.
+ - **No `TrashedFilter`.** A filter narrows a query, so it cannot re-include the
+   rows `query()` hides. For the same reason there is no Restore or ForceDelete
+   action: a hidden row has no page to run one from.
+-- **No has-many-through in a relation table.** A customer's relation tables are
+-  addresses and (via the order's own relation) payments; the through relation
+-  itself is not declared.
++- **No has-many-through in a relation table.** A customer's relation table is
++  its addresses; payments hang off the order they belong to, so a customer's
++  payments are reachable only through that order's page.
+ - **No reactive fields.** Filament derives the slug from the title, the days from
+   the dates, the cost from hours × rate and the line amount from quantity × price
+   in the browser. Tablo has no `Set`/`Get` pair, so slugs are typed, and the
+@@ -118,9 +126,10 @@ Details worth knowing:
+ - **No dependent predicate.** A Tablo dependent choice narrows by another field's
+   value; "only a top-level category may be a parent" is a predicate, so every
+   category is offered as a parent.
+-- **No `->hidden()`, `->placeholder()` or `->format()` on a form field**, no
+-  `helperText` (`.help()` is the equivalent), no `prefix`/`suffix`,
+-  `minValue`/`maxValue` or `rules()`; ranges belong in `validate_record`.
++- **No `->hidden()` or `->format()` on a form field**, no `prefix`/`suffix`,
++  `minValue`/`maxValue` or `rules()`; ranges belong in `validate_record`. A
++  placeholder is available (`.placeholder(..)`) but is not set on every field
++  Filament sets one on.
+ - **File fields are single-file.** `multiple()`, `maxFiles(5)` and `reorderable()`
+   on the product images are not translated; a product has one image.
+ 
+@@ -154,6 +163,10 @@ Details worth knowing:
+   Filament demo behaves the same way in practice, and the demo's screenshots use
+   one panel at a time.
+ - **No password reset and no email verification**, and no per-tenant panel access.
++- **No tenant registration page.** Filament's `->tenantRegistration()` asks for a
++  team after sign-up; Tablo's registrar creates the panel user in one step, so
++  the demo's sign-up form creates the account and the tenant switcher lists the
++  teams that exist.
+ - **The shell is Tablo's.** `->spa()`, `->topbar(false)`, `->colors()`, a Vite
+   theme and brand logos are not translated. The demo sets the brand, the login
+   hint, the Albert Sans font and the blue primary colour.
+@@ -180,10 +193,17 @@ widgets become sections on it:
+ - a **chart** is a column chart of one series, rendered as markup with no script
+   and no charting library. The year-over-year line becomes two series' worth of
+   points side by side, and the doughnut becomes bars;
+-- a **table widget** is a card listing its rows (flagged orders);
++- a **table widget** is a card listing its rows (flagged orders, the five oldest
++  first, as a label and a value rather than the widget's six columns);
+ - a widget that follows the list's table state or the dashboard's filter form has
+   no equivalent: a page cannot read either.
+ 
++The figures themselves follow the widgets they come from, with three deliberate
++differences: revenue and the product ranking leave out cancelled orders, which
++the widgets count; the shop's revenue series is money rather than the widget's
++order count; and the product-margin scatter and the feature index on the home
++page have no counterpart (the home page states what the demo covers instead).
++
+ ## Smaller differences
+ 
+ - `->copyable()`, `->limit()`, `->tooltip()`, `->weight()`, `->alignEnd()`,
+diff --git a/src/blog.rs b/src/blog.rs
+index 0c0968d..3eb7420 100644
+--- a/src/blog.rs
++++ b/src/blog.rs
+@@ -58,7 +58,8 @@ fn post_table() -> Table<Post> {
+         TextColumn::new(lens!(Post.slug)).searchable().sortable(),
+         RelationColumn::of::<AuthorResource>(relation!(Post.author)).label("Author"),
+         ComputedColumn::new("Status", |post: &Post| post.status().to_string()),
+-        RelationColumn::of::<PostCategoryResource>(relation!(Post.post_category)).label("Category"),
++        RelationColumn::of::<PostCategoryResource>(relation!(Post.post_category))
++            .label("Post category"),
+         TextColumn::new(lens!(Post.published_at))
+             .label("Publishing date")
+             .sortable(),
+@@ -140,7 +141,8 @@ impl Resource for PostCategoryResource {
+     fn declare() -> ResourceDef<Self> {
+         let c = PostCategoryForm::controls();
+         ResourceDef::new()
+-            .label("Category")
++            .label("Post category")
++            .plural_label("Post categories")
+             .icon(tablo::ui::icons::TAG)
+             .navigation_group("Blog")
+             .navigation_order(1)
+diff --git a/src/charts.rs b/src/charts.rs
+index aa64559..b251712 100644
+--- a/src/charts.rs
++++ b/src/charts.rs
+@@ -5,7 +5,7 @@
+ //! point. The columns are plain markup, so a chart needs no script and no
+ //! client-side charting library.
+ 
+-use jiff::{Span, Timestamp, Zoned, civil::Date, tz::TimeZone};
++use jiff::{Span, Timestamp, Zoned, tz::TimeZone};
+ use topcoat::{
+     context::Cx,
+     view::{BoxView, ViewExt, view},
+@@ -22,12 +22,11 @@ pub fn month_key(months_ago: i64) -> String {
+ 
+ /// The month `timestamp` falls in, spelled as [`month_key`] spells it.
+ pub fn month_of(timestamp: Timestamp) -> String {
+-    date_of(timestamp.to_zoned(TimeZone::UTC).date())
+-}
+-
+-/// The month `date` falls in, spelled as [`month_key`] spells it.
+-pub fn date_of(date: Date) -> String {
+-    date.strftime("%b %Y").to_string()
++    timestamp
++        .to_zoned(TimeZone::UTC)
++        .date()
++        .strftime("%b %Y")
++        .to_string()
+ }
+ 
+ /// One point of a chart: its label and its value.
+diff --git a/src/dashboards.rs b/src/dashboards.rs
+index cbb9f2b..b46f6e0 100644
+--- a/src/dashboards.rs
++++ b/src/dashboards.rs
+@@ -11,8 +11,8 @@ use topcoat::{
+ };
+ 
+ use crate::{
+-    charts::{Point, bar_chart, date_of, month_key, month_of, stat_card, table_card},
+-    enums::{EmploymentType, OrderStatus, ProjectStatus},
++    charts::{Point, bar_chart, month_key, month_of, stat_card, table_card},
++    enums::{EmploymentType, ExpenseStatus, LeaveStatus, OrderStatus, ProjectStatus},
+     models::{
+         Customer, Department, Employee, Expense, LeaveRequest, Order, OrderItem, Product, Project,
+         Task, Timesheet,
+@@ -25,6 +25,7 @@ pub struct Dashboard;
+ impl Page for Dashboard {
+     fn declare() -> PageDef {
+         PageDef::new()
++            .label("Welcome")
+             .icon(tablo::ui::icons::LAYOUT_DASHBOARD)
+             .navigation_order(-2)
+     }
+@@ -106,8 +107,12 @@ impl Page for ShopDashboard {
+ 
+     async fn render(cx: &Cx) -> Result<impl View> {
+         let mut db = db(cx);
+-        let orders: Vec<Order> = Order::all().exec(&mut db).await?;
+-        let customers: Vec<Customer> = Customer::all().exec(&mut db).await?;
++        let orders: Vec<Order> = Order::filter(Order::fields().deleted_at().is_none())
++            .exec(&mut db)
++            .await?;
++        let customers: Vec<Customer> = Customer::filter(Customer::fields().deleted_at().is_none())
++            .exec(&mut db)
++            .await?;
+         let items: Vec<OrderItem> = OrderItem::all().exec(&mut db).await?;
+         let products: Vec<Product> = Product::all().exec(&mut db).await?;
+ 
+@@ -152,8 +157,10 @@ impl Page for ShopDashboard {
+                 order.total_price.unwrap_or(0.0)
+             }
+         });
++        let orders_by_month = monthly_total(&orders, 12, |_| 1.0);
+         let customers_by_month = monthly_total(&customers, 12, |_| 1.0);
+         let segments = customer_segments(&orders_per_customer);
++        let values = order_value_distribution(&orders);
+         let sold_ids: Vec<u64> = sold.iter().map(|order| order.id).collect();
+         let top_products = top_products_by_revenue(
+             items
+@@ -180,7 +187,9 @@ impl Page for ShopDashboard {
+                     </div>
+                     <div class="grid gap-6 lg:grid-cols-2">
+                         (bar_chart(cx, "Revenue by month", &revenue_by_month, crate::models::dollars))
++                        (bar_chart(cx, "Orders by month", &orders_by_month, |value| format!("{value:.0}")))
+                         (bar_chart(cx, "New customers by month", &customers_by_month, |value| format!("{value:.0}")))
++                        (bar_chart(cx, "Order value", &values, |value| format!("{value:.0}")))
+                         (bar_chart(cx, "Customers by order count", &segments, |value| format!("{value:.0}")))
+                         (table_card(cx, "Top products by revenue", &top_products))
+                     </div>
+@@ -211,7 +220,7 @@ fn flagged_orders<'a>(cx: &'a Cx, orders: &[Order]) -> BoxView<'a> {
+         .map(|order| (order.number.clone(), order.total_price.unwrap_or(0.0)))
+         .collect();
+     flagged.sort_by(|left, right| left.0.cmp(&right.0));
+-    flagged.truncate(8);
++    flagged.truncate(5);
+     table_card(cx, "Flagged orders (oldest first)", &flagged)
+ }
+ 
+@@ -229,17 +238,23 @@ impl Page for HrDashboard {
+ 
+     async fn render(cx: &Cx) -> Result<impl View> {
+         let mut db = db(cx);
+-        let employees: Vec<Employee> = Employee::all().exec(&mut db).await?;
++        let employees: Vec<Employee> = Employee::filter(Employee::fields().deleted_at().is_none())
++            .exec(&mut db)
++            .await?;
+         let departments: Vec<Department> = Department::all().exec(&mut db).await?;
+-        let projects: Vec<Project> = Project::all().exec(&mut db).await?;
++        let projects: Vec<Project> = Project::filter(Project::fields().deleted_at().is_none())
++            .exec(&mut db)
++            .await?;
+         let leave: Vec<LeaveRequest> = LeaveRequest::all().exec(&mut db).await?;
+         let timesheets: Vec<Timesheet> = Timesheet::all().exec(&mut db).await?;
+         let expenses: Vec<Expense> = Expense::all().exec(&mut db).await?;
+         let tasks: Vec<Task> = Task::all().exec(&mut db).await?;
+ 
+         let today = Zoned::now().date();
+-        let tenure: f64 = employees
+-            .iter()
++        let active = employees.iter().filter(|employee| employee.is_active);
++        let active_count = active.clone().count();
++        let tenure: f64 = active
++            .clone()
+             .map(|employee| {
+                 today
+                     .since(employee.hire_date)
+@@ -248,29 +263,31 @@ impl Page for HrDashboard {
+                     / 365.0
+             })
+             .sum::<f64>()
+-            / employees.len().max(1) as f64;
++            / active_count.max(1) as f64;
+         let inactive = employees
+             .iter()
+             .filter(|employee| !employee.is_active)
+             .count();
+-        let contractors = employees
+-            .iter()
++        let contractors = active
++            .clone()
+             .filter(|employee| employee.employment_type == EmploymentType::Contractor)
+             .count();
+         let capacity: i64 = departments
+             .iter()
++            .filter(|department| department.is_active)
+             .map(|department| department.headcount_limit)
+             .sum();
+-        let open_capacity = capacity
+-            - employees
+-                .iter()
+-                .filter(|employee| employee.is_active)
+-                .count() as i64;
++        let open_capacity = (capacity - active_count as i64).max(0);
+ 
+         let leave_by_department = leave_by_department(&leave, &employees, &departments);
+         let project_health = project_health(&projects);
+-        let utilization = utilization_by_week(&timesheets);
+-        let burn = burn_rate(&timesheets, &expenses, &projects);
++        // A full-time week is forty hours, which is what the widget divides by.
++        let full_time = active
++            .clone()
++            .filter(|employee| employee.employment_type == EmploymentType::FullTime)
++            .count();
++        let utilization = utilization_by_week(&timesheets, (full_time * 40).max(1) as f64);
++        let burn = burn_rate(&expenses, &projects);
+ 
+         Ok(view! {
+             cx =>
+@@ -283,10 +300,10 @@ impl Page for HrDashboard {
+                 )
+                 tablo::ui::page_content(
+                     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+-                        (stat_card(cx, "Avg tenure", format!("{tenure:.1} yrs"), format!("{} employees", employees.len())))
+-                        (stat_card(cx, "Turnover rate", percent(share(inactive, employees.len())), format!("{inactive} inactive")))
+-                        (stat_card(cx, "Open capacity", open_capacity.to_string(), format!("{capacity} seats, {} filled", employees.len() - inactive)))
+-                        (stat_card(cx, "Contractor ratio", percent(share(contractors, employees.len())), format!("{contractors} contractors")))
++                        (stat_card(cx, "Avg tenure", format!("{tenure:.1} yrs"), format!("{active_count} active employees")))
++                        (stat_card(cx, "Turnover rate", percent(share(inactive, employees.len())), format!("{inactive} of {} inactive", employees.len())))
++                        (stat_card(cx, "Open capacity", open_capacity.to_string(), format!("{capacity} seats across the active departments")))
++                        (stat_card(cx, "Contractor ratio", percent(share(contractors, active_count)), format!("{contractors} contractors")))
+                     </div>
+                     <div class="grid gap-6 lg:grid-cols-2">
+                         (bar_chart(cx, "Leave days by department", &leave_by_department, |value| format!("{value:.0}")))
+@@ -316,8 +333,14 @@ fn leave_by_department(
+         .iter()
+         .filter_map(|employee| employee.department_id.map(|id| (employee.id, id)))
+         .collect();
++    let year = Zoned::now().date().year();
+     let mut days: HashMap<u64, f64> = HashMap::new();
+     for request in leave {
++        if request.start_date.year() != year
++            || !matches!(request.status, LeaveStatus::Approved | LeaveStatus::Taken)
++        {
++            continue;
++        }
+         if let Some(department) = department_of.get(&request.employee_id) {
+             *days.entry(*department).or_default() += request.days_requested;
+         }
+@@ -337,68 +360,65 @@ fn leave_by_department(
+ fn project_health(projects: &[Project]) -> Vec<Point> {
+     let mut points: Vec<Point> = projects
+         .iter()
+-        .filter(|project| project.budget > 0.0 && project.status != ProjectStatus::Cancelled)
+-        .map(|project| (project.name.clone(), project.spent / project.budget * 100.0))
++        .filter(|project| project.budget > 0.0 && project.status == ProjectStatus::Active)
++        .map(|project| {
++            (
++                project.name.clone(),
++                (project.spent / project.budget * 100.0).min(200.0),
++            )
++        })
+         .collect();
+-    points.sort_by(|left, right| right.1.total_cmp(&left.1));
+-    points.truncate(8);
++    points.sort_by(|left, right| left.0.cmp(&right.0));
++    points.truncate(10);
+     points
+ }
+ 
+ /// The share of the last eight weeks' hours that were billable.
+-fn utilization_by_week(timesheets: &[Timesheet]) -> Vec<Point> {
++fn utilization_by_week(timesheets: &[Timesheet], capacity: f64) -> Vec<Point> {
+     let today = Zoned::now().date();
+-    let weeks: Vec<Point> = (0..8)
++    (0..12)
+         .rev()
+         .map(|weeks_ago| {
+             let end = today
+                 .checked_sub(Span::new().days(weeks_ago * 7))
+                 .unwrap_or(today);
+             let start = end.checked_sub(Span::new().days(6)).unwrap_or(end);
+-            let (billable, total) = timesheets
++            let billable: f64 = timesheets
+                 .iter()
+-                .filter(|timesheet| timesheet.date >= start && timesheet.date <= end)
+-                .fold((0.0, 0.0), |(billable, total), timesheet| {
+-                    (
+-                        billable
+-                            + if timesheet.is_billable {
+-                                timesheet.hours
+-                            } else {
+-                                0.0
+-                            },
+-                        total + timesheet.hours,
+-                    )
+-                });
++                .filter(|timesheet| {
++                    timesheet.date >= start && timesheet.date <= end && timesheet.is_billable
++                })
++                .map(|timesheet| timesheet.hours)
++                .sum();
+             (
+                 start.strftime("%b %d").to_string(),
+-                if total > 0.0 {
+-                    billable / total * 100.0
+-                } else {
+-                    0.0
+-                },
++                billable / capacity * 100.0,
+             )
+         })
+-        .collect();
+-    weeks
++        .collect()
+ }
+ 
+ /// What the projects have cost so far, month by month, against their budgets.
+-fn burn_rate(timesheets: &[Timesheet], expenses: &[Expense], projects: &[Project]) -> Vec<Point> {
+-    let budget: f64 = projects.iter().map(|project| project.budget).sum();
+-    let mut months: Vec<Point> = (0..6)
++fn burn_rate(expenses: &[Expense], projects: &[Project]) -> Vec<Point> {
++    let budget: f64 = projects
++        .iter()
++        .filter(|project| project.status == ProjectStatus::Active)
++        .map(|project| project.budget)
++        .sum();
++    let mut months: Vec<Point> = (0..12)
+         .rev()
+         .map(|months_ago| {
+             let month = month_key(months_ago);
+-            let cost: f64 = timesheets
++            let cost: f64 = expenses
+                 .iter()
+-                .filter(|timesheet| date_of(timesheet.date) == month)
+-                .map(|timesheet| timesheet.total_cost)
+-                .sum::<f64>()
+-                + expenses
+-                    .iter()
+-                    .filter(|expense| month_of(expense.created_at) == month)
+-                    .map(|expense| expense.total_amount)
+-                    .sum::<f64>();
++                .filter(|expense| {
++                    matches!(
++                        expense.status,
++                        ExpenseStatus::Approved | ExpenseStatus::Reimbursed
++                    ) && month_of(expense.created_at) == month
++                })
++                .map(|expense| expense.total_amount)
++                .sum();
+             (month, cost)
+         })
+         .collect();
+@@ -454,10 +474,33 @@ fn top_products_by_revenue<'a>(
+         })
+         .collect();
+     points.sort_by(|left, right| right.1.total_cmp(&left.1));
+-    points.truncate(8);
++    points.truncate(10);
+     points
+ }
+ 
++/// How many orders fall in each band of order value.
++fn order_value_distribution(orders: &[Order]) -> Vec<Point> {
++    let mut bands = vec![
++        ("Under $100".to_string(), 0.0),
++        ("$100 to $250".to_string(), 0.0),
++        ("$250 to $500".to_string(), 0.0),
++        ("$500 to $1000".to_string(), 0.0),
++        ("$1000 and up".to_string(), 0.0),
++    ];
++    for order in orders {
++        let total = order.total_price.unwrap_or(0.0);
++        let band = match total {
++            total if total < 100.0 => 0,
++            total if total < 250.0 => 1,
++            total if total < 500.0 => 2,
++            total if total < 1000.0 => 3,
++            _ => 4,
++        };
++        bands[band].1 += 1.0;
++    }
++    bands
++}
++
+ /// How many rows of `rows` carry each key.
+ fn count_by<T>(rows: &[T], key: impl Fn(&T) -> Option<u64>) -> HashMap<Option<u64>, usize> {
+     let mut counts: HashMap<Option<u64>, usize> = HashMap::new();
+diff --git a/src/hr.rs b/src/hr.rs
+index eefa8e4..6126624 100644
+--- a/src/hr.rs
++++ b/src/hr.rs
+@@ -726,13 +726,13 @@ async fn review(
+     ex: &mut dyn toasty::Executor,
+ ) -> Result<()> {
+     for request in requests {
+-        LeaveRequest::filter(LeaveRequest::fields().id().eq(request.id))
+-            .update()
+-            .status(status)
+-            .reviewer_notes(notes.clone())
+-            .reviewed_at(Some(Timestamp::now()))
+-            .exec(&mut *ex)
+-            .await?;
++        let mut update = LeaveRequest::filter(LeaveRequest::fields().id().eq(request.id)).update();
++        update = update.status(status).reviewed_at(Some(Timestamp::now()));
++        // Approving keeps whatever notes the request already carries.
++        if let Some(notes) = notes.clone() {
++            update = update.reviewer_notes(Some(notes));
++        }
++        update.exec(&mut *ex).await?;
+     }
+     Ok(())
+ }
+@@ -1644,7 +1644,7 @@ impl Resource for ExpenseResource {
+                 ))),
+                 Section::new("Summary").schema(Grid::new(2).schema((
+                     c.total_amount,
+-                    c.currency,
++                    c.currency.choice().options(["USD"]),
+                     c.receipt_path,
+                     c.notes.multiline(3),
+                 ))),
+diff --git a/src/panel.rs b/src/panel.rs
+index 749436a..fb8447f 100644
+--- a/src/panel.rs
++++ b/src/panel.rs
+@@ -41,27 +41,29 @@ pub fn admin_panel() -> Panel {
+         .home::<Dashboard>()
+         .page::<ShopDashboard>()
+         .page::<HrDashboard>()
+-        .resource::<PostResource>()
+-        .resource::<PostCategoryResource>()
+-        .resource::<AuthorResource>()
+-        .resource::<CommentResource>()
++        // The first resource of a group fixes the group's place in the sidebar,
++        // so the registration order is the demo's navigation order.
+         .resource::<crate::shop::ProductResource>()
++        .resource::<crate::hr::DepartmentResource>()
++        .resource::<crate::hr::ProjectResource>()
++        .resource::<PostResource>()
+         .resource::<crate::shop::BrandResource>()
+         .resource::<crate::shop::ProductCategoryResource>()
+         .resource::<crate::shop::CustomerResource>()
+         .resource::<crate::shop::OrderResource>()
+         .resource::<crate::shop::OrderItemResource>()
++        .resource::<crate::shop::OrderAddressResource>()
+         .resource::<crate::shop::PaymentResource>()
+         .resource::<crate::shop::AddressResource>()
+-        .resource::<crate::shop::OrderAddressResource>()
+-        .resource::<crate::hr::DepartmentResource>()
+         .resource::<crate::hr::EmployeeResource>()
+         .resource::<crate::hr::LeaveRequestResource>()
+         .resource::<crate::hr::ExpenseResource>()
+         .resource::<crate::hr::ExpenseLineResource>()
+-        .resource::<crate::hr::ProjectResource>()
+         .resource::<crate::hr::TaskResource>()
+         .resource::<crate::hr::TimesheetResource>()
++        .resource::<PostCategoryResource>()
++        .resource::<AuthorResource>()
++        .resource::<CommentResource>()
+         .uploads_dir(UPLOAD_URL_PREFIX, upload_dir())
+ }
+ 
+diff --git a/src/shop.rs b/src/shop.rs
+index ff765b5..53b7e74 100644
+--- a/src/shop.rs
++++ b/src/shop.rs
+@@ -78,6 +78,7 @@ impl Resource for ProductResource {
+                 Comment::fields().product_id(),
+             ))
+             .action::<ToggleProductVisibility>()
++            .action::<BulkSetProductVisibility>()
+             .action::<AdjustProductPrice>()
+             .action::<AdjustProductStock>()
+     }
+@@ -148,7 +149,7 @@ pub struct ToggleProductVisibility;
+ impl Action<ProductResource> for ToggleProductVisibility {
+     type Input = ();
+     const NAME: &'static str = "toggle-visibility";
+-    const PLACES: Places = Places::ROW.with(Places::BULK);
++    const PLACES: Places = Places::ROW;
+ 
+     async fn run(
+         _cx: &Cx,
+@@ -167,6 +168,54 @@ impl Action<ProductResource> for ToggleProductVisibility {
+     }
+ }
+ 
++/// What showing or hiding the selection asks for.
++#[derive(ActionInput)]
++pub struct VisibilityChoice {
++    #[form(options = VisibilityOptions, label = "Visibility")]
++    pub is_visible: bool,
++}
++
++/// The two answers a visibility choice offers.
++pub struct VisibilityOptions;
++
++impl tablo::Options for VisibilityOptions {
++    fn options() -> Vec<(String, String)> {
++        vec![
++            ("true".to_string(), "Visible".to_string()),
++            ("false".to_string(), "Hidden".to_string()),
++        ]
++    }
++}
++
++/// Shows or hides every product in the selection.
++pub struct BulkSetProductVisibility;
++
++impl Action<ProductResource> for BulkSetProductVisibility {
++    type Input = VisibilityChoice;
++    const NAME: &'static str = "set-visibility";
++    const PLACES: Places = Places::BULK;
++
++    async fn run(
++        _cx: &Cx,
++        products: &[Product],
++        choice: VisibilityChoice,
++        ex: &mut dyn toasty::Executor,
++    ) -> Result<()> {
++        for product in products {
++            Product::filter(Product::fields().id().eq(product.id))
++                .update()
++                .is_visible(choice.is_visible)
++                .exec(&mut *ex)
++                .await?;
++        }
++        Ok(())
++    }
++
++    fn label(_cx: &Cx) -> String {
++        "Set visibility".to_string()
++    }
++}
++
+ /// What `AdjustProductPrice` asks for.
+ #[derive(ActionInput)]
+ pub struct PriceChange {
+@@ -332,8 +381,8 @@ impl Resource for ProductCategoryResource {
+     fn declare() -> ResourceDef<Self> {
+         let c = ProductCategoryForm::controls();
+         ResourceDef::new()
+-            .label("Category")
+-            .plural_label("Categories")
++            .label("Product category")
++            .plural_label("Product categories")
+             .icon(tablo::ui::icons::TAG)
+             .navigation_group("Shop")
+             .navigation_order(4)
