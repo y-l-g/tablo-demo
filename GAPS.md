@@ -48,12 +48,12 @@ Details worth knowing:
 
 ## Resources
 
-- **Five extra sidebar entries.** Tablo renders a relation as the related
+- **Six extra sidebar entries.** Tablo renders a relation as the related
   resource's own table, so the related resource must be registered, and every
   registered resource gets a sidebar entry. Filament needs no resource for a
-  relation manager, so the demo there has no Comments, Addresses, Payments,
-  Order items or Expense lines pages; here they exist, in the Shop and HR
-  groups.
+  relation manager, so the demo there has no Comments, Addresses, Order
+  addresses, Payments, Order items or Expense lines pages; here they exist, in
+  the Shop and HR groups.
 - **Every resource has a detail page.** A Tablo resource has a list, a detail
   page and a form unless it declares `Detail::empty()`, so `Brand`, `Customer`,
   `Order`, `Product`, `Employee`, `Task` and `Timesheet` gain a read-only page

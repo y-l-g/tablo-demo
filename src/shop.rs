@@ -11,8 +11,8 @@ use topcoat::{Result, context::Cx};
 use crate::blog::CommentResource;
 use crate::enums::OrderStatus;
 use crate::models::{
-    Address, Brand, Comment, Customer, Order, OrderItem, Payment, Product, ProductCategory,
-    maybe_money, money,
+    Address, Brand, Comment, Customer, Order, OrderAddress, OrderItem, Payment, Product,
+    ProductCategory, maybe_money, money,
 };
 
 /// Products.
@@ -583,6 +583,9 @@ impl Resource for OrderResource {
             .relation(Relation::has_many::<OrderItemResource>(
                 OrderItem::fields().order_id(),
             ))
+            .relation(Relation::has_many::<OrderAddressResource>(
+                OrderAddress::fields().order_id(),
+            ))
             .relation(Relation::has_many::<PaymentResource>(
                 Payment::fields().order_id(),
             ))
@@ -934,6 +937,68 @@ impl Resource for AddressResource {
 #[derive(tablo::RecordForm)]
 #[form(model = Address)]
 pub struct AddressForm {
+    #[form(options)]
+    pub country: Option<crate::enums::CountryCode>,
+    pub street: Option<String>,
+    pub city: Option<String>,
+    pub state: Option<String>,
+    pub zip: Option<String>,
+}
+
+/// Where an order ships, which the order page lists.
+///
+/// The Filament demo edits these fields inside the order form; Tablo has no
+/// nested relationship form, so they are a resource of their own.
+pub struct OrderAddressResource;
+
+impl Resource for OrderAddressResource {
+    type Model = OrderAddress;
+    type Form = OrderAddressForm;
+
+    fn declare() -> ResourceDef<Self> {
+        let c = OrderAddressForm::controls();
+        ResourceDef::new()
+            .label("Order address")
+            .plural_label("Order addresses")
+            .icon(tablo::ui::icons::INBOX)
+            .navigation_group("Shop")
+            .navigation_order(13)
+            .policy(Allow)
+            .table(Table::new((
+                RelationColumn::of::<OrderResource>(relation!(OrderAddress.order)).label("Order"),
+                TextColumn::new(lens!(OrderAddress.street)),
+                TextColumn::new(lens!(OrderAddress.city)),
+                TextColumn::new(lens!(OrderAddress.zip)),
+                TextColumn::new(lens!(OrderAddress.country)).width(ColumnWidth::Narrow),
+            )))
+            .detail(Detail::new(Section::new("Order address").columns((
+                RelationColumn::of::<OrderResource>(relation!(OrderAddress.order)).label("Order"),
+                TextColumn::new(lens!(OrderAddress.street)),
+                TextColumn::new(lens!(OrderAddress.city)),
+                TextColumn::new(lens!(OrderAddress.state)),
+                TextColumn::new(lens!(OrderAddress.zip)),
+                TextColumn::new(lens!(OrderAddress.country)),
+            ))))
+            .form(Schema::new(Section::new("Order address").schema((
+                c.order_id.searchable().label("Order"),
+                c.country.searchable(),
+                c.street.label("Street address"),
+                Grid::new(3).schema((
+                    c.city,
+                    c.state.label("State / Province"),
+                    c.zip.label("Zip / Postal code"),
+                )),
+            ))))
+            .record_title(lens!(OrderAddress.street))
+    }
+}
+
+/// The order address's record form.
+#[derive(tablo::RecordForm)]
+#[form(model = OrderAddress)]
+pub struct OrderAddressForm {
+    #[form(relationship = OrderResource)]
+    pub order_id: Option<u64>,
     #[form(options)]
     pub country: Option<crate::enums::CountryCode>,
     pub street: Option<String>,
