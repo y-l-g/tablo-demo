@@ -28,6 +28,7 @@ impl Resource for DepartmentResource {
     fn declare() -> ResourceDef<Self> {
         let c = DepartmentForm::controls();
         ResourceDef::new()
+            .icon(crate::icons::DEPARTMENTS)
             .label("Department")
             .navigation_group("HR")
             .navigation_order(1)
@@ -169,6 +170,7 @@ impl Resource for EmployeeResource {
             .hourly_rate
             .visible_when(&c.employment_type, ["contractor", "intern"]);
         ResourceDef::new()
+            .icon(crate::icons::EMPLOYEES)
             .label("Employee")
             .navigation_group("HR")
             .navigation_order(0)
@@ -448,6 +450,7 @@ impl Resource for LeaveRequestResource {
     fn declare() -> ResourceDef<Self> {
         let c = LeaveRequestForm::controls();
         ResourceDef::new()
+            .icon(crate::icons::LEAVE_REQUESTS)
             .label("Leave request")
             .navigation_group("HR")
             .navigation_order(2)
@@ -747,6 +750,7 @@ impl Resource for ProjectResource {
     fn declare() -> ResourceDef<Self> {
         let c = ProjectForm::controls();
         ResourceDef::new()
+            .icon(crate::icons::PROJECTS)
             .navigation_group("Projects")
             .navigation_order(0)
             .policy(Allow)
@@ -1031,6 +1035,7 @@ impl Resource for TaskResource {
         let c = TaskForm::controls();
         let completed_at = c.completed_at.visible_when(&c.status, ["completed"]);
         ResourceDef::new()
+            .icon(crate::icons::TASKS)
             .navigation_group("Projects")
             .navigation_order(1)
             .policy(Allow)
@@ -1365,6 +1370,7 @@ impl Resource for TimesheetResource {
             .label("Task")
             .depends_on(&c.project_id, Task::fields().project_id());
         ResourceDef::new()
+            .icon(crate::icons::TIMESHEETS)
             .plural_label("Timesheets")
             .navigation_group("Projects")
             .navigation_order(2)
@@ -1585,6 +1591,7 @@ impl Resource for ExpenseResource {
     fn declare() -> ResourceDef<Self> {
         let c = ExpenseForm::controls();
         ResourceDef::new()
+            .icon(crate::icons::EXPENSES)
             .label("Expense")
             .navigation_group("HR")
             .navigation_order(3)
@@ -1870,6 +1877,7 @@ impl Resource for ExpenseLineResource {
     fn declare() -> ResourceDef<Self> {
         let c = ExpenseLineForm::controls();
         ResourceDef::new()
+            .icon(crate::icons::EXPENSE_LINES)
             .label("Expense line")
             .plural_label("Expense lines")
             .navigation_group("HR")

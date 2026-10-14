@@ -82,7 +82,7 @@ pub struct Settings;
 
 impl Page for Settings {
     fn declare() -> PageDef {
-        PageDef::new().icon(tablo::ui::icons::FILE_TEXT)
+        PageDef::new().icon(crate::icons::SETTINGS)
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {

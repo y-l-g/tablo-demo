@@ -6,6 +6,7 @@ pub mod charts;
 pub mod dashboards;
 pub mod enums;
 pub mod hr;
+pub mod icons;
 pub mod models;
 pub mod panel;
 pub mod seed;

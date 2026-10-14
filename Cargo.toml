@@ -17,6 +17,7 @@ uuid = "1.23"
 
 [build-dependencies]
 tablo-build = { path = "../filament-topcoat/tablo/crates/tablo-build" }
+topcoat = { version = "0.10", features = ["icon-iconify"] }
 
 [lints.rust]
 unsafe_code = "deny"

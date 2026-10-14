@@ -26,7 +26,7 @@ impl Page for Dashboard {
     fn declare() -> PageDef {
         PageDef::new()
             .label("Welcome")
-            .icon(tablo::ui::icons::LAYOUT_DASHBOARD)
+            .icon(crate::icons::WELCOME)
             .navigation_order(-2)
     }
 
@@ -101,7 +101,7 @@ impl Page for ShopDashboard {
         PageDef::new()
             .slug("shop")
             .label("Shop dashboard")
-            .icon(tablo::ui::icons::INBOX)
+            .icon(crate::icons::SHOP_DASHBOARD)
             .navigation_order(2)
     }
 
@@ -252,7 +252,7 @@ impl Page for HrDashboard {
         PageDef::new()
             .slug("hr")
             .label("HR dashboard")
-            .icon(tablo::ui::icons::USERS)
+            .icon(crate::icons::HR_DASHBOARD)
             .navigation_order(3)
     }
 

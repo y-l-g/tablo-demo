@@ -25,7 +25,7 @@ impl Resource for ProductResource {
     fn declare() -> ResourceDef<Self> {
         let c = ProductForm::controls();
         ResourceDef::new()
-            .icon(tablo::ui::icons::IMAGE)
+            .icon(crate::icons::PRODUCTS)
             .navigation_group("Shop")
             .navigation_order(0)
             .policy(Allow)
@@ -301,7 +301,7 @@ impl Resource for BrandResource {
     fn declare() -> ResourceDef<Self> {
         let c = BrandForm::controls();
         ResourceDef::new()
-            .icon(tablo::ui::icons::TAG)
+            .icon(crate::icons::BRANDS)
             .navigation_group("Shop")
             .navigation_order(3)
             .policy(Allow)
@@ -383,7 +383,7 @@ impl Resource for ProductCategoryResource {
         ResourceDef::new()
             .label("Product category")
             .plural_label("Product categories")
-            .icon(tablo::ui::icons::TAG)
+            .icon(crate::icons::PRODUCT_CATEGORIES)
             .navigation_group("Shop")
             .navigation_order(4)
             .policy(Allow)
@@ -472,7 +472,7 @@ impl Resource for CustomerResource {
     fn declare() -> ResourceDef<Self> {
         let c = CustomerForm::controls();
         ResourceDef::new()
-            .icon(tablo::ui::icons::USERS)
+            .icon(crate::icons::CUSTOMERS)
             .navigation_group("Shop")
             .navigation_order(2)
             .policy(Allow)
@@ -593,7 +593,7 @@ impl Resource for OrderResource {
     fn declare() -> ResourceDef<Self> {
         let c = OrderForm::controls();
         ResourceDef::new()
-            .icon(tablo::ui::icons::INBOX)
+            .icon(crate::icons::ORDERS)
             .navigation_group("Shop")
             .navigation_order(1)
             .policy(Allow)
@@ -822,7 +822,7 @@ impl Resource for OrderItemResource {
         ResourceDef::new()
             .label("Order item")
             .plural_label("Order items")
-            .icon(tablo::ui::icons::INBOX)
+            .icon(crate::icons::ORDER_ITEMS)
             .navigation_group("Shop")
             .navigation_order(10)
             .policy(Allow)
@@ -875,7 +875,7 @@ impl Resource for PaymentResource {
     fn declare() -> ResourceDef<Self> {
         let c = PaymentForm::controls();
         ResourceDef::new()
-            .icon(tablo::ui::icons::INBOX)
+            .icon(crate::icons::PAYMENTS)
             .navigation_group("Shop")
             .navigation_order(11)
             .policy(Allow)
@@ -946,7 +946,7 @@ impl Resource for AddressResource {
         let c = AddressForm::controls();
         ResourceDef::new()
             .plural_label("Addresses")
-            .icon(tablo::ui::icons::INBOX)
+            .icon(crate::icons::ADDRESSES)
             .navigation_group("Shop")
             .navigation_order(12)
             .policy(Allow)
@@ -1009,7 +1009,7 @@ impl Resource for OrderAddressResource {
         ResourceDef::new()
             .label("Order address")
             .plural_label("Order addresses")
-            .icon(tablo::ui::icons::INBOX)
+            .icon(crate::icons::ORDER_ADDRESSES)
             .navigation_group("Shop")
             .navigation_order(13)
             .policy(Allow)

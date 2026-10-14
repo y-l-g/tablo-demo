@@ -19,7 +19,7 @@ impl Resource for PostResource {
     fn declare() -> ResourceDef<Self> {
         let c = PostForm::controls();
         ResourceDef::new()
-            .icon(tablo::ui::icons::FILE_TEXT)
+            .icon(crate::icons::POSTS)
             .navigation_group("Blog")
             .navigation_order(0)
             .policy(Allow)
@@ -143,7 +143,7 @@ impl Resource for PostCategoryResource {
         ResourceDef::new()
             .label("Post category")
             .plural_label("Post categories")
-            .icon(tablo::ui::icons::TAG)
+            .icon(crate::icons::POST_CATEGORIES)
             .navigation_group("Blog")
             .navigation_order(1)
             .policy(Allow)
@@ -223,7 +223,7 @@ impl Resource for AuthorResource {
         let c = AuthorForm::controls();
         ResourceDef::new()
             .label("Author")
-            .icon(tablo::ui::icons::USERS)
+            .icon(crate::icons::AUTHORS)
             .navigation_group("Blog")
             .navigation_order(2)
             .policy(Allow)
@@ -279,7 +279,7 @@ impl Resource for CommentResource {
         let c = CommentForm::controls();
         ResourceDef::new()
             .plural_label("Comments")
-            .icon(tablo::ui::icons::MESSAGE_SQUARE)
+            .icon(crate::icons::COMMENTS)
             .navigation_group("Shop")
             .navigation_order(9)
             .policy(Allow)
