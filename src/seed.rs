@@ -17,10 +17,10 @@ use crate::models::{
 };
 
 /// The demo administrator's email address.
-pub const ADMIN_EMAIL: &str = "admin@filamentphp.com";
+pub const ADMIN_EMAIL: &str = "admin@example.com";
 
 /// The demo administrator's password.
-pub const ADMIN_PASSWORD: &str = "demo.Filament@2021!";
+pub const ADMIN_PASSWORD: &str = "password";
 
 /// Fills an empty database with the demo's rows.
 pub async fn seed(db: &mut Db) -> toasty::Result<()> {
