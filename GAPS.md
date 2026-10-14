@@ -175,8 +175,18 @@ Details worth knowing:
 - **The shell is Tablo's.** `->spa()`, `->topbar(false)`, `->colors()`, a Vite
   theme and brand logos are not translated. The demo sets the brand, the login
   hint, the Albert Sans font and the blue primary colour.
-- **No icon registry.** Tablo ships a fixed Lucide set; the demo's heroicon aliases
-  and per-resource icons are not reproduced.
+- **A page with a table does not hydrate.** The bulk-select box binds its checked
+  and indeterminate states with expressions that call `.some()` and `.every()` on
+  the runtime's `Vec` value, which is not a JavaScript array, so hydrating any
+  list or detail page throws `t.some is not a function` and the runtime stops
+  before it wires up navigation: every link then loads the whole document, and
+  the table's own sort, paging and selection are dead with it. The dashboard and
+  settings pages, which hold no table, navigate in place. `->spa()` has no
+  counterpart until this is fixed, and the demo cannot fix it.
+- **No icon registry.** Tablo ships eight navigation icons and resolves the rest
+  from the set a build script stages, so an app with more entries names its own:
+  the demo vendors the twenty-five Lucide icons it uses and picks one per entry.
+  The Filament demo's heroicon aliases are not reproduced.
 - **Options carry a label, not a colour.** `HasColor`/`HasIcon` on the demo's enums
   have no counterpart, so a status renders as its label in a text column rather
   than as a coloured badge.
@@ -195,19 +205,17 @@ Tablo has no widget system: no `StatsOverviewWidget`, no `ChartWidget`, no
 widgets become sections on it:
 
 - a **stat** is a card, rendered from the same figures the widget computes;
-- a **chart** is a column chart of one series, rendered as markup with no script
-  and no charting library. The year-over-year line becomes two series' worth of
-  points side by side, and the doughnut becomes bars;
 - a **table widget** is a card listing its rows (flagged orders, the five oldest
   first, as a label and a value rather than the widget's six columns);
+- a **chart** has no counterpart, and Tablo has no charting of its own, so the
+  demo drops the chart widgets rather than draw them;
 - a widget that follows the list's table state or the dashboard's filter form has
   no equivalent: a page cannot read either.
 
-The figures themselves follow the widgets they come from, with three deliberate
+The figures themselves follow the widgets they come from, with two deliberate
 differences: revenue and the product ranking leave out cancelled orders, which
-the widgets count; the shop's revenue series is money rather than the widget's
-order count; and the product-margin scatter and the feature index on the home
-page have no counterpart (the home page states what the demo covers instead).
+the widgets count, and the product-margin scatter and the feature index on the
+home page have no counterpart.
 
 ## Smaller differences
 
@@ -220,6 +228,20 @@ page have no counterpart (the home page states what the demo covers instead).
   `->stackedOnMobile()` and `->reorderable('sort')` (drag to reorder brands) have
   no counterpart.
 - Time is typed and shown as UTC: a `datetime-local` control carries no zone.
+- **A date column has no date type.** `TextColumn` over a `jiff` date or
+  timestamp renders the stored spelling, so a timestamp reads
+  `2026-10-14T09:38:54.016162841Z` and a nullable one prints nothing. There is no
+  column that spells the day, so the demo shows the stored value.
+- **A false boolean is a bare cross.** `BooleanColumn` draws a circled check in
+  the primary colour for true, and an uncircled cross in the muted colour for
+  false. The demo shows both as Tablo draws them; the mark belongs to the column.
+- **A labeled row action overflows its column.** The row-actions column takes a
+  share of the table by link count, not by the width of the labels it holds, so
+  "Toggle visibility", "Adjust price" and "Adjust stock" on the product list are
+  painted over the security stock and publishing date columns; a wide column
+  whose header is longer than its share ("Security stock") runs into its
+  neighbour for the same reason. The demo can size its own columns but not the
+  actions column, and neither width is a demo decision.
 - **A unique value a hidden row holds answers 500.** The unique check probes
   through the resource's `query`, so a soft-deleted row is invisible to it, while
   the index the write then hits is not: reusing a deleted order's number, or a

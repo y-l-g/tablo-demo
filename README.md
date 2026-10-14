@@ -12,7 +12,7 @@ Two panels are mounted, as in the Filament demo:
 | `admin` | `/admin` | every resource: the blog, the shop, HR and projects, plus the shop and HR dashboards |
 | `app`   | `/app`   | the tenant panel: sign-up, a team switcher and the settings page                     |
 
-Sign in with `admin@filamentphp.com` / `demo.Filament@2021!`.
+Sign in with `admin@example.com` / `password`.
 
 ## Running it
 
@@ -49,8 +49,7 @@ beside the executable.
   file uploads.
 - **Actions**, record and bulk, with input dialogs, confirmation and success
   notifications.
-- **Dashboards** that read the seeded data and render their own figures and
-  charts.
+- **Dashboards** that read the seeded data and render their own figures.
 
 [GAPS.md](GAPS.md) lists everything in the Filament demo that Tablo has no
 equivalent for, and what this demo does instead.
