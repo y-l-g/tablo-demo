@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use jiff::{Span, Timestamp, Zoned};
+use jiff::{Timestamp, Zoned};
 use tablo::{Page, PageDef, db::db};
 use topcoat::{
     Result,
@@ -11,11 +11,11 @@ use topcoat::{
 };
 
 use crate::{
-    charts::{Point, bar_chart, month_key, month_of, stat_card, table_card},
-    enums::{EmploymentType, ExpenseStatus, LeaveStatus, OrderStatus, ProjectStatus},
+    cards::{Point, stat_card, table_card},
+    enums::{EmploymentType, OrderStatus},
     models::{
-        Customer, Department, Employee, Expense, LeaveRequest, Order, OrderItem, Product, Project,
-        Task, Timesheet,
+        Customer, Department, Employee, Expense, LeaveRequest, Order, OrderItem, Product, Task,
+        Timesheet,
     },
 };
 
@@ -34,8 +34,14 @@ impl Page for Dashboard {
         let mut db = db(cx);
         let posts = crate::models::Post::all().exec(&mut db).await?.len();
         let products = Product::all().exec(&mut db).await?.len();
-        let orders = Order::all().exec(&mut db).await?.len();
-        let employees = Employee::all().exec(&mut db).await?.len();
+        let orders = Order::filter(Order::fields().deleted_at().is_none())
+            .exec(&mut db)
+            .await?
+            .len();
+        let employees = Employee::filter(Employee::fields().deleted_at().is_none())
+            .exec(&mut db)
+            .await?
+            .len();
 
         Ok(view! {
             cx =>
@@ -52,40 +58,6 @@ impl Page for Dashboard {
                         (stat_card(cx, "Products", products.to_string(), "what the shop sells"))
                         (stat_card(cx, "Orders", orders.to_string(), "placed by customers"))
                         (stat_card(cx, "Employees", employees.to_string(), "across every department"))
-                    </div>
-                    <div class="grid gap-6 lg:grid-cols-2">
-                        tablo::ui::card(
-                            tablo::ui::card_header(
-                                tablo::ui::card_title("The demo's domains")
-                                tablo::ui::card_description(
-                                    "Each one is a resource group in the sidebar."
-                                )
-                            )
-                            tablo::ui::card_content(
-                                <ul class="flex flex-col gap-2 text-sm">
-                                    <li><strong>"Blog"</strong>": authors, categories and posts, with the comments on each post."</li>
-                                    <li><strong>"Shop"</strong>": brands, categories, products, customers and orders, with payments."</li>
-                                    <li><strong>"HR"</strong>": departments, employees, leave requests and expenses."</li>
-                                    <li><strong>"Projects"</strong>": projects, their tasks and their timesheets."</li>
-                                </ul>
-                            )
-                        )
-                        tablo::ui::card(
-                            tablo::ui::card_header(
-                                tablo::ui::card_title("What to try")
-                                tablo::ui::card_description(
-                                    "Pages that exercise Tablo's own features."
-                                )
-                            )
-                            tablo::ui::card_content(
-                                <ul class="flex flex-col gap-2 text-sm">
-                                    <li>"Search, sort, filter and page any list; the export button writes a CSV."</li>
-                                    <li>"Run a row action: publish a post, approve leave, ship an order."</li>
-                                    <li>"Open a record: relations render as the related resource's own table."</li>
-                                    <li>"Upload an image on a post or a product."</li>
-                                </ul>
-                            )
-                        )
                     </div>
                 )
             )
@@ -155,29 +127,6 @@ impl Page for ShopDashboard {
         } else {
             items.len() as f64 / orders.len() as f64
         };
-
-        let revenue_by_month = monthly_total(
-            &orders,
-            12,
-            |order| month_of(order.created_at),
-            |order| {
-                if order.status == OrderStatus::Cancelled {
-                    0.0
-                } else {
-                    order.total_price.unwrap_or(0.0)
-                }
-            },
-        );
-        let orders_by_month =
-            monthly_total(&orders, 12, |order| month_of(order.created_at), |_| 1.0);
-        let customers_by_month = monthly_total(
-            &customers,
-            12,
-            |customer| month_of(customer.created_at),
-            |_| 1.0,
-        );
-        let segments = customer_segments(&orders_per_customer);
-        let values = order_value_distribution(&orders);
         let sold_ids: Vec<u64> = sold.iter().map(|order| order.id).collect();
         let top_products = top_products_by_revenue(
             items
@@ -203,14 +152,9 @@ impl Page for ShopDashboard {
                         (stat_card(cx, "Revenue / customer", crate::models::money(&revenue_per_customer), format!("{} total revenue", crate::models::dollars(revenue))))
                     </div>
                     <div class="grid gap-6 lg:grid-cols-2">
-                        (bar_chart(cx, "Revenue by month", &revenue_by_month, crate::models::dollars))
-                        (bar_chart(cx, "Orders by month", &orders_by_month, |value| format!("{value:.0}")))
-                        (bar_chart(cx, "New customers by month", &customers_by_month, |value| format!("{value:.0}")))
-                        (bar_chart(cx, "Order value distribution", &values, |value| format!("{value:.0}")))
-                        (bar_chart(cx, "Customers by order count", &segments, |value| format!("{value:.0}")))
                         (table_card(cx, "Top products by revenue", &top_products))
+                        (flagged_orders(cx, &orders))
                     </div>
-                    (flagged_orders(cx, &orders))
                 )
             )
         })
@@ -262,9 +206,6 @@ impl Page for HrDashboard {
             .exec(&mut db)
             .await?;
         let departments: Vec<Department> = Department::all().exec(&mut db).await?;
-        let projects: Vec<Project> = Project::filter(Project::fields().deleted_at().is_none())
-            .exec(&mut db)
-            .await?;
         let leave: Vec<LeaveRequest> = LeaveRequest::all().exec(&mut db).await?;
         let timesheets: Vec<Timesheet> = Timesheet::all().exec(&mut db).await?;
         let expenses: Vec<Expense> = Expense::all().exec(&mut db).await?;
@@ -299,16 +240,6 @@ impl Page for HrDashboard {
             .sum();
         let open_capacity = (capacity - active_count as i64).max(0);
 
-        let leave_by_department = leave_by_department(&leave, &employees, &departments);
-        let project_health = project_health(&projects);
-        // A full-time week is forty hours, which is what the widget divides by.
-        let full_time = active
-            .clone()
-            .filter(|employee| employee.employment_type == EmploymentType::FullTime)
-            .count();
-        let utilization = utilization_by_week(&timesheets, (full_time * 40).max(1) as f64);
-        let burn = burn_rate(&expenses, &projects);
-
         Ok(view! {
             cx =>
             tablo::ui::page(
@@ -325,12 +256,6 @@ impl Page for HrDashboard {
                         (stat_card(cx, "Open capacity", open_capacity.to_string(), format!("{capacity} seats across the active departments")))
                         (stat_card(cx, "Contractor ratio", percent(share(contractors, active_count)), format!("{contractors} contractors")))
                     </div>
-                    <div class="grid gap-6 lg:grid-cols-2">
-                        (bar_chart(cx, "Leave days by department", &leave_by_department, |value| format!("{value:.0}")))
-                        (bar_chart(cx, "Budget used by project", &project_health, percent))
-                        (bar_chart(cx, "Billable utilization by week", &utilization, percent))
-                        (bar_chart(cx, "Cumulative spend", &burn, crate::models::dollars))
-                    </div>
                     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                         (stat_card(cx, "Tasks", tasks.len().to_string(), "across every project"))
                         (stat_card(cx, "Timesheets", timesheets.len().to_string(), "booked entries"))
@@ -341,134 +266,6 @@ impl Page for HrDashboard {
             )
         })
     }
-}
-
-/// Leave days per department, the busiest first.
-fn leave_by_department(
-    leave: &[LeaveRequest],
-    employees: &[Employee],
-    departments: &[Department],
-) -> Vec<Point> {
-    let department_of: HashMap<u64, u64> = employees
-        .iter()
-        .filter_map(|employee| employee.department_id.map(|id| (employee.id, id)))
-        .collect();
-    let year = Zoned::now().date().year();
-    let mut days: HashMap<u64, f64> = HashMap::new();
-    for request in leave {
-        if request.start_date.year() != year
-            || !matches!(request.status, LeaveStatus::Approved | LeaveStatus::Taken)
-        {
-            continue;
-        }
-        if let Some(department) = department_of.get(&request.employee_id) {
-            *days.entry(*department).or_default() += request.days_requested;
-        }
-    }
-    let mut points: Vec<Point> = departments
-        .iter()
-        .filter_map(|department| {
-            let days = days.get(&department.id).copied().unwrap_or(0.0);
-            (days > 0.0).then(|| (department.name.clone(), days))
-        })
-        .collect();
-    points.sort_by(|left, right| right.1.total_cmp(&left.1));
-    points
-}
-
-/// How much of each project's budget is spent.
-fn project_health(projects: &[Project]) -> Vec<Point> {
-    let mut points: Vec<Point> = projects
-        .iter()
-        .filter(|project| project.budget > 0.0 && project.status == ProjectStatus::Active)
-        .map(|project| {
-            (
-                project.name.clone(),
-                (project.spent / project.budget * 100.0).min(200.0),
-            )
-        })
-        .collect();
-    points.sort_by(|left, right| left.0.cmp(&right.0));
-    points.truncate(10);
-    points
-}
-
-/// The share of a full-time week's hours that were billable, week by week.
-fn utilization_by_week(timesheets: &[Timesheet], capacity: f64) -> Vec<Point> {
-    let today = Zoned::now().date();
-    (0..12)
-        .rev()
-        .map(|weeks_ago| {
-            let end = today
-                .checked_sub(Span::new().days(weeks_ago * 7))
-                .unwrap_or(today);
-            let start = end.checked_sub(Span::new().days(6)).unwrap_or(end);
-            let billable: f64 = timesheets
-                .iter()
-                .filter(|timesheet| {
-                    timesheet.date >= start && timesheet.date <= end && timesheet.is_billable
-                })
-                .map(|timesheet| timesheet.hours)
-                .sum();
-            (
-                start.strftime("%b %d").to_string(),
-                billable / capacity * 100.0,
-            )
-        })
-        .collect()
-}
-
-/// What the projects have cost so far, month by month, against their budgets.
-fn burn_rate(expenses: &[Expense], projects: &[Project]) -> Vec<Point> {
-    let budget: f64 = projects
-        .iter()
-        .filter(|project| project.status == ProjectStatus::Active)
-        .map(|project| project.budget)
-        .sum();
-    let mut spent = 0.0;
-    let mut months: Vec<Point> = (0..12)
-        .rev()
-        .map(|months_ago| {
-            let month = month_key(months_ago);
-            spent += expenses
-                .iter()
-                .filter(|expense| {
-                    matches!(
-                        expense.status,
-                        ExpenseStatus::Approved | ExpenseStatus::Reimbursed
-                    ) && month_of(expense.created_at) == month
-                })
-                .map(|expense| expense.total_amount)
-                .sum::<f64>();
-            (month, spent)
-        })
-        .collect();
-    months.push(("Budget".to_string(), budget));
-    months
-}
-
-/// How many customers bought once, a few times, often, or at all.
-fn customer_segments(orders_per_customer: &HashMap<Option<u64>, usize>) -> Vec<Point> {
-    let mut segments = vec![
-        ("One-time (1)".to_string(), 0.0),
-        ("Occasional (2-3)".to_string(), 0.0),
-        ("Regular (4-9)".to_string(), 0.0),
-        ("VIP (10+)".to_string(), 0.0),
-    ];
-    for count in orders_per_customer
-        .iter()
-        .filter_map(|(customer, count)| customer.is_some().then_some(count))
-    {
-        let bucket = match count {
-            0 => continue,
-            1 => 0,
-            2..=3 => 1,
-            4..=9 => 2,
-            _ => 3,
-        };
-        segments[bucket].1 += 1.0;
-    }
-    segments
 }
 
 /// The ten products that took the most money.
@@ -499,33 +296,6 @@ fn top_products_by_revenue<'a>(
     points
 }
 
-/// How many orders fall in each band of order value.
-fn order_value_distribution(orders: &[Order]) -> Vec<Point> {
-    let mut bands = vec![
-        ("Under $50".to_string(), 0.0),
-        ("$50 to $100".to_string(), 0.0),
-        ("$100 to $250".to_string(), 0.0),
-        ("$250 to $500".to_string(), 0.0),
-        ("$500 to $1000".to_string(), 0.0),
-        ("$1000 and up".to_string(), 0.0),
-    ];
-    for order in orders {
-        let Some(total) = order.total_price else {
-            continue;
-        };
-        let band = match total {
-            total if total < 50.0 => 0,
-            total if total < 100.0 => 1,
-            total if total < 250.0 => 2,
-            total if total < 500.0 => 3,
-            total if total < 1000.0 => 4,
-            _ => 5,
-        };
-        bands[band].1 += 1.0;
-    }
-    bands
-}
-
 /// How many rows of `rows` carry each key.
 fn count_by<T>(rows: &[T], key: impl Fn(&T) -> Option<u64>) -> HashMap<Option<u64>, usize> {
     let mut counts: HashMap<Option<u64>, usize> = HashMap::new();
@@ -533,27 +303,6 @@ fn count_by<T>(rows: &[T], key: impl Fn(&T) -> Option<u64>) -> HashMap<Option<u6
         *counts.entry(key(row)).or_default() += 1;
     }
     counts
-}
-
-/// What each of the last `months` months' rows come to, oldest first.
-fn monthly_total<T>(
-    rows: &[T],
-    months: i64,
-    month_of_row: impl Fn(&T) -> String,
-    amount: impl Fn(&T) -> f64,
-) -> Vec<Point> {
-    (0..months)
-        .rev()
-        .map(|ago| {
-            let month = month_key(ago);
-            let total = rows
-                .iter()
-                .filter(|row| month_of_row(row) == month)
-                .map(&amount)
-                .sum();
-            (month, total)
-        })
-        .collect()
 }
 
 /// The share of `total` that `part` is, as a percentage.

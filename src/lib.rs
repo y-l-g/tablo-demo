@@ -2,7 +2,7 @@
 
 pub mod auth;
 pub mod blog;
-pub mod charts;
+pub mod cards;
 pub mod dashboards;
 pub mod enums;
 pub mod hr;
