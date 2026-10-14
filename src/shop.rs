@@ -1,9 +1,9 @@
 //! The shop resources: products, brands, categories, customers and orders.
 
 use tablo::{
-    Action, ActionInput, Allow, BooleanColumn, ColumnWidth, ComputedColumn, DateFilter, Detail,
-    FieldErrors, FileColumn, Grid, Places, Relation, RelationColumn, Resource, ResourceDef, Schema,
-    Section, SelectFilter, Table, TernaryFilter, TextColumn, lens, relation,
+    Action, ActionInput, Allow, BooleanColumn, ColumnWidth, ComputedColumn, DateColumn, DateFilter,
+    Detail, FieldErrors, FileColumn, Grid, Places, Relation, RelationColumn, Resource, ResourceDef,
+    Schema, Section, SelectFilter, Table, TernaryFilter, TextColumn, lens, relation,
 };
 use toasty::stmt::{List, Query};
 use topcoat::{Result, context::Cx};
@@ -70,7 +70,7 @@ impl Resource for ProductResource {
                     .label("Price"),
                 TextColumn::new(lens!(Product.sku)).label("SKU"),
                 TextColumn::new(lens!(Product.qty)).label("Quantity"),
-                TextColumn::new(lens!(Product.published_at)).label("Publishing date"),
+                DateColumn::new(lens!(Product.published_at)).label("Publishing date"),
                 TextColumn::new(lens!(Product.description)),
             )),)))
             .record_title(lens!(Product.name))
@@ -103,7 +103,7 @@ fn product_table() -> Table<Product> {
             .label("Quantity")
             .sortable(),
         TextColumn::new(lens!(Product.security_stock)).sortable(),
-        TextColumn::new(lens!(Product.published_at))
+        DateColumn::new(lens!(Product.published_at))
             .label("Publishing date")
             .sortable(),
     ))
@@ -311,7 +311,7 @@ impl Resource for BrandResource {
                     .searchable()
                     .sortable(),
                 BooleanColumn::new(lens!(Brand.is_visible)).label("Visibility"),
-                TextColumn::new(lens!(Brand.updated_at))
+                DateColumn::new(lens!(Brand.updated_at))
                     .label("Last modified at")
                     .sortable(),
             )))
@@ -321,7 +321,7 @@ impl Resource for BrandResource {
                 TextColumn::new(lens!(Brand.website)),
                 TextColumn::new(lens!(Brand.description)),
                 BooleanColumn::new(lens!(Brand.is_visible)).label("Visibility"),
-                TextColumn::new(lens!(Brand.updated_at)).label("Last modified at"),
+                DateColumn::new(lens!(Brand.updated_at)).label("Last modified at"),
             ))))
             .form(Schema::new(Section::new("Brand").schema((
                 Grid::new(2).schema((c.name, c.slug)),
@@ -394,7 +394,7 @@ impl Resource for ProductCategoryResource {
                 RelationColumn::of::<ProductCategoryResource>(relation!(ProductCategory.parent))
                     .label("Parent"),
                 BooleanColumn::new(lens!(ProductCategory.is_visible)).label("Visibility"),
-                TextColumn::new(lens!(ProductCategory.updated_at))
+                DateColumn::new(lens!(ProductCategory.updated_at))
                     .label("Last modified at")
                     .sortable(),
             )))
@@ -408,7 +408,7 @@ impl Resource for ProductCategoryResource {
                     .label("Parent"),
                     BooleanColumn::new(lens!(ProductCategory.is_visible)).label("Visibility"),
                     TextColumn::new(lens!(ProductCategory.description)),
-                    TextColumn::new(lens!(ProductCategory.updated_at)).label("Last modified at"),
+                    DateColumn::new(lens!(ProductCategory.updated_at)).label("Last modified at"),
                 )),
             ))
             .form(Schema::new(Section::new("Category").schema((
@@ -609,7 +609,7 @@ impl Resource for OrderResource {
                         TextColumn::new(lens!(Order.shipping_price))
                             .format(maybe_money)
                             .label("Shipping cost"),
-                        TextColumn::new(lens!(Order.created_at)).label("Order date"),
+                        DateColumn::new(lens!(Order.created_at)).label("Order date"),
                     )),
                     TextColumn::new(lens!(Order.notes)),
                 )),
@@ -664,7 +664,7 @@ fn order_table() -> Table<Order> {
         TextColumn::new(lens!(Order.shipping_price))
             .format(maybe_money)
             .label("Shipping cost"),
-        TextColumn::new(lens!(Order.created_at)).label("Order date"),
+        DateColumn::new(lens!(Order.created_at)).label("Order date"),
     ))
     .filters((
         DateFilter::new(lens!(Order.created_at))

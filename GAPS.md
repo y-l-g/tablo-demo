@@ -172,21 +172,9 @@ Details worth knowing:
   team after sign-up; Tablo's registrar creates the panel user in one step, so
   the demo's sign-up form creates the account and the tenant switcher lists the
   teams that exist.
-- **The shell is Tablo's.** `->spa()`, `->topbar(false)`, `->colors()`, a Vite
-  theme and brand logos are not translated. The demo sets the brand, the login
-  hint, the Albert Sans font and the blue primary colour.
-- **A page with a table does not hydrate.** The bulk-select box binds its checked
-  and indeterminate states with expressions that call `.some()` and `.every()` on
-  the runtime's `Vec` value, which is not a JavaScript array, so hydrating any
-  list or detail page throws `t.some is not a function` and the runtime stops
-  before it wires up navigation: every link then loads the whole document, and
-  the table's own sort, paging and selection are dead with it. The dashboard and
-  settings pages, which hold no table, navigate in place. `->spa()` has no
-  counterpart until this is fixed, and the demo cannot fix it.
-- **No icon registry.** Tablo ships eight navigation icons and resolves the rest
-  from the set a build script stages, so an app with more entries names its own:
-  the demo vendors the twenty-five Lucide icons it uses and picks one per entry.
-  The Filament demo's heroicon aliases are not reproduced.
+- **The shell is Tablo's.** `->topbar(false)`, `->colors()`, a Vite theme and
+  brand logos are not translated. The demo sets the brand, the login hint, the
+  Albert Sans font and the blue primary colour.
 - **Options carry a label, not a colour.** `HasColor`/`HasIcon` on the demo's enums
   have no counterpart, so a status renders as its label in a text column rather
   than as a coloured badge.
@@ -228,20 +216,11 @@ home page have no counterpart.
   `->stackedOnMobile()` and `->reorderable('sort')` (drag to reorder brands) have
   no counterpart.
 - Time is typed and shown as UTC: a `datetime-local` control carries no zone.
-- **A date column has no date type.** `TextColumn` over a `jiff` date or
-  timestamp renders the stored spelling, so a timestamp reads
-  `2026-10-14T09:38:54.016162841Z` and a nullable one prints nothing. There is no
-  column that spells the day, so the demo shows the stored value.
-- **A false boolean is a bare cross.** `BooleanColumn` draws a circled check in
-  the primary colour for true, and an uncircled cross in the muted colour for
-  false. The demo shows both as Tablo draws them; the mark belongs to the column.
-- **A labeled row action overflows its column.** The row-actions column takes a
-  share of the table by link count, not by the width of the labels it holds, so
-  "Toggle visibility", "Adjust price" and "Adjust stock" on the product list are
-  painted over the security stock and publishing date columns; a wide column
-  whose header is longer than its share ("Security stock") runs into its
-  neighbour for the same reason. The demo can size its own columns but not the
-  actions column, and neither width is a demo decision.
+- **A cell truncates rather than widening its column.** A Tablo table is a fixed
+  layout: a wide column takes a share of the table, never less than its header,
+  and a cell too long for it is cut with an ellipsis and the table scrolls
+  sideways. Filament sizes columns to their content, so a name, an email or a
+  title the Filament demo shows whole reads `Alpine Du…` here.
 - **A unique value a hidden row holds answers 500.** The unique check probes
   through the resource's `query`, so a soft-deleted row is invisible to it, while
   the index the write then hits is not: reusing a deleted order's number, or a

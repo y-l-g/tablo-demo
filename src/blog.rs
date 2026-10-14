@@ -1,9 +1,9 @@
 //! The blog resources: posts, categories and authors.
 
 use tablo::{
-    Action, Allow, BooleanColumn, ComputedColumn, DateFilter, Detail, FileColumn, Grid, Places,
-    Relation, RelationColumn, Resource, ResourceDef, Schema, Section, Table, TextColumn, lens,
-    relation,
+    Action, Allow, BooleanColumn, ComputedColumn, DateColumn, DateFilter, Detail, FileColumn, Grid,
+    Places, Relation, RelationColumn, Resource, ResourceDef, Schema, Section, Table, TextColumn,
+    lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -60,7 +60,7 @@ fn post_table() -> Table<Post> {
         ComputedColumn::new("Status", |post: &Post| post.status().to_string()),
         RelationColumn::of::<PostCategoryResource>(relation!(Post.post_category))
             .label("Post category"),
-        TextColumn::new(lens!(Post.published_at))
+        DateColumn::new(lens!(Post.published_at))
             .label("Publishing date")
             .sortable(),
     ))
@@ -76,7 +76,7 @@ fn post_detail() -> Detail<Post> {
             Grid::new(2).columns((
                 TextColumn::new(lens!(Post.title)),
                 TextColumn::new(lens!(Post.slug)),
-                TextColumn::new(lens!(Post.published_at)).label("Publishing date"),
+                DateColumn::new(lens!(Post.published_at)).label("Publishing date"),
                 RelationColumn::of::<AuthorResource>(relation!(Post.author)).label("Author"),
                 RelationColumn::of::<PostCategoryResource>(relation!(Post.post_category))
                     .label("Category"),
@@ -155,7 +155,7 @@ impl Resource for PostCategoryResource {
                     .searchable()
                     .sortable(),
                 BooleanColumn::new(lens!(PostCategory.is_visible)).label("Visibility"),
-                TextColumn::new(lens!(PostCategory.updated_at))
+                DateColumn::new(lens!(PostCategory.updated_at))
                     .label("Last modified at")
                     .sortable(),
             )))
@@ -164,7 +164,7 @@ impl Resource for PostCategoryResource {
                 TextColumn::new(lens!(PostCategory.slug)),
                 TextColumn::new(lens!(PostCategory.description)),
                 BooleanColumn::new(lens!(PostCategory.is_visible)).label("Visibility"),
-                TextColumn::new(lens!(PostCategory.updated_at)).label("Last modified at"),
+                DateColumn::new(lens!(PostCategory.updated_at)).label("Last modified at"),
             ))))
             .form(Schema::new(Section::new("Category").schema((
                 c.name,

@@ -3,8 +3,9 @@
 use jiff::{Span, Timestamp, Zoned};
 use tablo::{
     Action, ActionInput, Allow, BooleanColumn, ColumnWidth, ComputedColumn, CountColumn,
-    DateFilter, Detail, FileColumn, Grid, Places, RecordForm, Relation, RelationColumn, Resource,
-    ResourceDef, Schema, Section, SelectFilter, Table, TernaryFilter, TextColumn, lens, relation,
+    DateColumn, DateFilter, Detail, FileColumn, Grid, Places, RecordForm, Relation, RelationColumn,
+    Resource, ResourceDef, Schema, Section, SelectFilter, Table, TernaryFilter, TextColumn, lens,
+    relation,
 };
 use toasty::stmt::{List, Query};
 use topcoat::{Result, context::Cx};
@@ -187,7 +188,7 @@ impl Resource for EmployeeResource {
                         TextColumn::new(lens!(Employee.job_title)),
                         TextColumn::new(lens!(Employee.employment_type)),
                         TextColumn::new(lens!(Employee.salary)).format(maybe_money),
-                        TextColumn::new(lens!(Employee.hire_date)),
+                        DateColumn::new(lens!(Employee.hire_date)),
                         BooleanColumn::new(lens!(Employee.is_active)).label("Active"),
                     )),
                     TextColumn::new(lens!(Employee.team_color)),
@@ -263,7 +264,7 @@ fn employee_table() -> Table<Employee> {
             .format(maybe_money)
             .sortable(),
         TextColumn::new(lens!(Employee.team_color)).width(ColumnWidth::Narrow),
-        TextColumn::new(lens!(Employee.hire_date)).sortable(),
+        DateColumn::new(lens!(Employee.hire_date)).sortable(),
         BooleanColumn::new(lens!(Employee.is_active))
             .label("Active")
             .sortable(),
@@ -461,8 +462,8 @@ impl Resource for LeaveRequestResource {
                         .label("Employee"),
                     TextColumn::new(lens!(LeaveRequest.kind)).label("Type"),
                     TextColumn::new(lens!(LeaveRequest.status)),
-                    TextColumn::new(lens!(LeaveRequest.start_date)).sortable(),
-                    TextColumn::new(lens!(LeaveRequest.end_date)).sortable(),
+                    DateColumn::new(lens!(LeaveRequest.start_date)).sortable(),
+                    DateColumn::new(lens!(LeaveRequest.end_date)).sortable(),
                     TextColumn::new(lens!(LeaveRequest.days_requested))
                         .format(|days| format!("{days:.1}"))
                         .sortable(),
@@ -481,8 +482,8 @@ impl Resource for LeaveRequestResource {
                             .label("Employee"),
                         TextColumn::new(lens!(LeaveRequest.kind)).label("Type"),
                         TextColumn::new(lens!(LeaveRequest.status)),
-                        TextColumn::new(lens!(LeaveRequest.start_date)),
-                        TextColumn::new(lens!(LeaveRequest.end_date)),
+                        DateColumn::new(lens!(LeaveRequest.start_date)),
+                        DateColumn::new(lens!(LeaveRequest.end_date)),
                         TextColumn::new(lens!(LeaveRequest.days_requested))
                             .format(|days| format!("{days:.1} days")),
                         TextColumn::new(lens!(LeaveRequest.start_time)),
@@ -493,7 +494,7 @@ impl Resource for LeaveRequestResource {
                 Section::new("Review").columns((
                     RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.approver))
                         .label("Approver"),
-                    TextColumn::new(lens!(LeaveRequest.reviewed_at)).label("Reviewed at"),
+                    DateColumn::new(lens!(LeaveRequest.reviewed_at)).label("Reviewed at"),
                     TextColumn::new(lens!(LeaveRequest.reviewer_notes)),
                 )),
             )))
@@ -768,8 +769,8 @@ impl Resource for ProjectResource {
                         .format(money)
                         .sortable(),
                     ComputedColumn::new("Progress", |project: &Project| progress(project)),
-                    TextColumn::new(lens!(Project.start_date)).sortable(),
-                    TextColumn::new(lens!(Project.end_date)).sortable(),
+                    DateColumn::new(lens!(Project.start_date)).sortable(),
+                    DateColumn::new(lens!(Project.end_date)).sortable(),
                 ))
                 .filters((
                     SelectFilter::of(lens!(Project.status)),
@@ -788,8 +789,8 @@ impl Resource for ProjectResource {
                         TextColumn::new(lens!(Project.status)),
                         TextColumn::new(lens!(Project.priority)),
                         TextColumn::new(lens!(Project.color)),
-                        TextColumn::new(lens!(Project.start_date)),
-                        TextColumn::new(lens!(Project.end_date)),
+                        DateColumn::new(lens!(Project.start_date)),
+                        DateColumn::new(lens!(Project.end_date)),
                         TextColumn::new(lens!(Project.description)),
                     )),
                 ),
@@ -1052,7 +1053,7 @@ impl Resource for TaskResource {
                             hours.map_or_else(String::new, |hours| format!("{hours:.1}"))
                         })
                         .sortable(),
-                    TextColumn::new(lens!(Task.due_date)).sortable(),
+                    DateColumn::new(lens!(Task.due_date)).sortable(),
                 ))
                 .filters((
                     SelectFilter::of(lens!(Task.status)),
@@ -1076,8 +1077,8 @@ impl Resource for TaskResource {
                         TextColumn::new(lens!(Task.priority)),
                         TextColumn::new(lens!(Task.estimated_hours)),
                         TextColumn::new(lens!(Task.actual_hours)),
-                        TextColumn::new(lens!(Task.due_date)),
-                        TextColumn::new(lens!(Task.completed_at)),
+                        DateColumn::new(lens!(Task.due_date)),
+                        DateColumn::new(lens!(Task.completed_at)),
                     )),
                     TextColumn::new(lens!(Task.description)),
                 )),
@@ -1610,7 +1611,7 @@ impl Resource for ExpenseResource {
                         .sortable(),
                     RelationColumn::of::<ProjectResource>(relation!(Expense.project))
                         .label("Project"),
-                    TextColumn::new(lens!(Expense.submitted_at)).sortable(),
+                    DateColumn::new(lens!(Expense.submitted_at)).sortable(),
                 ))
                 .filters((
                     SelectFilter::of(lens!(Expense.status)),
@@ -1631,8 +1632,8 @@ impl Resource for ExpenseResource {
                         TextColumn::new(lens!(Expense.currency)),
                         RelationColumn::of::<ProjectResource>(relation!(Expense.project))
                             .label("Project"),
-                        TextColumn::new(lens!(Expense.submitted_at)),
-                        TextColumn::new(lens!(Expense.approved_at)),
+                        DateColumn::new(lens!(Expense.submitted_at)),
+                        DateColumn::new(lens!(Expense.approved_at)),
                         TextColumn::new(lens!(Expense.description)),
                         TextColumn::new(lens!(Expense.notes)),
                     )),

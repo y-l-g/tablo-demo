@@ -50,6 +50,8 @@ beside the executable.
 - **Actions**, record and bulk, with input dialogs, confirmation and success
   notifications.
 - **Dashboards** that read the seeded data and render their own figures.
+- **Navigation** that swaps the page in place, and an icon of its own for every
+  sidebar entry, from a Lucide subset the build stages.
 
 [GAPS.md](GAPS.md) lists everything in the Filament demo that Tablo has no
 equivalent for, and what this demo does instead.
