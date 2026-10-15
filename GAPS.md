@@ -80,10 +80,6 @@ Details worth knowing:
 - **No query builder.** The product list's `QueryBuilder` with arbitrary
   constraints becomes a fixed set of select, ternary and date filters. Search
   still covers the string columns.
-- **A broken page cursor renders a retry card.** Filament paginates with a page
-  number and ignores a bad one; Tablo's list carries a cursor, and a request with
-  a cursor it cannot read answers 200 with a "couldn't load, retry" card rather
-  than the first page.
 - **One grouping per table.** Filament declares several groupings on the task
   and timesheet lists (project, status, priority, assignee; employee, project,
   date); a Tablo table groups by one lens, so the demo keeps the status grouping
@@ -175,9 +171,9 @@ Details worth knowing:
 - **The shell is Tablo's.** `->topbar(false)`, `->colors()`, a Vite theme and
   brand logos are not translated. The demo sets the brand, the login hint, the
   Albert Sans font and the blue primary colour.
-- **Options carry a label, not a colour.** `HasColor`/`HasIcon` on the demo's enums
-  have no counterpart, so a status renders as its label in a text column rather
-  than as a coloured badge.
+- **Options carry a colour, not an icon.** `HasColor` on the demo's enums becomes
+  `#[option(color = "…")]` and the status columns render as badges, but `HasIcon`
+  has no counterpart: a badge shows a coloured dot where Filament shows the icon.
 
 ## Imports and exports
 
@@ -207,9 +203,14 @@ home page have no counterpart.
 
 ## Smaller differences
 
-- `->copyable()`, `->limit()`, `->tooltip()`, `->weight()`, `->alignEnd()`,
-  `->money()`, `->badge()`, `->prose()` and `->markdown()` are not translated.
-  A text column formats its value with one closure; money is one of them.
+- `->copyable()`, `->limit()`, `->tooltip()`, `->weight()`, `->prose()` and
+  `->markdown()` are not translated.
+- **One currency per column.** `->money(fn ($record) => $record->currency)` on the
+  payments relation picks each row's currency; a Tablo money column names one, so
+  payments show in dollars, the currency every seeded payment is in.
+- **The post status is no badge.** Filament derives `Published`/`Draft` from
+  `published_at` and badges it; the demo's status is a `ComputedColumn`, which
+  renders text, so only stored `Options` columns show as badges.
 - `->poll('30s')` on the expenses list has no counterpart: a Tablo table updates
   when it is asked to.
 - `->deferFilters()`, `FiltersLayout::AboveContentCollapsible`,

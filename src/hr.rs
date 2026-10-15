@@ -2,7 +2,7 @@
 
 use jiff::{Span, Timestamp, Zoned};
 use tablo::{
-    Action, ActionInput, Allow, BooleanColumn, ColumnWidth, ComputedColumn, CountColumn,
+    Action, ActionInput, Allow, BooleanColumn, ColorColumn, ComputedColumn, CountColumn, Currency,
     DateColumn, DateFilter, Detail, FileColumn, Grid, Places, RecordForm, Relation, RelationColumn,
     Resource, ResourceDef, Schema, Section, SelectFilter, Table, TernaryFilter, TextColumn, lens,
     relation,
@@ -15,8 +15,7 @@ use crate::enums::{
     TaskPriority, TaskStatus,
 };
 use crate::models::{
-    Department, Employee, Expense, ExpenseLine, LeaveRequest, Project, Task, Timesheet,
-    maybe_money, money, round,
+    Department, Employee, Expense, ExpenseLine, LeaveRequest, Project, Task, Timesheet, round,
 };
 
 /// Departments.
@@ -42,9 +41,9 @@ impl Resource for DepartmentResource {
                     .label("Parent"),
                 CountColumn::new(relation!(Department.employees)).label("Headcount"),
                 TextColumn::new(lens!(Department.budget))
-                    .format(money)
+                    .money(Currency::USD)
                     .sortable(),
-                TextColumn::new(lens!(Department.color)).width(ColumnWidth::Narrow),
+                ColorColumn::new(lens!(Department.color)),
                 BooleanColumn::new(lens!(Department.is_active)).label("Active"),
             )))
             .detail(Detail::new(
@@ -54,9 +53,9 @@ impl Resource for DepartmentResource {
                     RelationColumn::of::<DepartmentResource>(relation!(Department.parent))
                         .label("Parent"),
                     TextColumn::new(lens!(Department.description)),
-                    TextColumn::new(lens!(Department.budget)).format(money),
-                    TextColumn::new(lens!(Department.headcount_limit)),
-                    TextColumn::new(lens!(Department.color)),
+                    TextColumn::new(lens!(Department.budget)).money(Currency::USD),
+                    TextColumn::new(lens!(Department.headcount_limit)).numeric(0),
+                    ColorColumn::new(lens!(Department.color)),
                     BooleanColumn::new(lens!(Department.is_active)).label("Active"),
                 )),
             ))
@@ -186,12 +185,12 @@ impl Resource for EmployeeResource {
                         RelationColumn::of::<DepartmentResource>(relation!(Employee.department))
                             .label("Department"),
                         TextColumn::new(lens!(Employee.job_title)),
-                        TextColumn::new(lens!(Employee.employment_type)),
-                        TextColumn::new(lens!(Employee.salary)).format(maybe_money),
+                        TextColumn::new(lens!(Employee.employment_type)).badge(),
+                        TextColumn::new(lens!(Employee.salary)).money(Currency::USD),
                         DateColumn::new(lens!(Employee.hire_date)),
                         BooleanColumn::new(lens!(Employee.is_active)).label("Active"),
                     )),
-                    TextColumn::new(lens!(Employee.team_color)),
+                    ColorColumn::new(lens!(Employee.team_color)),
                 )),
             ))
             .form(Schema::new((
@@ -259,11 +258,11 @@ fn employee_table() -> Table<Employee> {
         TextColumn::new(lens!(Employee.job_title))
             .searchable()
             .sortable(),
-        TextColumn::new(lens!(Employee.employment_type)),
+        TextColumn::new(lens!(Employee.employment_type)).badge(),
         TextColumn::new(lens!(Employee.salary))
-            .format(maybe_money)
+            .money(Currency::USD)
             .sortable(),
-        TextColumn::new(lens!(Employee.team_color)).width(ColumnWidth::Narrow),
+        ColorColumn::new(lens!(Employee.team_color)),
         DateColumn::new(lens!(Employee.hire_date)).sortable(),
         BooleanColumn::new(lens!(Employee.is_active))
             .label("Active")
@@ -460,12 +459,14 @@ impl Resource for LeaveRequestResource {
                 Table::new((
                     RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.employee))
                         .label("Employee"),
-                    TextColumn::new(lens!(LeaveRequest.kind)).label("Type"),
-                    TextColumn::new(lens!(LeaveRequest.status)),
+                    TextColumn::new(lens!(LeaveRequest.kind))
+                        .badge()
+                        .label("Type"),
+                    TextColumn::new(lens!(LeaveRequest.status)).badge(),
                     DateColumn::new(lens!(LeaveRequest.start_date)).sortable(),
                     DateColumn::new(lens!(LeaveRequest.end_date)).sortable(),
                     TextColumn::new(lens!(LeaveRequest.days_requested))
-                        .format(|days| format!("{days:.1}"))
+                        .numeric(1)
                         .sortable(),
                     RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.approver))
                         .label("Approver"),
@@ -480,8 +481,10 @@ impl Resource for LeaveRequestResource {
                     Grid::new(3).columns((
                         RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.employee))
                             .label("Employee"),
-                        TextColumn::new(lens!(LeaveRequest.kind)).label("Type"),
-                        TextColumn::new(lens!(LeaveRequest.status)),
+                        TextColumn::new(lens!(LeaveRequest.kind))
+                            .badge()
+                            .label("Type"),
+                        TextColumn::new(lens!(LeaveRequest.status)).badge(),
                         DateColumn::new(lens!(LeaveRequest.start_date)),
                         DateColumn::new(lens!(LeaveRequest.end_date)),
                         TextColumn::new(lens!(LeaveRequest.days_requested))
@@ -758,15 +761,15 @@ impl Resource for ProjectResource {
             .table(
                 Table::new((
                     TextColumn::new(lens!(Project.name)).searchable().sortable(),
-                    TextColumn::new(lens!(Project.status)),
-                    TextColumn::new(lens!(Project.priority)),
+                    TextColumn::new(lens!(Project.status)).badge(),
+                    TextColumn::new(lens!(Project.priority)).badge(),
                     RelationColumn::of::<DepartmentResource>(relation!(Project.department))
                         .label("Department"),
                     TextColumn::new(lens!(Project.budget))
-                        .format(money)
+                        .money(Currency::USD)
                         .sortable(),
                     TextColumn::new(lens!(Project.spent))
-                        .format(money)
+                        .money(Currency::USD)
                         .sortable(),
                     ComputedColumn::new("Progress", |project: &Project| progress(project)),
                     DateColumn::new(lens!(Project.start_date)).sortable(),
@@ -786,9 +789,9 @@ impl Resource for ProjectResource {
                         TextColumn::new(lens!(Project.slug)),
                         RelationColumn::of::<DepartmentResource>(relation!(Project.department))
                             .label("Department"),
-                        TextColumn::new(lens!(Project.status)),
-                        TextColumn::new(lens!(Project.priority)),
-                        TextColumn::new(lens!(Project.color)),
+                        TextColumn::new(lens!(Project.status)).badge(),
+                        TextColumn::new(lens!(Project.priority)).badge(),
+                        ColorColumn::new(lens!(Project.color)),
                         DateColumn::new(lens!(Project.start_date)),
                         DateColumn::new(lens!(Project.end_date)),
                         TextColumn::new(lens!(Project.description)),
@@ -796,8 +799,8 @@ impl Resource for ProjectResource {
                 ),
                 Section::new("Budget").columns(
                     Grid::new(2).columns((
-                        TextColumn::new(lens!(Project.budget)).format(money),
-                        TextColumn::new(lens!(Project.spent)).format(money),
+                        TextColumn::new(lens!(Project.budget)).money(Currency::USD),
+                        TextColumn::new(lens!(Project.spent)).money(Currency::USD),
                         TextColumn::new(lens!(Project.estimated_hours))
                             .format(|hours| format!("{hours:.1} hours")),
                         TextColumn::new(lens!(Project.actual_hours))
@@ -1046,12 +1049,10 @@ impl Resource for TaskResource {
                     RelationColumn::of::<ProjectResource>(relation!(Task.project)).label("Project"),
                     RelationColumn::of::<EmployeeResource>(relation!(Task.assignee))
                         .label("Assignee"),
-                    TextColumn::new(lens!(Task.status)),
-                    TextColumn::new(lens!(Task.priority)),
+                    TextColumn::new(lens!(Task.status)).badge(),
+                    TextColumn::new(lens!(Task.priority)).badge(),
                     TextColumn::new(lens!(Task.estimated_hours))
-                        .format(|hours| {
-                            hours.map_or_else(String::new, |hours| format!("{hours:.1}"))
-                        })
+                        .numeric(1)
                         .sortable(),
                     DateColumn::new(lens!(Task.due_date)).sortable(),
                 ))
@@ -1073,8 +1074,8 @@ impl Resource for TaskResource {
                             .label("Project"),
                         RelationColumn::of::<EmployeeResource>(relation!(Task.assignee))
                             .label("Assignee"),
-                        TextColumn::new(lens!(Task.status)),
-                        TextColumn::new(lens!(Task.priority)),
+                        TextColumn::new(lens!(Task.status)).badge(),
+                        TextColumn::new(lens!(Task.priority)).badge(),
                         TextColumn::new(lens!(Task.estimated_hours)),
                         TextColumn::new(lens!(Task.actual_hours)),
                         DateColumn::new(lens!(Task.due_date)),
@@ -1385,14 +1386,14 @@ impl Resource for TimesheetResource {
                     RelationColumn::of::<TaskResource>(relation!(Timesheet.task)).label("Task"),
                     TextColumn::new(lens!(Timesheet.date)).sortable(),
                     TextColumn::new(lens!(Timesheet.hours))
-                        .format(|hours| format!("{hours:.1}"))
+                        .numeric(1)
                         .sortable(),
                     BooleanColumn::new(lens!(Timesheet.is_billable)).label("Billable"),
                     TextColumn::new(lens!(Timesheet.hourly_rate))
-                        .format(money)
+                        .money(Currency::USD)
                         .sortable(),
                     TextColumn::new(lens!(Timesheet.total_cost))
-                        .format(money)
+                        .money(Currency::USD)
                         .sortable(),
                 ))
                 .filters((
@@ -1416,8 +1417,8 @@ impl Resource for TimesheetResource {
                     TextColumn::new(lens!(Timesheet.hours)),
                     TextColumn::new(lens!(Timesheet.minutes)),
                     BooleanColumn::new(lens!(Timesheet.is_billable)).label("Billable"),
-                    TextColumn::new(lens!(Timesheet.hourly_rate)).format(money),
-                    TextColumn::new(lens!(Timesheet.total_cost)).format(money),
+                    TextColumn::new(lens!(Timesheet.hourly_rate)).money(Currency::USD),
+                    TextColumn::new(lens!(Timesheet.total_cost)).money(Currency::USD),
                     TextColumn::new(lens!(Timesheet.description)),
                 )),
             ))
@@ -1604,10 +1605,10 @@ impl Resource for ExpenseResource {
                         .sortable(),
                     RelationColumn::of::<EmployeeResource>(relation!(Expense.employee))
                         .label("Employee"),
-                    TextColumn::new(lens!(Expense.category)),
-                    TextColumn::new(lens!(Expense.status)),
+                    TextColumn::new(lens!(Expense.category)).badge(),
+                    TextColumn::new(lens!(Expense.status)).badge(),
                     TextColumn::new(lens!(Expense.total_amount))
-                        .format(money)
+                        .money(Currency::USD)
                         .sortable(),
                     RelationColumn::of::<ProjectResource>(relation!(Expense.project))
                         .label("Project"),
@@ -1626,9 +1627,9 @@ impl Resource for ExpenseResource {
                         TextColumn::new(lens!(Expense.expense_number)),
                         RelationColumn::of::<EmployeeResource>(relation!(Expense.employee))
                             .label("Employee"),
-                        TextColumn::new(lens!(Expense.category)),
-                        TextColumn::new(lens!(Expense.status)),
-                        TextColumn::new(lens!(Expense.total_amount)).format(money),
+                        TextColumn::new(lens!(Expense.category)).badge(),
+                        TextColumn::new(lens!(Expense.status)).badge(),
+                        TextColumn::new(lens!(Expense.total_amount)).money(Currency::USD),
                         TextColumn::new(lens!(Expense.currency)),
                         RelationColumn::of::<ProjectResource>(relation!(Expense.project))
                             .label("Project"),
@@ -1888,9 +1889,9 @@ impl Resource for ExpenseLineResource {
                 RelationColumn::of::<ExpenseResource>(relation!(ExpenseLine.expense))
                     .label("Expense"),
                 TextColumn::new(lens!(ExpenseLine.description)).searchable(),
-                TextColumn::new(lens!(ExpenseLine.quantity)),
-                TextColumn::new(lens!(ExpenseLine.unit_price)).format(money),
-                TextColumn::new(lens!(ExpenseLine.amount)).format(money),
+                TextColumn::new(lens!(ExpenseLine.quantity)).numeric(0),
+                TextColumn::new(lens!(ExpenseLine.unit_price)).money(Currency::USD),
+                TextColumn::new(lens!(ExpenseLine.amount)).money(Currency::USD),
                 TextColumn::new(lens!(ExpenseLine.date)),
             )))
             .detail(Detail::new(
@@ -1898,9 +1899,9 @@ impl Resource for ExpenseLineResource {
                     RelationColumn::of::<ExpenseResource>(relation!(ExpenseLine.expense))
                         .label("Expense"),
                     TextColumn::new(lens!(ExpenseLine.description)),
-                    TextColumn::new(lens!(ExpenseLine.quantity)),
-                    TextColumn::new(lens!(ExpenseLine.unit_price)).format(money),
-                    TextColumn::new(lens!(ExpenseLine.amount)).format(money),
+                    TextColumn::new(lens!(ExpenseLine.quantity)).numeric(0),
+                    TextColumn::new(lens!(ExpenseLine.unit_price)).money(Currency::USD),
+                    TextColumn::new(lens!(ExpenseLine.amount)).money(Currency::USD),
                     TextColumn::new(lens!(ExpenseLine.date)),
                 )),
             ))
