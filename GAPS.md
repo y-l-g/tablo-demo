@@ -217,11 +217,11 @@ home page have no counterpart.
   `->stackedOnMobile()` and `->reorderable('sort')` (drag to reorder brands) have
   no counterpart.
 - Time is typed and shown as UTC: a `datetime-local` control carries no zone.
-- **A cell truncates rather than widening its column.** A Tablo table is a fixed
-  layout: a wide column takes a share of the table, never less than its header,
-  and a cell too long for it is cut with an ellipsis and the table scrolls
-  sideways. Filament sizes columns to their content, so a name, an email or a
-  title the Filament demo shows whole reads `Alpine Du…` here.
+- **A long cell truncates.** A Tablo table sizes each column to its content, but a
+  text or relation cell is capped at 20rem and is cut with an ellipsis past that;
+  the first such column takes the table's spare width. Filament has no cap, so a
+  long name, email or title that the Filament demo shows whole can read
+  `Alpine Du…` here.
 - **A unique value a hidden row holds answers 500.** The unique check probes
   through the resource's `query`, so a soft-deleted row is invisible to it, while
   the index the write then hits is not: reusing a deleted order's number, or a

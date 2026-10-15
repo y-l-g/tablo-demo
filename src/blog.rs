@@ -1,9 +1,9 @@
 //! The blog resources: posts, categories and authors.
 
 use tablo::{
-    Action, Allow, BooleanColumn, ComputedColumn, DateColumn, DateFilter, Detail, Grid,
-    ImageColumn, Places, Relation, RelationColumn, Resource, ResourceDef, Schema, Section, Table,
-    TextColumn, lens, relation,
+    Action, ActionLayout, Allow, BooleanColumn, ComputedColumn, DateColumn, DateFilter, Detail,
+    Grid, ImageColumn, Places, Relation, RelationColumn, Resource, ResourceDef, Schema, Section,
+    Table, TextColumn, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -64,6 +64,7 @@ fn post_table() -> Table<Post> {
             .label("Publishing date")
             .sortable(),
     ))
+    .action_layout(ActionLayout::Menu)
     .filters((DateFilter::new(lens!(Post.published_at))
         .label("Publishing date")
         .range(),))
@@ -147,18 +148,21 @@ impl Resource for PostCategoryResource {
             .navigation_group("Blog")
             .navigation_order(1)
             .policy(Allow)
-            .table(Table::new((
-                TextColumn::new(lens!(PostCategory.name))
-                    .searchable()
-                    .sortable(),
-                TextColumn::new(lens!(PostCategory.slug))
-                    .searchable()
-                    .sortable(),
-                BooleanColumn::new(lens!(PostCategory.is_visible)).label("Visibility"),
-                DateColumn::new(lens!(PostCategory.updated_at))
-                    .label("Last modified at")
-                    .sortable(),
-            )))
+            .table(
+                Table::new((
+                    TextColumn::new(lens!(PostCategory.name))
+                        .searchable()
+                        .sortable(),
+                    TextColumn::new(lens!(PostCategory.slug))
+                        .searchable()
+                        .sortable(),
+                    BooleanColumn::new(lens!(PostCategory.is_visible)).label("Visibility"),
+                    DateColumn::new(lens!(PostCategory.updated_at))
+                        .label("Last modified at")
+                        .sortable(),
+                ))
+                .action_layout(ActionLayout::Menu),
+            )
             .detail(Detail::new(Section::new("Category").columns((
                 TextColumn::new(lens!(PostCategory.name)),
                 TextColumn::new(lens!(PostCategory.slug)),

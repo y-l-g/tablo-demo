@@ -2,10 +2,10 @@
 
 use jiff::{Span, Timestamp, Zoned};
 use tablo::{
-    Action, ActionInput, Allow, BooleanColumn, ColorColumn, ComputedColumn, CountColumn, Currency,
-    DateColumn, DateFilter, Detail, FileColumn, Grid, Places, RecordForm, Relation, RelationColumn,
-    Resource, ResourceDef, Schema, Section, SelectFilter, Table, TernaryFilter, TextColumn, lens,
-    relation,
+    Action, ActionInput, ActionLayout, Allow, BooleanColumn, ColorColumn, ComputedColumn,
+    CountColumn, Currency, DateColumn, DateFilter, Detail, FileColumn, Grid, Places, RecordForm,
+    Relation, RelationColumn, Resource, ResourceDef, Schema, Section, SelectFilter, Table,
+    TernaryFilter, TextColumn, lens, relation,
 };
 use toasty::stmt::{List, Query};
 use topcoat::{Result, context::Cx};
@@ -33,19 +33,22 @@ impl Resource for DepartmentResource {
             .navigation_group("HR")
             .navigation_order(1)
             .policy(Allow)
-            .table(Table::new((
-                TextColumn::new(lens!(Department.name))
-                    .searchable()
-                    .sortable(),
-                RelationColumn::of::<DepartmentResource>(relation!(Department.parent))
-                    .label("Parent"),
-                CountColumn::new(relation!(Department.employees)).label("Headcount"),
-                TextColumn::new(lens!(Department.budget))
-                    .money(Currency::USD)
-                    .sortable(),
-                ColorColumn::new(lens!(Department.color)),
-                BooleanColumn::new(lens!(Department.is_active)).label("Active"),
-            )))
+            .table(
+                Table::new((
+                    TextColumn::new(lens!(Department.name))
+                        .searchable()
+                        .sortable(),
+                    RelationColumn::of::<DepartmentResource>(relation!(Department.parent))
+                        .label("Parent"),
+                    CountColumn::new(relation!(Department.employees)).label("Headcount"),
+                    TextColumn::new(lens!(Department.budget))
+                        .money(Currency::USD)
+                        .sortable(),
+                    ColorColumn::new(lens!(Department.color)),
+                    BooleanColumn::new(lens!(Department.is_active)).label("Active"),
+                ))
+                .action_layout(ActionLayout::Menu),
+            )
             .detail(Detail::new(
                 Section::new("Department").columns((
                     TextColumn::new(lens!(Department.name)),
@@ -268,6 +271,7 @@ fn employee_table() -> Table<Employee> {
             .label("Active")
             .sortable(),
     ))
+    .action_layout(ActionLayout::Menu)
     .filters((
         SelectFilter::of(lens!(Employee.employment_type)),
         SelectFilter::relationship::<DepartmentResource>(lens!(Employee.department_id))
@@ -471,6 +475,7 @@ impl Resource for LeaveRequestResource {
                     RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.approver))
                         .label("Approver"),
                 ))
+                .action_layout(ActionLayout::Menu)
                 .filters((
                     SelectFilter::of(lens!(LeaveRequest.status)),
                     SelectFilter::of(lens!(LeaveRequest.kind)).label("Type"),
@@ -775,6 +780,7 @@ impl Resource for ProjectResource {
                     DateColumn::new(lens!(Project.start_date)).sortable(),
                     DateColumn::new(lens!(Project.end_date)).sortable(),
                 ))
+                .action_layout(ActionLayout::Menu)
                 .filters((
                     SelectFilter::of(lens!(Project.status)),
                     SelectFilter::of(lens!(Project.priority)),
@@ -1056,6 +1062,7 @@ impl Resource for TaskResource {
                         .sortable(),
                     DateColumn::new(lens!(Task.due_date)).sortable(),
                 ))
+                .action_layout(ActionLayout::Menu)
                 .filters((
                     SelectFilter::of(lens!(Task.status)),
                     SelectFilter::of(lens!(Task.priority)),
@@ -1396,6 +1403,7 @@ impl Resource for TimesheetResource {
                         .money(Currency::USD)
                         .sortable(),
                 ))
+                .action_layout(ActionLayout::Menu)
                 .filters((
                     SelectFilter::relationship::<EmployeeResource>(lens!(Timesheet.employee_id))
                         .label("Employee"),
@@ -1614,6 +1622,7 @@ impl Resource for ExpenseResource {
                         .label("Project"),
                     DateColumn::new(lens!(Expense.submitted_at)).sortable(),
                 ))
+                .action_layout(ActionLayout::Menu)
                 .filters((
                     SelectFilter::of(lens!(Expense.status)),
                     SelectFilter::of(lens!(Expense.category)),

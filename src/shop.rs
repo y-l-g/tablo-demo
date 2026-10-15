@@ -1,9 +1,10 @@
 //! The shop resources: products, brands, categories, customers and orders.
 
 use tablo::{
-    Action, ActionInput, Allow, BooleanColumn, ColumnWidth, ComputedColumn, Currency, DateColumn,
-    DateFilter, Detail, FieldErrors, Grid, ImageColumn, Places, Relation, RelationColumn, Resource,
-    ResourceDef, Schema, Section, SelectFilter, Table, TernaryFilter, TextColumn, lens, relation,
+    Action, ActionInput, ActionLayout, Allow, BooleanColumn, ColumnWidth, ComputedColumn, Currency,
+    DateColumn, DateFilter, Detail, FieldErrors, Grid, ImageColumn, Places, Relation,
+    RelationColumn, Resource, ResourceDef, Schema, Section, SelectFilter, Table, TernaryFilter,
+    TextColumn, lens, relation,
 };
 use toasty::stmt::{List, Query};
 use topcoat::{Result, context::Cx};
@@ -112,6 +113,7 @@ fn product_table() -> Table<Product> {
             .label("Publishing date")
             .sortable(),
     ))
+    .action_layout(ActionLayout::Menu)
     .filters((
         SelectFilter::relationship::<BrandResource>(lens!(Product.brand_id)).label("Brand"),
         TernaryFilter::new(lens!(Product.is_visible)).label("Visibility"),
@@ -310,16 +312,19 @@ impl Resource for BrandResource {
             .navigation_group("Shop")
             .navigation_order(3)
             .policy(Allow)
-            .table(Table::new((
-                TextColumn::new(lens!(Brand.name)).searchable().sortable(),
-                TextColumn::new(lens!(Brand.website))
-                    .searchable()
-                    .sortable(),
-                BooleanColumn::new(lens!(Brand.is_visible)).label("Visibility"),
-                DateColumn::new(lens!(Brand.updated_at))
-                    .label("Last modified at")
-                    .sortable(),
-            )))
+            .table(
+                Table::new((
+                    TextColumn::new(lens!(Brand.name)).searchable().sortable(),
+                    TextColumn::new(lens!(Brand.website))
+                        .searchable()
+                        .sortable(),
+                    BooleanColumn::new(lens!(Brand.is_visible)).label("Visibility"),
+                    DateColumn::new(lens!(Brand.updated_at))
+                        .label("Last modified at")
+                        .sortable(),
+                ))
+                .action_layout(ActionLayout::Menu),
+            )
             .detail(Detail::new(Section::new("Brand").columns((
                 TextColumn::new(lens!(Brand.name)),
                 TextColumn::new(lens!(Brand.slug)),
@@ -392,17 +397,22 @@ impl Resource for ProductCategoryResource {
             .navigation_group("Shop")
             .navigation_order(4)
             .policy(Allow)
-            .table(Table::new((
-                TextColumn::new(lens!(ProductCategory.name))
-                    .searchable()
-                    .sortable(),
-                RelationColumn::of::<ProductCategoryResource>(relation!(ProductCategory.parent))
+            .table(
+                Table::new((
+                    TextColumn::new(lens!(ProductCategory.name))
+                        .searchable()
+                        .sortable(),
+                    RelationColumn::of::<ProductCategoryResource>(relation!(
+                        ProductCategory.parent
+                    ))
                     .label("Parent"),
-                BooleanColumn::new(lens!(ProductCategory.is_visible)).label("Visibility"),
-                DateColumn::new(lens!(ProductCategory.updated_at))
-                    .label("Last modified at")
-                    .sortable(),
-            )))
+                    BooleanColumn::new(lens!(ProductCategory.is_visible)).label("Visibility"),
+                    DateColumn::new(lens!(ProductCategory.updated_at))
+                        .label("Last modified at")
+                        .sortable(),
+                ))
+                .action_layout(ActionLayout::Menu),
+            )
             .detail(Detail::new(
                 Section::new("Category").columns((
                     TextColumn::new(lens!(ProductCategory.name)),
@@ -481,22 +491,25 @@ impl Resource for CustomerResource {
             .navigation_group("Shop")
             .navigation_order(2)
             .policy(Allow)
-            .table(Table::new((
-                TextColumn::new(lens!(Customer.name))
-                    .searchable()
-                    .sortable(),
-                TextColumn::new(lens!(Customer.email))
-                    .label("Email address")
-                    .searchable()
-                    .sortable(),
-                ComputedColumn::new("Country", |customer: &Customer| {
-                    customer_country(customer).unwrap_or_default()
-                })
-                .include(Customer::fields().addresses()),
-                TextColumn::new(lens!(Customer.phone))
-                    .searchable()
-                    .sortable(),
-            )))
+            .table(
+                Table::new((
+                    TextColumn::new(lens!(Customer.name))
+                        .searchable()
+                        .sortable(),
+                    TextColumn::new(lens!(Customer.email))
+                        .label("Email address")
+                        .searchable()
+                        .sortable(),
+                    ComputedColumn::new("Country", |customer: &Customer| {
+                        customer_country(customer).unwrap_or_default()
+                    })
+                    .include(Customer::fields().addresses()),
+                    TextColumn::new(lens!(Customer.phone))
+                        .searchable()
+                        .sortable(),
+                ))
+                .action_layout(ActionLayout::Menu),
+            )
             .detail(Detail::new(Section::new("Customer").columns((
                 TextColumn::new(lens!(Customer.name)),
                 TextColumn::new(lens!(Customer.email)).label("Email address"),
@@ -671,6 +684,7 @@ fn order_table() -> Table<Order> {
             .label("Shipping cost"),
         DateColumn::new(lens!(Order.created_at)).label("Order date"),
     ))
+    .action_layout(ActionLayout::Menu)
     .filters((
         DateFilter::new(lens!(Order.created_at))
             .label("Order date")
@@ -963,7 +977,7 @@ impl Resource for AddressResource {
                 TextColumn::new(lens!(Address.street)),
                 TextColumn::new(lens!(Address.zip)),
                 TextColumn::new(lens!(Address.city)),
-                TextColumn::new(lens!(Address.country)).width(ColumnWidth::Narrow),
+                TextColumn::new(lens!(Address.country)).width(ColumnWidth::Auto),
             )))
             .detail(Detail::new(Section::new("Address").columns((
                 TextColumn::new(lens!(Address.street)),
@@ -1027,7 +1041,7 @@ impl Resource for OrderAddressResource {
                 TextColumn::new(lens!(OrderAddress.street)),
                 TextColumn::new(lens!(OrderAddress.city)),
                 TextColumn::new(lens!(OrderAddress.zip)),
-                TextColumn::new(lens!(OrderAddress.country)).width(ColumnWidth::Narrow),
+                TextColumn::new(lens!(OrderAddress.country)).width(ColumnWidth::Auto),
             )))
             .detail(Detail::new(Section::new("Order address").columns((
                 RelationColumn::of::<OrderResource>(relation!(OrderAddress.order)).label("Order"),

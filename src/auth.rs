@@ -25,6 +25,11 @@ impl PanelUser for SignedIn {
         &self.user.name
     }
 
+    /// The account's email, shown under the name in the sidebar's user menu.
+    fn subtitle(&self) -> Option<&str> {
+        Some(&self.user.email)
+    }
+
     /// Every account may open the panel, as `User::canAccessPanel` answers.
     fn can_access_panel(&self) -> bool {
         true
