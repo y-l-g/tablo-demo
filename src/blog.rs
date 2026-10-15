@@ -1,9 +1,9 @@
 //! The blog resources: posts, categories and authors.
 
 use tablo::{
-    Action, Allow, BooleanColumn, ComputedColumn, DateColumn, DateFilter, Detail, FileColumn, Grid,
-    Places, Relation, RelationColumn, Resource, ResourceDef, Schema, Section, Table, TextColumn,
-    lens, relation,
+    Action, Allow, BooleanColumn, ComputedColumn, DateColumn, DateFilter, Detail, Grid,
+    ImageColumn, Places, Relation, RelationColumn, Resource, ResourceDef, Schema, Section, Table,
+    TextColumn, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -53,7 +53,7 @@ impl Resource for PostResource {
 /// The post list.
 fn post_table() -> Table<Post> {
     Table::new((
-        FileColumn::new(lens!(Post.image)).label("Image"),
+        ImageColumn::new(lens!(Post.image)).label("Image"),
         TextColumn::new(lens!(Post.title)).searchable().sortable(),
         TextColumn::new(lens!(Post.slug)).searchable().sortable(),
         RelationColumn::of::<AuthorResource>(relation!(Post.author)).label("Author"),
@@ -82,7 +82,7 @@ fn post_detail() -> Detail<Post> {
                     .label("Category"),
                 TextColumn::new(lens!(Post.tags)),
             )),
-            FileColumn::new(lens!(Post.image)).label("Image"),
+            ImageColumn::new(lens!(Post.image)).label("Image"),
         )),
         Section::new("Content").columns(TextColumn::new(lens!(Post.content))),
     ))

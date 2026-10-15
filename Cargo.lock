@@ -3459,7 +3459,7 @@ dependencies = [
 
 [[package]]
 name = "tablo"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "tablo-core",
  "tablo-ui",
@@ -3469,14 +3469,14 @@ dependencies = [
 
 [[package]]
 name = "tablo-build"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "topcoat",
 ]
 
 [[package]]
 name = "tablo-core"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "argon2",
  "bytes",
@@ -3518,7 +3518,7 @@ dependencies = [
 
 [[package]]
 name = "tablo-macros"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -3528,7 +3528,7 @@ dependencies = [
 
 [[package]]
 name = "tablo-ui"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "http",
  "topcoat",

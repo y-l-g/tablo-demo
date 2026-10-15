@@ -1,9 +1,9 @@
 //! The shop resources: products, brands, categories, customers and orders.
 
 use tablo::{
-    Action, ActionInput, Allow, BooleanColumn, ColumnWidth, ComputedColumn, DateColumn, DateFilter,
-    Detail, FieldErrors, FileColumn, Grid, Places, Relation, RelationColumn, Resource, ResourceDef,
-    Schema, Section, SelectFilter, Table, TernaryFilter, TextColumn, lens, relation,
+    Action, ActionInput, Allow, BooleanColumn, ColumnWidth, ComputedColumn, Currency, DateColumn,
+    DateFilter, Detail, FieldErrors, Grid, ImageColumn, Places, Relation, RelationColumn, Resource,
+    ResourceDef, Schema, Section, SelectFilter, Table, TernaryFilter, TextColumn, lens, relation,
 };
 use toasty::stmt::{List, Query};
 use topcoat::{Result, context::Cx};
@@ -12,7 +12,7 @@ use crate::blog::CommentResource;
 use crate::enums::OrderStatus;
 use crate::models::{
     Address, Brand, Comment, Customer, Order, OrderAddress, OrderItem, Payment, Product,
-    ProductCategory, maybe_money, money,
+    ProductCategory,
 };
 
 /// Products.
@@ -60,16 +60,18 @@ impl Resource for ProductResource {
             .detail(Detail::new((Section::new("Product").columns((
                 TextColumn::new(lens!(Product.name)),
                 TextColumn::new(lens!(Product.slug)),
-                FileColumn::new(lens!(Product.image)).label("Image"),
+                ImageColumn::new(lens!(Product.image)).label("Image"),
                 RelationColumn::of::<BrandResource>(relation!(Product.brand)).label("Brand"),
                 RelationColumn::list::<ProductCategoryResource>(relation!(Product.categories))
                     .label("Categories"),
                 BooleanColumn::new(lens!(Product.is_visible)).label("Visibility"),
                 TextColumn::new(lens!(Product.price))
-                    .format(maybe_money)
+                    .money(Currency::USD)
                     .label("Price"),
                 TextColumn::new(lens!(Product.sku)).label("SKU"),
-                TextColumn::new(lens!(Product.qty)).label("Quantity"),
+                TextColumn::new(lens!(Product.qty))
+                    .numeric(0)
+                    .label("Quantity"),
                 DateColumn::new(lens!(Product.published_at)).label("Publishing date"),
                 TextColumn::new(lens!(Product.description)),
             )),)))
@@ -87,12 +89,12 @@ impl Resource for ProductResource {
 /// The product list.
 fn product_table() -> Table<Product> {
     Table::new((
-        FileColumn::new(lens!(Product.image)).label("Image"),
+        ImageColumn::new(lens!(Product.image)).label("Image"),
         TextColumn::new(lens!(Product.name)).searchable().sortable(),
         RelationColumn::of::<BrandResource>(relation!(Product.brand)).label("Brand"),
         BooleanColumn::new(lens!(Product.is_visible)).label("Visibility"),
         TextColumn::new(lens!(Product.price))
-            .format(maybe_money)
+            .money(Currency::USD)
             .sortable()
             .label("Price"),
         TextColumn::new(lens!(Product.sku))
@@ -100,9 +102,12 @@ fn product_table() -> Table<Product> {
             .searchable()
             .sortable(),
         TextColumn::new(lens!(Product.qty))
+            .numeric(0)
             .label("Quantity")
             .sortable(),
-        TextColumn::new(lens!(Product.security_stock)).sortable(),
+        TextColumn::new(lens!(Product.security_stock))
+            .numeric(0)
+            .sortable(),
         DateColumn::new(lens!(Product.published_at))
             .label("Publishing date")
             .sortable(),
@@ -604,10 +609,10 @@ impl Resource for OrderResource {
                         TextColumn::new(lens!(Order.number)),
                         RelationColumn::of::<CustomerResource>(relation!(Order.customer))
                             .label("Customer"),
-                        TextColumn::new(lens!(Order.status)),
-                        TextColumn::new(lens!(Order.total_price)).format(maybe_money),
+                        TextColumn::new(lens!(Order.status)).badge(),
+                        TextColumn::new(lens!(Order.total_price)).money(Currency::USD),
                         TextColumn::new(lens!(Order.shipping_price))
-                            .format(maybe_money)
+                            .money(Currency::USD)
                             .label("Shipping cost"),
                         DateColumn::new(lens!(Order.created_at)).label("Order date"),
                     )),
@@ -659,10 +664,10 @@ fn order_table() -> Table<Order> {
     Table::new((
         TextColumn::new(lens!(Order.number)).searchable().sortable(),
         RelationColumn::of::<CustomerResource>(relation!(Order.customer)).label("Customer"),
-        TextColumn::new(lens!(Order.status)),
-        TextColumn::new(lens!(Order.total_price)).format(maybe_money),
+        TextColumn::new(lens!(Order.status)).badge(),
+        TextColumn::new(lens!(Order.total_price)).money(Currency::USD),
         TextColumn::new(lens!(Order.shipping_price))
-            .format(maybe_money)
+            .money(Currency::USD)
             .label("Shipping cost"),
         DateColumn::new(lens!(Order.created_at)).label("Order date"),
     ))
@@ -829,9 +834,11 @@ impl Resource for OrderItemResource {
             .table(Table::new((
                 RelationColumn::of::<ProductResource>(relation!(OrderItem.product))
                     .label("Product"),
-                TextColumn::new(lens!(OrderItem.qty)).label("Quantity"),
+                TextColumn::new(lens!(OrderItem.qty))
+                    .numeric(0)
+                    .label("Quantity"),
                 TextColumn::new(lens!(OrderItem.unit_price))
-                    .format(money)
+                    .money(Currency::USD)
                     .label("Unit price"),
             )))
             .detail(Detail::new(
@@ -839,9 +846,11 @@ impl Resource for OrderItemResource {
                     RelationColumn::of::<OrderResource>(relation!(OrderItem.order)).label("Order"),
                     RelationColumn::of::<ProductResource>(relation!(OrderItem.product))
                         .label("Product"),
-                    TextColumn::new(lens!(OrderItem.qty)).label("Quantity"),
+                    TextColumn::new(lens!(OrderItem.qty))
+                        .numeric(0)
+                        .label("Quantity"),
                     TextColumn::new(lens!(OrderItem.unit_price))
-                        .format(money)
+                        .money(Currency::USD)
                         .label("Unit price"),
                 )),
             ))
@@ -883,7 +892,7 @@ impl Resource for PaymentResource {
                 RelationColumn::of::<OrderResource>(relation!(Payment.order)).label("Order"),
                 TextColumn::new(lens!(Payment.reference)).searchable(),
                 TextColumn::new(lens!(Payment.amount))
-                    .format(money)
+                    .money(Currency::USD)
                     .sortable(),
                 TextColumn::new(lens!(Payment.provider)).sortable(),
                 TextColumn::new(lens!(Payment.method)).sortable(),
@@ -891,7 +900,7 @@ impl Resource for PaymentResource {
             .detail(Detail::new(Section::new("Payment").columns((
                 RelationColumn::of::<OrderResource>(relation!(Payment.order)).label("Order"),
                 TextColumn::new(lens!(Payment.reference)),
-                TextColumn::new(lens!(Payment.amount)).format(money),
+                TextColumn::new(lens!(Payment.amount)).money(Currency::USD),
                 TextColumn::new(lens!(Payment.currency)),
                 TextColumn::new(lens!(Payment.provider)),
                 TextColumn::new(lens!(Payment.method)),
