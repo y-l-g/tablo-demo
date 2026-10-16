@@ -108,7 +108,7 @@ impl Authenticator for DemoAuth {
 }
 
 /// What the `app` panel's sign-up page asks for.
-#[derive(tablo::ActionInput)]
+#[derive(tablo::FormInput)]
 pub struct SignUp {
     #[form(label = "Name")]
     pub name: String,

@@ -2,7 +2,7 @@
 
 use jiff::{Span, Timestamp, Zoned};
 use tablo::{
-    Action, ActionInput, ActionLayout, Allow, BooleanColumn, ColorColumn, ComputedColumn,
+    Action, FormInput, ActionLayout, Allow, BooleanColumn, ColorColumn, ComputedColumn,
     CountColumn, Currency, DateColumn, DateFilter, Detail, FileColumn, Grid, Places, RecordForm,
     Relation, RelationColumn, Resource, ResourceDef, Schema, Section, SelectFilter, Table,
     TernaryFilter, TextColumn, lens, relation,
@@ -95,7 +95,7 @@ pub struct DepartmentForm {
 }
 
 /// What `AdjustDepartmentBudget` asks for.
-#[derive(ActionInput)]
+#[derive(FormInput)]
 pub struct BudgetChange {
     #[form(label = "Budget")]
     pub budget: f64,
@@ -326,7 +326,7 @@ impl Action<EmployeeResource> for ToggleEmployeeActive {
 }
 
 /// What a department choice asks for.
-#[derive(ActionInput)]
+#[derive(FormInput)]
 pub struct DepartmentChoice {
     #[form(label = "Department")]
     pub department_id: Option<u64>,
@@ -393,7 +393,7 @@ async fn move_department(
 }
 
 /// What a yes or no choice asks for.
-#[derive(ActionInput)]
+#[derive(FormInput)]
 pub struct ActiveChoice {
     #[form(options = ActiveOptions, label = "Active")]
     pub is_active: bool,
@@ -598,7 +598,7 @@ pub struct LeaveRequestForm {
 }
 
 /// What a rejection asks for.
-#[derive(ActionInput)]
+#[derive(FormInput)]
 pub struct Rejection {
     #[form(label = "Reason for rejection", multiline = 3)]
     pub reviewer_notes: String,
@@ -899,7 +899,7 @@ pub struct ProjectForm {
 }
 
 /// What a status change asks for.
-#[derive(ActionInput)]
+#[derive(FormInput)]
 pub struct StatusChange {
     #[form(options)]
     pub status: ProjectStatus,
@@ -1175,7 +1175,7 @@ impl Action<TaskResource> for SendTaskToReview {
 }
 
 /// What completing a task asks for.
-#[derive(ActionInput)]
+#[derive(FormInput)]
 pub struct TaskCompletion {
     #[form(label = "Actual hours")]
     pub actual_hours: Option<f64>,
@@ -1217,7 +1217,7 @@ impl Action<TaskResource> for CompleteTask {
 }
 
 /// What assigning a task asks for.
-#[derive(ActionInput)]
+#[derive(FormInput)]
 pub struct AssigneeChoice {
     #[form(label = "Assignee")]
     pub assigned_to: Option<u64>,
@@ -1284,7 +1284,7 @@ async fn assign(
 }
 
 /// What setting a priority asks for.
-#[derive(ActionInput)]
+#[derive(FormInput)]
 pub struct PriorityChange {
     #[form(options)]
     pub priority: TaskPriority,
@@ -1316,7 +1316,7 @@ impl Action<TaskResource> for SetTaskPriority {
 }
 
 /// What setting a status asks for.
-#[derive(ActionInput)]
+#[derive(FormInput)]
 pub struct TaskStatusChange {
     #[form(options)]
     pub status: TaskStatus,
@@ -1774,7 +1774,7 @@ impl Action<ExpenseResource> for ApproveExpense {
 }
 
 /// What a rejection asks for.
-#[derive(ActionInput)]
+#[derive(FormInput)]
 pub struct RejectionReason {
     #[form(label = "Reason for rejection", multiline = 3)]
     pub reason: String,

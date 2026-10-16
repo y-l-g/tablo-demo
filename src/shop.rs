@@ -1,7 +1,7 @@
 //! The shop resources: products, brands, categories, customers and orders.
 
 use tablo::{
-    Action, ActionInput, ActionLayout, Allow, BooleanColumn, ColumnWidth, ComputedColumn, Currency,
+    Action, FormInput, ActionLayout, Allow, BooleanColumn, ColumnWidth, ComputedColumn, Currency,
     DateColumn, DateFilter, Detail, FieldErrors, Grid, ImageColumn, Places, Relation,
     RelationColumn, Resource, ResourceDef, Schema, Section, SelectFilter, Table, TernaryFilter,
     TextColumn, lens, relation,
@@ -176,7 +176,7 @@ impl Action<ProductResource> for ToggleProductVisibility {
 }
 
 /// What showing or hiding the selection asks for.
-#[derive(ActionInput)]
+#[derive(FormInput)]
 pub struct VisibilityChoice {
     #[form(options = VisibilityOptions, label = "Visibility")]
     pub is_visible: bool,
@@ -224,7 +224,7 @@ impl Action<ProductResource> for BulkSetProductVisibility {
 }
 
 /// What `AdjustProductPrice` asks for.
-#[derive(ActionInput)]
+#[derive(FormInput)]
 pub struct PriceChange {
     #[form(label = "Price")]
     pub price: f64,
@@ -259,7 +259,7 @@ impl Action<ProductResource> for AdjustProductPrice {
 }
 
 /// What `AdjustProductStock` asks for.
-#[derive(ActionInput)]
+#[derive(FormInput)]
 pub struct StockChange {
     #[form(label = "Quantity")]
     pub qty: i64,
@@ -571,7 +571,7 @@ pub struct CustomerForm {
 }
 
 /// What `SendCustomerEmail` asks for.
-#[derive(ActionInput)]
+#[derive(FormInput)]
 pub struct EmailDraft {
     #[form(label = "Subject")]
     pub subject: String,
@@ -726,7 +726,7 @@ impl Action<OrderResource> for ProcessOrder {
 }
 
 /// What `ShipOrder` asks for.
-#[derive(ActionInput)]
+#[derive(FormInput)]
 pub struct ShippingNotes {
     #[form(label = "Shipping notes", multiline = 3)]
     pub notes: Option<String>,
