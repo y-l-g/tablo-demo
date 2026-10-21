@@ -6,7 +6,6 @@ use tablo::{
     RelationColumn, Resource, ResourceDef, Schema, Section, SelectFilter, Table, TernaryFilter,
     TextColumn, lens, relation,
 };
-use toasty::stmt::{List, Query};
 use topcoat::{Result, context::Cx};
 
 use crate::blog::CommentResource;
@@ -543,25 +542,7 @@ impl Resource for CustomerResource {
                 Address::fields().customer_id(),
             ))
             .action::<SendCustomerEmail>()
-    }
-
-    /// Hides the customers a delete has removed.
-    fn query(_cx: &Cx) -> Query<List<Customer>> {
-        Query::<List<Customer>>::all().filter(Customer::fields().deleted_at().is_none())
-    }
-
-    /// Hides the row instead of removing it, as `SoftDeletes` does.
-    async fn delete_record(
-        _cx: &Cx,
-        record: &Customer,
-        ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
-        Customer::filter(Customer::fields().id().eq(record.id))
-            .update()
-            .deleted_at(Some(jiff::Timestamp::now()))
-            .exec(ex)
-            .await?;
-        Ok(())
+            .soft_delete(lens!(Customer.deleted_at))
     }
 }
 
@@ -673,21 +654,7 @@ impl Resource for OrderResource {
             .action::<ShipOrder>()
             .action::<DeliverOrder>()
             .action::<CancelOrder>()
-    }
-
-    /// Hides the orders a delete has removed.
-    fn query(_cx: &Cx) -> Query<List<Order>> {
-        Query::<List<Order>>::all().filter(Order::fields().deleted_at().is_none())
-    }
-
-    /// Hides the row instead of removing it, as `SoftDeletes` does.
-    async fn delete_record(_cx: &Cx, record: &Order, ex: &mut dyn toasty::Executor) -> Result<()> {
-        Order::filter(Order::fields().id().eq(record.id))
-            .update()
-            .deleted_at(Some(jiff::Timestamp::now()))
-            .exec(ex)
-            .await?;
-        Ok(())
+            .soft_delete(lens!(Order.deleted_at))
     }
 }
 

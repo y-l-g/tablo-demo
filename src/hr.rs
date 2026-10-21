@@ -7,7 +7,6 @@ use tablo::{
     Relation, RelationColumn, Resource, ResourceDef, Schema, Section, SelectFilter, Table,
     TernaryFilter, TextColumn, lens, relation,
 };
-use toasty::stmt::{List, Query};
 use topcoat::{Result, context::Cx};
 
 use crate::enums::{
@@ -227,25 +226,7 @@ impl Resource for EmployeeResource {
             .action::<ChangeEmployeeDepartment>()
             .action::<BulkChangeEmployeeDepartment>()
             .action::<BulkSetEmployeeActive>()
-    }
-
-    /// Hides the employees a delete has removed.
-    fn query(_cx: &Cx) -> Query<List<Employee>> {
-        Query::<List<Employee>>::all().filter(Employee::fields().deleted_at().is_none())
-    }
-
-    /// Hides the row instead of removing it, as `SoftDeletes` does.
-    async fn delete_record(
-        _cx: &Cx,
-        record: &Employee,
-        ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
-        Employee::filter(Employee::fields().id().eq(record.id))
-            .update()
-            .deleted_at(Some(Timestamp::now()))
-            .exec(ex)
-            .await?;
-        Ok(())
+            .soft_delete(lens!(Employee.deleted_at))
     }
 }
 
@@ -851,25 +832,7 @@ impl Resource for ProjectResource {
             .action::<HoldProject>()
             .action::<ResumeProject>()
             .action::<CompleteProject>()
-    }
-
-    /// Hides the projects a delete has removed.
-    fn query(_cx: &Cx) -> Query<List<Project>> {
-        Query::<List<Project>>::all().filter(Project::fields().deleted_at().is_none())
-    }
-
-    /// Hides the row instead of removing it, as `SoftDeletes` does.
-    async fn delete_record(
-        _cx: &Cx,
-        record: &Project,
-        ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
-        Project::filter(Project::fields().id().eq(record.id))
-            .update()
-            .deleted_at(Some(Timestamp::now()))
-            .exec(ex)
-            .await?;
-        Ok(())
+            .soft_delete(lens!(Project.deleted_at))
     }
 }
 

@@ -17,7 +17,7 @@ the demo either omits the feature or uses the closest declaration it does have.
 | Polymorphic `morphTo` / `morphToMany` | two nullable foreign keys | Toasty has no polymorphic relation; the [design](https://github.com/tokio-rs/toasty/blob/main/docs/dev/design/polymorphic-relations.md) is a roadmap item, and today's documented shape is one nullable key per owner |
 | Spatie media library (`media` table, collections, conversions) | one `image` column holding the uploaded path | Tablo's file field binds one `String` column |
 | Spatie tags (`tags` + `taggables`, JSON names) | `posts.tags`, a comma-separated string | there is no tag input and no polymorphic pivot |
-| Soft deletes | a nullable `deleted_at` column, scoped out in the resource's `query`, set by `delete_record` | Tablo declares its own through `soft_delete(lens!(..))`; the demo keeps the column and scopes it by hand |
+| Soft deletes | a nullable `deleted_at` column, stamped by the framework's `soft_delete(lens(..))` | the Filament demo has no soft delete: it deletes for real |
 | `full_address`, a generated column | dropped | Toasty declares no generated column; the demo used it only as a relation manager's record title |
 | `hasManyThrough` (`Customer::payments`) | not rendered | Toasty has no through relation |
 | Pivot columns (`id`, timestamps on `product_category_product`, `team_user`) | dropped; a join model is keyed by its two foreign keys | a link Tablo writes sets the two keys and nothing else |
@@ -43,8 +43,11 @@ Details worth knowing:
   `Order::address` is a `has_one`.
 - **The delete that does not delete.** The Filament demo overrides Delete to show
   a warning instead of deleting. Tablo's Delete is built in and cannot be
-  replaced, so the demo deletes for real. Every soft-deleted table instead keeps
-  the row and hides it.
+  replaced, so the demo deletes for real. The customers, the orders, the
+  employees and the projects keep the row instead and hide it, through the
+  framework's own soft delete: their list offers a trash control, and a
+  trashed row offers Restore and Delete permanently. The Filament demo has no
+  counterpart for either.
 - **Team membership does not gate anything**, exactly as in the Filament demo,
   where `User::getTenants` returns every team and `canAccessTenant` answers
   `true`. The `team_user` rows are seeded and the memberships are all teams.
@@ -94,10 +97,10 @@ Details worth knowing:
   Filament marks required but declares nullable (a product's slug, SKU and
   barcode, an order's shipping price) stay optional here. `.unique()` is kept on
   the three email addresses.
-- **No `TrashedFilter`.** A filter narrows a query, so it cannot re-include the
-  rows `query()` hides. Tablo's own soft deletes declare a trash control and a
-  Restore and ForceDelete action through `soft_delete(lens!(..))`; the demo does
-  not declare them, so it has neither.
+- **The trash control is not a filter.** A filter narrows a query, so it cannot
+  re-include the rows a soft delete hides; Tablo's trash control replaces the
+  live-only default the query holds instead. The Filament demo's `TrashedFilter`
+  narrows the query, so it never shows a trashed row.
 - **No has-many-through in a relation table.** A customer's relation table is
   its addresses; payments hang off the order they belong to, so a customer's
   payments are reachable only through that order's page.
@@ -233,12 +236,3 @@ home page have no counterpart.
   the first such column takes the table's spare width. Filament has no cap, so a
   long name, email or title that the Filament demo shows whole can read
   `Alpine Du…` here.
-- **A unique value a hidden row holds answers 500.** The unique check probes
-  through the resource's `query`, so a soft-deleted row is invisible to it, while
-  the index the write then hits is not: reusing a deleted order's number, or a
-  deleted customer's email, answers "internal server error" instead of coming
-  back with "has already been taken" under the field. Four resources are affected
-  (orders, customers, employees, projects), and a value a *visible* row holds
-  behaves correctly. Tablo names this case and asks for a constraint scoped like
-  the query, which a soft delete cannot do, so the demo leaves it documented
-  rather than probing the table a second time by hand.
