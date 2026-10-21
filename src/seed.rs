@@ -2,6 +2,7 @@
 
 use jiff::{Span, Timestamp, Zoned, civil::Date};
 use serde_json::json;
+use tablo::rich_text::from_text;
 use toasty::Db;
 
 use crate::auth::create_user;
@@ -75,7 +76,7 @@ async fn seed_shop(
             name: name.to_string(),
             slug: slug(name),
             website: Some(format!("https://{}.example.com", slug(name))),
-            description: Some(format!("{name} makes everyday goods.")),
+            description: Some(from_text(&format!("{name} makes everyday goods."))),
             position: index as u16,
             is_visible: true,
             sort: Some(index as i64),
@@ -182,7 +183,7 @@ async fn seed_products(
                 customer_id: Some(rng.pick(customers).id),
                 product_id: Some(product.id),
                 title: Some(rng.pick(REVIEW_TITLES).to_string()),
-                content: Some(rng.pick(REVIEWS).to_string()),
+                content: Some(from_text(rng.pick(REVIEWS))),
                 is_visible: rng.boolean(80),
                 created_at: days_ago(&Zoned::now(), rng.below(700) as i64),
             })
@@ -380,7 +381,7 @@ async fn seed_blog(
                 post_category_id: Some(rng.pick(&categories).id),
                 title: title.clone(),
                 slug: slug(&title),
-                content: template.content.to_string(),
+                content: from_text(template.content),
                 published_at: rng.boolean(80).then_some(today),
                 tags: tags.join(","),
                 seo_title: Some(title),

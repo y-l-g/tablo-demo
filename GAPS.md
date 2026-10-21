@@ -123,8 +123,9 @@ Details worth knowing:
   must name a many-to-many field, so `skills` and `labels` are carried but not
   editable.
 - **No colour picker, tag input or masked input.** Colours are text fields, tags
-  are comma-separated, and a phone number is not masked. Tablo has a rich text
-  editor; the demo keeps the post's content a textarea.
+  are comma-separated, and a phone number is not masked. The rich text editor is
+  translated: the post's content, the order's notes, the product's description
+  and the comment's content are edited in one, as the Filament demo edits them.
 - **No tabs.** Filament's `Tabs` become sections one after another, and the list
   pages' status tabs (`getTabs()` with badges on orders, leave requests and
   expenses) become select filters.

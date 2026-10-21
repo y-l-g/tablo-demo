@@ -3,7 +3,7 @@
 use tablo::{
     Action, ActionLayout, Allow, BooleanColumn, Change, ComputedColumn, DateColumn, DateFilter,
     Detail, Grid, ImageColumn, Outcome, Places, Relation, RelationColumn, Resource, ResourceDef,
-    Schema, Section, Table, TextColumn, lens, relation,
+    RichTextColumn, Schema, Section, Table, TextColumn, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -30,7 +30,7 @@ impl Resource for PostResource {
                     Grid::new(2).schema((
                         c.title.placeholder("A title readers click"),
                         c.slug,
-                        c.content.multiline(8),
+                        c.content.rich_text(),
                         c.author_id.searchable().label("Author"),
                         c.post_category_id.searchable().label("Category"),
                         c.published_at.label("Publishing date"),
@@ -88,7 +88,7 @@ fn post_detail() -> Detail<Post> {
             )),
             ImageColumn::new(lens!(Post.image)).label("Image"),
         )),
-        Section::new("Content").columns(TextColumn::new(lens!(Post.content))),
+        Section::new("Content").columns(RichTextColumn::new(lens!(Post.content))),
     ))
 }
 
@@ -319,7 +319,7 @@ impl Resource for CommentResource {
                     ))
                     .label("Customer"),
                     BooleanColumn::new(lens!(Comment.is_visible)).label("Public visibility"),
-                    TextColumn::new(lens!(Comment.content)),
+                    RichTextColumn::new(lens!(Comment.content)),
                 )),
             ))
             .form(Schema::new(Section::new("Comment").schema((
@@ -328,7 +328,7 @@ impl Resource for CommentResource {
                 c.post_id.searchable().label("Post"),
                 c.product_id.searchable().label("Product"),
                 c.is_visible.label("Public visibility"),
-                c.content.multiline(5),
+                c.content.rich_text(),
             ))))
             .record_title(lens!(Comment.title))
     }

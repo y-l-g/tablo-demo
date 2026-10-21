@@ -3,8 +3,8 @@
 use tablo::{
     Action, ActionLayout, Allow, BooleanColumn, Change, ColumnWidth, ComputedColumn, Currency,
     DateColumn, DateFilter, Detail, FieldErrors, FormInput, Grid, ImageColumn, Outcome, Places,
-    Relation, RelationColumn, Resource, ResourceDef, Schema, Section, SelectFilter, Table,
-    TernaryFilter, TextColumn, lens, relation,
+    Relation, RelationColumn, Resource, ResourceDef, RichTextColumn, Schema, Section, SelectFilter,
+    Table, TernaryFilter, TextColumn, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -33,7 +33,7 @@ impl Resource for ProductResource {
             .form(Schema::new((
                 Section::new("Product").schema((
                     Grid::new(2).schema((c.name, c.slug)),
-                    c.description.multiline(4),
+                    c.description.rich_text(),
                 )),
                 Section::new("Images").schema(c.image.label("Image")),
                 Section::new("Pricing").schema(Grid::new(2).schema((
@@ -73,7 +73,7 @@ impl Resource for ProductResource {
                     .numeric(0)
                     .label("Quantity"),
                 DateColumn::new(lens!(Product.published_at)).label("Publishing date"),
-                TextColumn::new(lens!(Product.description)),
+                RichTextColumn::new(lens!(Product.description)),
             )),)))
             .record_title(lens!(Product.name))
             .relation(Relation::has_many::<CommentResource>(
@@ -637,7 +637,7 @@ impl Resource for OrderResource {
                             .label("Shipping cost"),
                         DateColumn::new(lens!(Order.created_at)).label("Order date"),
                     )),
-                    TextColumn::new(lens!(Order.notes)),
+                    RichTextColumn::new(lens!(Order.notes)),
                 )),
             ))
             .form(Schema::new(Section::new("Order").schema(
@@ -645,7 +645,7 @@ impl Resource for OrderResource {
                     c.number.label("Number"),
                     c.customer_id.searchable().label("Customer"),
                     c.status,
-                    c.notes.multiline(3),
+                    c.notes.rich_text(),
                 )),
             )))
             .record_title(lens!(Order.number))
