@@ -92,8 +92,12 @@ fn product_table() -> Table<Product> {
     Table::new((
         ImageColumn::new(lens!(Product.image)).label("Image"),
         TextColumn::new(lens!(Product.name)).searchable().sortable(),
-        RelationColumn::of::<BrandResource>(relation!(Product.brand)).label("Brand"),
-        BooleanColumn::new(lens!(Product.is_visible)).label("Visibility"),
+        RelationColumn::of::<BrandResource>(relation!(Product.brand))
+            .label("Brand")
+            .toggleable(),
+        BooleanColumn::new(lens!(Product.is_visible))
+            .label("Visibility")
+            .toggleable(),
         TextColumn::new(lens!(Product.price))
             .money(Currency::USD)
             .sortable()
@@ -101,17 +105,23 @@ fn product_table() -> Table<Product> {
         TextColumn::new(lens!(Product.sku))
             .label("SKU")
             .searchable()
-            .sortable(),
+            .sortable()
+            .toggleable(),
         TextColumn::new(lens!(Product.qty))
             .numeric(0)
             .label("Quantity")
-            .sortable(),
+            .sortable()
+            .toggleable(),
         TextColumn::new(lens!(Product.security_stock))
             .numeric(0)
-            .sortable(),
+            .sortable()
+            .toggleable()
+            .hidden_by_default(),
         DateColumn::new(lens!(Product.published_at))
             .label("Publishing date")
-            .sortable(),
+            .sortable()
+            .toggleable()
+            .hidden_by_default(),
     ))
     .default_sort(lens!(Product.name))
     .action_layout(ActionLayout::Menu)
@@ -685,15 +695,19 @@ impl Resource for OrderResource {
 fn order_table() -> Table<Order> {
     Table::new((
         TextColumn::new(lens!(Order.number)).searchable().sortable(),
-        RelationColumn::of::<CustomerResource>(relation!(Order.customer)).label("Customer"),
+        RelationColumn::of::<CustomerResource>(relation!(Order.customer))
+            .label("Customer")
+            .toggleable(),
         TextColumn::new(lens!(Order.status)).badge(),
         TextColumn::new(lens!(Order.total_price)).money(Currency::USD),
         TextColumn::new(lens!(Order.shipping_price))
             .money(Currency::USD)
-            .label("Shipping cost"),
+            .label("Shipping cost")
+            .toggleable(),
         DateColumn::new(lens!(Order.created_at))
             .label("Order date")
-            .sortable(),
+            .sortable()
+            .toggleable(),
     ))
     .default_sort_desc(lens!(Order.created_at))
     .action_layout(ActionLayout::Menu)

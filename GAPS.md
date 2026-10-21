@@ -76,8 +76,10 @@ Details worth knowing:
   date. The demo's address table sorts by city, and its city column is
   sortable where the Filament demo's is not.
 - **No inline editing.** `SelectColumn` (the leave request status in the list) and
-  `TextColumn::toggleable()`/`toggledHiddenByDefault` have no equivalent: every
-  declared column shows, and a value is edited on the form.
+  `TextColumn::toggleable()` have no equivalent: every declared column shows,
+  and a value is edited on the form. The table's own column toggles are
+  translated: the products and the orders let each reader hide a column from
+  the list, and the choice is kept per user and per resource.
 - **No summarizers.** `Sum`, `Average`, `Count` and `Range` on a column are not
   translated; there is no aggregate row.
 - **No query builder.** The product list's `QueryBuilder` with arbitrary
