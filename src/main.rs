@@ -3,7 +3,7 @@ use toasty::Db;
 #[tokio::main]
 async fn main() {
     let mut db = Db::builder()
-        .models(toasty::models!(
+        .models(tablo::models!(
             tablo_demo::models::Address,
             tablo_demo::models::Comment,
             tablo_demo::models::Author,
@@ -28,8 +28,7 @@ async fn main() {
             tablo_demo::models::ExpenseLine,
             tablo_demo::models::User,
             tablo_demo::models::Team,
-            tablo_demo::models::TeamUser,
-            tablo::auth::AuthSession
+            tablo_demo::models::TeamUser
         ))
         .connect("sqlite::memory:")
         .await

@@ -2,8 +2,8 @@
 
 use tablo::{
     Action, ActionLayout, Allow, BooleanColumn, ComputedColumn, DateColumn, DateFilter, Detail,
-    Grid, ImageColumn, Places, Relation, RelationColumn, Resource, ResourceDef, Schema, Section,
-    Table, TextColumn, lens, relation,
+    Grid, ImageColumn, Outcome, Places, Relation, RelationColumn, Resource, ResourceDef, Schema,
+    Section, Table, TextColumn, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -115,7 +115,12 @@ impl Action<PostResource> for TogglePostPublish {
     const NAME: &'static str = "toggle-publish";
     const PLACES: Places = Places::ROW.with(Places::DETAIL);
 
-    async fn run(_cx: &Cx, posts: &[Post], (): (), ex: &mut dyn toasty::Executor) -> Result<()> {
+    async fn run(
+        _cx: &Cx,
+        posts: &[Post],
+        (): (),
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<Outcome> {
         for post in posts {
             let published_at = if post.is_published() {
                 None
@@ -128,7 +133,7 @@ impl Action<PostResource> for TogglePostPublish {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 }
 
@@ -204,7 +209,7 @@ impl Action<PostCategoryResource> for ToggleCategoryVisibility {
         categories: &[PostCategory],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for category in categories {
             PostCategory::filter(PostCategory::fields().id().eq(category.id))
                 .update()
@@ -212,7 +217,7 @@ impl Action<PostCategoryResource> for ToggleCategoryVisibility {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 }
 

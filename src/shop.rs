@@ -1,8 +1,8 @@
 //! The shop resources: products, brands, categories, customers and orders.
 
 use tablo::{
-    Action, FormInput, ActionLayout, Allow, BooleanColumn, ColumnWidth, ComputedColumn, Currency,
-    DateColumn, DateFilter, Detail, FieldErrors, Grid, ImageColumn, Places, Relation,
+    Action, ActionLayout, Allow, BooleanColumn, ColumnWidth, ComputedColumn, Currency, DateColumn,
+    DateFilter, Detail, FieldErrors, FormInput, Grid, ImageColumn, Outcome, Places, Relation,
     RelationColumn, Resource, ResourceDef, Schema, Section, SelectFilter, Table, TernaryFilter,
     TextColumn, lens, relation,
 };
@@ -163,7 +163,7 @@ impl Action<ProductResource> for ToggleProductVisibility {
         products: &[Product],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for product in products {
             Product::filter(Product::fields().id().eq(product.id))
                 .update()
@@ -171,7 +171,7 @@ impl Action<ProductResource> for ToggleProductVisibility {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 }
 
@@ -207,7 +207,7 @@ impl Action<ProductResource> for BulkSetProductVisibility {
         products: &[Product],
         choice: VisibilityChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for product in products {
             Product::filter(Product::fields().id().eq(product.id))
                 .update()
@@ -215,7 +215,7 @@ impl Action<ProductResource> for BulkSetProductVisibility {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 
     fn label(_cx: &Cx) -> String {
@@ -245,7 +245,7 @@ impl Action<ProductResource> for AdjustProductPrice {
         products: &[Product],
         change: PriceChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for product in products {
             Product::filter(Product::fields().id().eq(product.id))
                 .update()
@@ -254,7 +254,7 @@ impl Action<ProductResource> for AdjustProductPrice {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 }
 
@@ -286,7 +286,7 @@ impl Action<ProductResource> for AdjustProductStock {
         products: &[Product],
         change: StockChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for product in products {
             Product::filter(Product::fields().id().eq(product.id))
                 .update()
@@ -294,7 +294,7 @@ impl Action<ProductResource> for AdjustProductStock {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 }
 
@@ -369,7 +369,12 @@ impl Action<BrandResource> for ToggleBrandVisibility {
     const NAME: &'static str = "toggle-visibility";
     const PLACES: Places = Places::ROW;
 
-    async fn run(_cx: &Cx, brands: &[Brand], (): (), ex: &mut dyn toasty::Executor) -> Result<()> {
+    async fn run(
+        _cx: &Cx,
+        brands: &[Brand],
+        (): (),
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<Outcome> {
         for brand in brands {
             Brand::filter(Brand::fields().id().eq(brand.id))
                 .update()
@@ -377,7 +382,7 @@ impl Action<BrandResource> for ToggleBrandVisibility {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 }
 
@@ -465,7 +470,7 @@ impl Action<ProductCategoryResource> for ToggleCategoryVisibility {
         categories: &[ProductCategory],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for category in categories {
             ProductCategory::filter(ProductCategory::fields().id().eq(category.id))
                 .update()
@@ -473,7 +478,7 @@ impl Action<ProductCategoryResource> for ToggleCategoryVisibility {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 }
 
@@ -503,7 +508,7 @@ impl Resource for CustomerResource {
                     ComputedColumn::new("Country", |customer: &Customer| {
                         customer_country(customer).unwrap_or_default()
                     })
-                    .include(Customer::fields().addresses()),
+                    .include_unscoped(Customer::fields().addresses()),
                     TextColumn::new(lens!(Customer.phone))
                         .searchable()
                         .sortable(),
@@ -592,8 +597,8 @@ impl Action<CustomerResource> for SendCustomerEmail {
         _customers: &[Customer],
         _draft: EmailDraft,
         _ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
-        Ok(())
+    ) -> Result<Outcome> {
+        Ok(Outcome::done())
     }
 
     fn success(_cx: &Cx, count: usize) -> String {
@@ -716,7 +721,12 @@ impl Action<OrderResource> for ProcessOrder {
         order.status == OrderStatus::New
     }
 
-    async fn run(_cx: &Cx, orders: &[Order], (): (), ex: &mut dyn toasty::Executor) -> Result<()> {
+    async fn run(
+        _cx: &Cx,
+        orders: &[Order],
+        (): (),
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<Outcome> {
         set_status(orders, OrderStatus::Processing, ex).await
     }
 
@@ -749,7 +759,7 @@ impl Action<OrderResource> for ShipOrder {
         orders: &[Order],
         shipping: ShippingNotes,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for order in orders {
             Order::filter(Order::fields().id().eq(order.id))
                 .update()
@@ -758,7 +768,7 @@ impl Action<OrderResource> for ShipOrder {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 
     fn success(_cx: &Cx, _count: usize) -> String {
@@ -779,7 +789,12 @@ impl Action<OrderResource> for DeliverOrder {
         order.status == OrderStatus::Shipped
     }
 
-    async fn run(_cx: &Cx, orders: &[Order], (): (), ex: &mut dyn toasty::Executor) -> Result<()> {
+    async fn run(
+        _cx: &Cx,
+        orders: &[Order],
+        (): (),
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<Outcome> {
         set_status(orders, OrderStatus::Delivered, ex).await
     }
 
@@ -804,7 +819,12 @@ impl Action<OrderResource> for CancelOrder {
         )
     }
 
-    async fn run(_cx: &Cx, orders: &[Order], (): (), ex: &mut dyn toasty::Executor) -> Result<()> {
+    async fn run(
+        _cx: &Cx,
+        orders: &[Order],
+        (): (),
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<Outcome> {
         set_status(orders, OrderStatus::Cancelled, ex).await
     }
 
@@ -818,7 +838,7 @@ async fn set_status(
     orders: &[Order],
     status: OrderStatus,
     ex: &mut dyn toasty::Executor,
-) -> Result<()> {
+) -> Result<Outcome> {
     for order in orders {
         Order::filter(Order::fields().id().eq(order.id))
             .update()
@@ -826,7 +846,7 @@ async fn set_status(
             .exec(&mut *ex)
             .await?;
     }
-    Ok(())
+    Ok(Outcome::done())
 }
 
 /// One line of an order, which the order page lists.

@@ -2,8 +2,8 @@
 
 use jiff::{Span, Timestamp, Zoned};
 use tablo::{
-    Action, FormInput, ActionLayout, Allow, BooleanColumn, ColorColumn, ComputedColumn,
-    CountColumn, Currency, DateColumn, DateFilter, Detail, FileColumn, Grid, Places, RecordForm,
+    Action, ActionLayout, Allow, BooleanColumn, ColorColumn, ComputedColumn, CountColumn, Currency,
+    DateColumn, DateFilter, Detail, FileColumn, FormInput, Grid, Outcome, Places, RecordForm,
     Relation, RelationColumn, Resource, ResourceDef, Schema, Section, SelectFilter, Table,
     TernaryFilter, TextColumn, lens, relation,
 };
@@ -40,7 +40,8 @@ impl Resource for DepartmentResource {
                         .sortable(),
                     RelationColumn::of::<DepartmentResource>(relation!(Department.parent))
                         .label("Parent"),
-                    CountColumn::new(relation!(Department.employees)).label("Headcount"),
+                    CountColumn::of::<EmployeeResource>(relation!(Department.employees))
+                        .label("Headcount"),
                     TextColumn::new(lens!(Department.budget))
                         .money(Currency::USD)
                         .sortable(),
@@ -114,7 +115,7 @@ impl Action<DepartmentResource> for AdjustDepartmentBudget {
         departments: &[Department],
         change: BudgetChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for department in departments {
             Department::filter(Department::fields().id().eq(department.id))
                 .update()
@@ -122,7 +123,7 @@ impl Action<DepartmentResource> for AdjustDepartmentBudget {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 
     fn success(_cx: &Cx, _count: usize) -> String {
@@ -143,7 +144,7 @@ impl Action<DepartmentResource> for ToggleDepartmentActive {
         departments: &[Department],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for department in departments {
             Department::filter(Department::fields().id().eq(department.id))
                 .update()
@@ -151,7 +152,7 @@ impl Action<DepartmentResource> for ToggleDepartmentActive {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 }
 
@@ -313,7 +314,7 @@ impl Action<EmployeeResource> for ToggleEmployeeActive {
         employees: &[Employee],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for employee in employees {
             Employee::filter(Employee::fields().id().eq(employee.id))
                 .update()
@@ -321,7 +322,7 @@ impl Action<EmployeeResource> for ToggleEmployeeActive {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 }
 
@@ -345,7 +346,7 @@ impl Action<EmployeeResource> for ChangeEmployeeDepartment {
         employees: &[Employee],
         choice: DepartmentChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         move_department(employees, choice.department_id, ex).await
     }
 }
@@ -367,7 +368,7 @@ impl Action<EmployeeResource> for BulkChangeEmployeeDepartment {
         employees: &[Employee],
         choice: DepartmentChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         move_department(employees, choice.department_id, ex).await
     }
 
@@ -381,7 +382,7 @@ async fn move_department(
     employees: &[Employee],
     department_id: Option<u64>,
     ex: &mut dyn toasty::Executor,
-) -> Result<()> {
+) -> Result<Outcome> {
     for employee in employees {
         Employee::filter(Employee::fields().id().eq(employee.id))
             .update()
@@ -389,7 +390,7 @@ async fn move_department(
             .exec(&mut *ex)
             .await?;
     }
-    Ok(())
+    Ok(Outcome::done())
 }
 
 /// What a yes or no choice asks for.
@@ -428,7 +429,7 @@ impl Action<EmployeeResource> for BulkSetEmployeeActive {
         employees: &[Employee],
         choice: ActiveChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for employee in employees {
             Employee::filter(Employee::fields().id().eq(employee.id))
                 .update()
@@ -436,7 +437,7 @@ impl Action<EmployeeResource> for BulkSetEmployeeActive {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 
     fn success(_cx: &Cx, count: usize) -> String {
@@ -622,7 +623,7 @@ impl Action<LeaveRequestResource> for ApproveLeaveRequest {
         requests: &[LeaveRequest],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         review(requests, LeaveStatus::Approved, None, ex).await
     }
 
@@ -648,7 +649,7 @@ impl Action<LeaveRequestResource> for RejectLeaveRequest {
         requests: &[LeaveRequest],
         rejection: Rejection,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         review(
             requests,
             LeaveStatus::Rejected,
@@ -685,7 +686,7 @@ impl Action<LeaveRequestResource> for BulkApproveLeaveRequests {
         requests: &[LeaveRequest],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         review(requests, LeaveStatus::Approved, None, ex).await
     }
 
@@ -715,7 +716,7 @@ impl Action<LeaveRequestResource> for BulkRejectLeaveRequests {
         requests: &[LeaveRequest],
         rejection: Rejection,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         review(
             requests,
             LeaveStatus::Rejected,
@@ -736,7 +737,7 @@ async fn review(
     status: LeaveStatus,
     notes: Option<String>,
     ex: &mut dyn toasty::Executor,
-) -> Result<()> {
+) -> Result<Outcome> {
     for request in requests {
         let mut update = LeaveRequest::filter(LeaveRequest::fields().id().eq(request.id)).update();
         update = update.status(status).reviewed_at(Some(Timestamp::now()));
@@ -746,7 +747,7 @@ async fn review(
         }
         update.exec(&mut *ex).await?;
     }
-    Ok(())
+    Ok(Outcome::done())
 }
 
 /// Projects.
@@ -918,7 +919,7 @@ impl Action<ProjectResource> for ChangeProjectStatus {
         projects: &[Project],
         change: StatusChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         set_project_status(projects, change.status, ex).await
     }
 
@@ -945,7 +946,7 @@ impl Action<ProjectResource> for HoldProject {
         projects: &[Project],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         set_project_status(projects, ProjectStatus::OnHold, ex).await
     }
 
@@ -971,7 +972,7 @@ impl Action<ProjectResource> for ResumeProject {
         projects: &[Project],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         set_project_status(projects, ProjectStatus::Active, ex).await
     }
 
@@ -1001,7 +1002,7 @@ impl Action<ProjectResource> for CompleteProject {
         projects: &[Project],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for project in projects {
             Project::filter(Project::fields().id().eq(project.id))
                 .update()
@@ -1010,7 +1011,7 @@ impl Action<ProjectResource> for CompleteProject {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 
     fn success(_cx: &Cx, _count: usize) -> String {
@@ -1023,7 +1024,7 @@ async fn set_project_status(
     projects: &[Project],
     status: ProjectStatus,
     ex: &mut dyn toasty::Executor,
-) -> Result<()> {
+) -> Result<Outcome> {
     for project in projects {
         Project::filter(Project::fields().id().eq(project.id))
             .update()
@@ -1031,7 +1032,7 @@ async fn set_project_status(
             .exec(&mut *ex)
             .await?;
     }
-    Ok(())
+    Ok(Outcome::done())
 }
 
 /// Tasks.
@@ -1144,7 +1145,12 @@ impl Action<TaskResource> for StartTask {
         matches!(task.status, TaskStatus::Backlog | TaskStatus::Todo)
     }
 
-    async fn run(_cx: &Cx, tasks: &[Task], (): (), ex: &mut dyn toasty::Executor) -> Result<()> {
+    async fn run(
+        _cx: &Cx,
+        tasks: &[Task],
+        (): (),
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<Outcome> {
         set_task_status(tasks, TaskStatus::InProgress, ex).await
     }
 
@@ -1165,7 +1171,12 @@ impl Action<TaskResource> for SendTaskToReview {
         task.status == TaskStatus::InProgress
     }
 
-    async fn run(_cx: &Cx, tasks: &[Task], (): (), ex: &mut dyn toasty::Executor) -> Result<()> {
+    async fn run(
+        _cx: &Cx,
+        tasks: &[Task],
+        (): (),
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<Outcome> {
         set_task_status(tasks, TaskStatus::InReview, ex).await
     }
 
@@ -1198,7 +1209,7 @@ impl Action<TaskResource> for CompleteTask {
         tasks: &[Task],
         completion: TaskCompletion,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for task in tasks {
             Task::filter(Task::fields().id().eq(task.id))
                 .update()
@@ -1208,7 +1219,7 @@ impl Action<TaskResource> for CompleteTask {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 
     fn success(_cx: &Cx, _count: usize) -> String {
@@ -1236,7 +1247,7 @@ impl Action<TaskResource> for AssignTask {
         tasks: &[Task],
         choice: AssigneeChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         assign(tasks, choice.assigned_to, ex).await
     }
 }
@@ -1258,7 +1269,7 @@ impl Action<TaskResource> for BulkAssignTask {
         tasks: &[Task],
         choice: AssigneeChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         assign(tasks, choice.assigned_to, ex).await
     }
 
@@ -1272,7 +1283,7 @@ async fn assign(
     tasks: &[Task],
     assigned_to: Option<u64>,
     ex: &mut dyn toasty::Executor,
-) -> Result<()> {
+) -> Result<Outcome> {
     for task in tasks {
         Task::filter(Task::fields().id().eq(task.id))
             .update()
@@ -1280,7 +1291,7 @@ async fn assign(
             .exec(&mut *ex)
             .await?;
     }
-    Ok(())
+    Ok(Outcome::done())
 }
 
 /// What setting a priority asks for.
@@ -1303,7 +1314,7 @@ impl Action<TaskResource> for SetTaskPriority {
         tasks: &[Task],
         change: PriorityChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for task in tasks {
             Task::filter(Task::fields().id().eq(task.id))
                 .update()
@@ -1311,7 +1322,7 @@ impl Action<TaskResource> for SetTaskPriority {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 }
 
@@ -1339,7 +1350,7 @@ impl Action<TaskResource> for BulkSetTaskStatus {
         tasks: &[Task],
         change: TaskStatusChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         set_task_status(tasks, change.status, ex).await
     }
 
@@ -1353,7 +1364,7 @@ async fn set_task_status(
     tasks: &[Task],
     status: TaskStatus,
     ex: &mut dyn toasty::Executor,
-) -> Result<()> {
+) -> Result<Outcome> {
     for task in tasks {
         Task::filter(Task::fields().id().eq(task.id))
             .update()
@@ -1361,7 +1372,7 @@ async fn set_task_status(
             .exec(&mut *ex)
             .await?;
     }
-    Ok(())
+    Ok(Outcome::done())
 }
 
 /// Timesheets.
@@ -1517,7 +1528,7 @@ impl Action<TimesheetResource> for ToggleTimesheetBillable {
         timesheets: &[Timesheet],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for timesheet in timesheets {
             Timesheet::filter(Timesheet::fields().id().eq(timesheet.id))
                 .update()
@@ -1525,7 +1536,7 @@ impl Action<TimesheetResource> for ToggleTimesheetBillable {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 }
 
@@ -1543,7 +1554,7 @@ impl Action<TimesheetResource> for BulkMarkBillable {
         timesheets: &[Timesheet],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         set_billable(timesheets, true, ex).await
     }
 
@@ -1566,7 +1577,7 @@ impl Action<TimesheetResource> for BulkMarkNonBillable {
         timesheets: &[Timesheet],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         set_billable(timesheets, false, ex).await
     }
 
@@ -1580,7 +1591,7 @@ async fn set_billable(
     timesheets: &[Timesheet],
     billable: bool,
     ex: &mut dyn toasty::Executor,
-) -> Result<()> {
+) -> Result<Outcome> {
     for timesheet in timesheets {
         Timesheet::filter(Timesheet::fields().id().eq(timesheet.id))
             .update()
@@ -1588,7 +1599,7 @@ async fn set_billable(
             .exec(&mut *ex)
             .await?;
     }
-    Ok(())
+    Ok(Outcome::done())
 }
 
 /// Expenses.
@@ -1716,7 +1727,7 @@ impl Action<ExpenseResource> for SubmitExpense {
         expenses: &[Expense],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for expense in expenses {
             if expense.total_amount <= 0.0 {
                 return Err(topcoat::Error::msg(
@@ -1730,7 +1741,7 @@ impl Action<ExpenseResource> for SubmitExpense {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 
     fn success(_cx: &Cx, count: usize) -> String {
@@ -1756,7 +1767,7 @@ impl Action<ExpenseResource> for ApproveExpense {
         expenses: &[Expense],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for expense in expenses {
             Expense::filter(Expense::fields().id().eq(expense.id))
                 .update()
@@ -1765,7 +1776,7 @@ impl Action<ExpenseResource> for ApproveExpense {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 
     fn success(_cx: &Cx, _count: usize) -> String {
@@ -1797,7 +1808,7 @@ impl Action<ExpenseResource> for RejectExpense {
         expenses: &[Expense],
         rejection: RejectionReason,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for expense in expenses {
             Expense::filter(Expense::fields().id().eq(expense.id))
                 .update()
@@ -1806,7 +1817,7 @@ impl Action<ExpenseResource> for RejectExpense {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 
     fn success(_cx: &Cx, _count: usize) -> String {
@@ -1832,7 +1843,7 @@ impl Action<ExpenseResource> for ReimburseExpense {
         expenses: &[Expense],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for expense in expenses {
             Expense::filter(Expense::fields().id().eq(expense.id))
                 .update()
@@ -1840,7 +1851,7 @@ impl Action<ExpenseResource> for ReimburseExpense {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 
     fn success(_cx: &Cx, _count: usize) -> String {
@@ -1861,7 +1872,7 @@ impl Action<ExpenseResource> for FlagExpense {
         expenses: &[Expense],
         flag: RejectionReason,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<Outcome> {
         for expense in expenses {
             Expense::filter(Expense::fields().id().eq(expense.id))
                 .update()
@@ -1870,7 +1881,7 @@ impl Action<ExpenseResource> for FlagExpense {
                 .exec(&mut *ex)
                 .await?;
         }
-        Ok(())
+        Ok(Outcome::done())
     }
 
     fn success(_cx: &Cx, _count: usize) -> String {

@@ -17,14 +17,14 @@ the demo either omits the feature or uses the closest declaration it does have.
 | Polymorphic `morphTo` / `morphToMany` | two nullable foreign keys | Toasty has no polymorphic relation; the [design](https://github.com/tokio-rs/toasty/blob/main/docs/dev/design/polymorphic-relations.md) is a roadmap item, and today's documented shape is one nullable key per owner |
 | Spatie media library (`media` table, collections, conversions) | one `image` column holding the uploaded path | Tablo's file field binds one `String` column |
 | Spatie tags (`tags` + `taggables`, JSON names) | `posts.tags`, a comma-separated string | there is no tag input and no polymorphic pivot |
-| Soft deletes | a nullable `deleted_at` column, scoped out in the resource's `query`, set by `delete_record` | kept, but without the filter and the actions below |
+| Soft deletes | a nullable `deleted_at` column, scoped out in the resource's `query`, set by `delete_record` | Tablo declares its own through `soft_delete(lens!(..))`; the demo keeps the column and scopes it by hand |
 | `full_address`, a generated column | dropped | Toasty declares no generated column; the demo used it only as a relation manager's record title |
 | `hasManyThrough` (`Customer::payments`) | not rendered | Toasty has no through relation |
 | Pivot columns (`id`, timestamps on `product_category_product`, `team_user`) | dropped; a join model is keyed by its two foreign keys | a link Tablo writes sets the two keys and nothing else |
 | Auto-increment team ids | `Team.id` is a UUID | Tablo's tenant id is a `uuid::Uuid` |
 | `decimal(10,2)` money columns | `f64` | Tablo binds no decimal type in a form or a table, and an app cannot add one: `TypedValue` is foreign to both `rust_decimal` and the app |
 | `json` columns | `Vec<String>` for skills and labels, `Json<Value>` for metadata and the project plan | Toasty stores lists and JSON directly |
-| `email_verified_at`, `remember_token` | carried, unused | Tablo ships no email verification or "remember me" |
+| `email_verified_at`, `remember_token` | carried, unused | Tablo ships email verification and a password reset for its own authenticator; the demo's custom one has neither |
 | `failed_jobs`, `job_batches`, `personal_access_tokens`, `settings` | dropped | infrastructure tables: the demo queues nothing, exposes no API and stores no settings |
 | Spatie's media relation on `Brand` and `ProductCategory` | dropped | neither registers a collection and no form, table or factory uploads for them |
 | `expenses.receipt_path`, `employees.skills`, `tasks.labels` nullable | not null, defaulting to empty | a Tablo file field binds a `String`, and a list column is always present |
@@ -90,8 +90,9 @@ Details worth knowing:
   barcode, an order's shipping price) stay optional here. `.unique()` is kept on
   the three email addresses.
 - **No `TrashedFilter`.** A filter narrows a query, so it cannot re-include the
-  rows `query()` hides. For the same reason there is no Restore or ForceDelete
-  action: a hidden row has no page to run one from.
+  rows `query()` hides. Tablo's own soft deletes declare a trash control and a
+  Restore and ForceDelete action through `soft_delete(lens!(..))`; the demo does
+  not declare them, so it has neither.
 - **No has-many-through in a relation table.** A customer's relation table is
   its addresses; payments hang off the order they belong to, so a customer's
   payments are reachable only through that order's page.
@@ -113,9 +114,9 @@ Details worth knowing:
 - **No checkbox list over a `Vec<String>`.** A multiple choice in a resource form
   must name a many-to-many field, so `skills` and `labels` are carried but not
   editable.
-- **No colour picker, rich editor, tag input or masked input.** Colours are text
-  fields, rich text is a textarea (and the demo's HTML shows as text), tags are
-  comma-separated, and a phone number is not masked.
+- **No colour picker, tag input or masked input.** Colours are text fields, tags
+  are comma-separated, and a phone number is not masked. Tablo has a rich text
+  editor; the demo keeps the post's content a textarea.
 - **No tabs.** Filament's `Tabs` become sections one after another, and the list
   pages' status tabs (`getTabs()` with badges on orders, leave requests and
   expenses) become select filters.
@@ -153,9 +154,10 @@ Details worth knowing:
   rather than greying out.
 - **No row classes.** `recordClasses` (the red rows for over-budget departments
   and overdue tasks) has no equivalent.
-- **No navigation badges, no global search, no database notifications.** Tablo
+- **No navigation badges, no global search, no stored notifications.** Tablo
   shows one toast per write; the sidebar carries no counts, there is no
-  `command+k` search, and nothing is stored for later.
+  `command+k` search, and the demo declares no notification store, so nothing is
+  kept for later.
 
 ## Auth and panels
 
@@ -177,7 +179,8 @@ Details worth knowing:
 
 ## Imports and exports
 
-- **No CSV import.** `ImportAction` and the two importers have no counterpart.
+- **No CSV import.** `ImportAction` and the two importers are not translated:
+  Tablo imports a CSV through the create form, which the demo does not declare.
 - **Export is built in.** Every list exports its current search, filters and sort
   as CSV through the list header, so the demo needs no exporter classes.
 
@@ -231,7 +234,3 @@ home page have no counterpart.
   behaves correctly. Tablo names this case and asks for a constraint scoped like
   the query, which a soft delete cannot do, so the demo leaves it documented
   rather than probing the table a second time by hand.
-- **A count over a relation includes hidden rows.** The department list's
-  headcount is `CountColumn`, which counts the related rows directly rather than
-  through the related resource's query, so a soft-deleted employee is still
-  counted there while the employee list hides it.

@@ -79,7 +79,7 @@ impl Authenticator for DemoAuth {
     ) -> topcoat::Result<Option<SignedIn>> {
         let user = Self::by_email(cx, login).await?;
         // An unknown address costs the same work as a wrong password.
-        if !verify_password(password, user.as_ref().map(|user| user.password.as_str())) {
+        if !verify_password(password, user.as_ref().map(|user| user.password.as_str())).await {
             return Ok(None);
         }
         match user {
@@ -150,7 +150,7 @@ impl Registrar for DemoAuth {
         let user = toasty::create!(User {
             name: sign_up.name,
             email: sign_up.email,
-            password: hash_password(&sign_up.password)?,
+            password: hash_password(&sign_up.password).await?,
         })
         .exec(&mut *ex)
         .await?;
@@ -168,7 +168,9 @@ pub async fn create_user(
     toasty::create!(User {
         name: name.to_string(),
         email: email.to_string(),
-        password: hash_password(password).expect("hash the demo password"),
+        password: hash_password(password)
+            .await
+            .expect("hash the demo password"),
     })
     .exec(db)
     .await
