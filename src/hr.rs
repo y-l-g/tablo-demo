@@ -48,6 +48,7 @@ impl Resource for DepartmentResource {
                     ColorColumn::new(lens!(Department.color)),
                     BooleanColumn::new(lens!(Department.is_active)).label("Active"),
                 ))
+                .default_sort(lens!(Department.name))
                 .action_layout(ActionLayout::Menu),
             )
             .detail(Detail::new(
@@ -272,6 +273,7 @@ fn employee_table() -> Table<Employee> {
             .label("Active")
             .sortable(),
     ))
+    .default_sort(lens!(Employee.name))
     .action_layout(ActionLayout::Menu)
     .filters((
         SelectFilter::of(lens!(Employee.employment_type)),
@@ -477,6 +479,7 @@ impl Resource for LeaveRequestResource {
                     RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.approver))
                         .label("Approver"),
                 ))
+                .default_sort_desc(lens!(LeaveRequest.start_date))
                 .action_layout(ActionLayout::Menu)
                 .filters((
                     SelectFilter::of(lens!(LeaveRequest.status)),
@@ -783,6 +786,7 @@ impl Resource for ProjectResource {
                     DateColumn::new(lens!(Project.start_date)).sortable(),
                     DateColumn::new(lens!(Project.end_date)).sortable(),
                 ))
+                .default_sort_desc(lens!(Project.start_date))
                 .action_layout(ActionLayout::Menu)
                 .filters((
                     SelectFilter::of(lens!(Project.status)),
@@ -1417,6 +1421,7 @@ impl Resource for TimesheetResource {
                         .money(Currency::USD)
                         .sortable(),
                 ))
+                .default_sort_desc(lens!(Timesheet.date))
                 .action_layout(ActionLayout::Menu)
                 .filters((
                     SelectFilter::relationship::<EmployeeResource>(lens!(Timesheet.employee_id))

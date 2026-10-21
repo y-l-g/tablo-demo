@@ -64,6 +64,7 @@ fn post_table() -> Table<Post> {
             .label("Publishing date")
             .sortable(),
     ))
+    .default_sort_desc(lens!(Post.published_at))
     .action_layout(ActionLayout::Menu)
     .filters((DateFilter::new(lens!(Post.published_at))
         .label("Publishing date")
@@ -166,6 +167,7 @@ impl Resource for PostCategoryResource {
                         .label("Last modified at")
                         .sortable(),
                 ))
+                .default_sort(lens!(PostCategory.name))
                 .action_layout(ActionLayout::Menu),
             )
             .detail(Detail::new(Section::new("Category").columns((
@@ -236,15 +238,18 @@ impl Resource for AuthorResource {
             .navigation_group("Blog")
             .navigation_order(2)
             .policy(Allow)
-            .table(Table::new((
-                TextColumn::new(lens!(Author.name)).searchable().sortable(),
-                TextColumn::new(lens!(Author.email))
-                    .label("Email address")
-                    .searchable()
-                    .sortable(),
-                TextColumn::new(lens!(Author.github_handle)).label("GitHub handle"),
-                TextColumn::new(lens!(Author.twitter_handle)).label("Twitter handle"),
-            )))
+            .table(
+                Table::new((
+                    TextColumn::new(lens!(Author.name)).searchable().sortable(),
+                    TextColumn::new(lens!(Author.email))
+                        .label("Email address")
+                        .searchable()
+                        .sortable(),
+                    TextColumn::new(lens!(Author.github_handle)).label("GitHub handle"),
+                    TextColumn::new(lens!(Author.twitter_handle)).label("Twitter handle"),
+                ))
+                .default_sort(lens!(Author.name)),
+            )
             .detail(Detail::new(Section::new("Author").columns((
                 TextColumn::new(lens!(Author.name)),
                 TextColumn::new(lens!(Author.email)).label("Email address"),

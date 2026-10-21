@@ -69,9 +69,12 @@ Details worth knowing:
 - **Nested slugs.** Filament mounts `blog/posts`, `shop/orders`, `hr/employees`.
   A Tablo slug is one URL segment, so every list lives directly under the panel
   prefix: `/admin/posts`, `/admin/orders`, `/admin/employees`.
-- **No default sort.** A Tablo table orders by its first sortable column,
-  ascending, until the reader sorts. `defaultSort('name')` is matched by
-  declaration order; `defaultSort('created_at', 'desc')` is not expressible.
+- **Thirteen of the eighteen default sorts.** Tablo's default sort names a
+  field the table has a sortable column for, so the five the Filament demo
+  sorts by a field its table does not show are left out: the brands by their
+  manual order, the tasks, expenses, comments and payments by their creation
+  date. The demo's address table sorts by city, and its city column is
+  sortable where the Filament demo's is not.
 - **No inline editing.** `SelectColumn` (the leave request status in the list) and
   `TextColumn::toggleable()`/`toggledHiddenByDefault` have no equivalent: every
   declared column shows, and a value is edited on the form.

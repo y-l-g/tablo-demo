@@ -113,6 +113,7 @@ fn product_table() -> Table<Product> {
             .label("Publishing date")
             .sortable(),
     ))
+    .default_sort(lens!(Product.name))
     .action_layout(ActionLayout::Menu)
     .filters((
         SelectFilter::relationship::<BrandResource>(lens!(Product.brand_id)).label("Brand"),
@@ -416,6 +417,7 @@ impl Resource for ProductCategoryResource {
                         .label("Last modified at")
                         .sortable(),
                 ))
+                .default_sort(lens!(ProductCategory.name))
                 .action_layout(ActionLayout::Menu),
             )
             .detail(Detail::new(
@@ -513,6 +515,7 @@ impl Resource for CustomerResource {
                         .searchable()
                         .sortable(),
                 ))
+                .default_sort(lens!(Customer.name))
                 .action_layout(ActionLayout::Menu),
             )
             .detail(Detail::new(Section::new("Customer").columns((
@@ -688,8 +691,11 @@ fn order_table() -> Table<Order> {
         TextColumn::new(lens!(Order.shipping_price))
             .money(Currency::USD)
             .label("Shipping cost"),
-        DateColumn::new(lens!(Order.created_at)).label("Order date"),
+        DateColumn::new(lens!(Order.created_at))
+            .label("Order date")
+            .sortable(),
     ))
+    .default_sort_desc(lens!(Order.created_at))
     .action_layout(ActionLayout::Menu)
     .filters((
         DateFilter::new(lens!(Order.created_at))
@@ -994,12 +1000,15 @@ impl Resource for AddressResource {
             .navigation_group("Shop")
             .navigation_order(12)
             .policy(Allow)
-            .table(Table::new((
-                TextColumn::new(lens!(Address.street)),
-                TextColumn::new(lens!(Address.zip)),
-                TextColumn::new(lens!(Address.city)),
-                TextColumn::new(lens!(Address.country)).width(ColumnWidth::Auto),
-            )))
+            .table(
+                Table::new((
+                    TextColumn::new(lens!(Address.street)),
+                    TextColumn::new(lens!(Address.zip)),
+                    TextColumn::new(lens!(Address.city)).sortable(),
+                    TextColumn::new(lens!(Address.country)).width(ColumnWidth::Auto),
+                ))
+                .default_sort(lens!(Address.city)),
+            )
             .detail(Detail::new(Section::new("Address").columns((
                 TextColumn::new(lens!(Address.street)),
                 TextColumn::new(lens!(Address.city)),
