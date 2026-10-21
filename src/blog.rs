@@ -155,6 +155,7 @@ impl Resource for PostCategoryResource {
             .icon(crate::icons::POST_CATEGORIES)
             .navigation_group("Blog")
             .navigation_order(1)
+            .importable()
             .policy(Allow)
             .table(
                 Table::new((

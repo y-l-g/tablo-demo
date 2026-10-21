@@ -415,6 +415,7 @@ impl Resource for ProductCategoryResource {
             .icon(crate::icons::PRODUCT_CATEGORIES)
             .navigation_group("Shop")
             .navigation_order(4)
+            .importable()
             .policy(Allow)
             .table(
                 Table::new((

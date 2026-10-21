@@ -192,8 +192,9 @@ Details worth knowing:
 
 ## Imports and exports
 
-- **No CSV import.** `ImportAction` and the two importers are not translated:
-  Tablo imports a CSV through the create form, which the demo does not declare.
+- **The importers read the create form.** The Filament demo's two importers name
+  their own columns; Tablo's import reads the columns of the resource's create
+  form, so the shop and the blog categories import what their form asks for.
 - **Export is built in.** Every list exports its current search, filters and sort
   as CSV through the list header, so the demo needs no exporter classes.
 
