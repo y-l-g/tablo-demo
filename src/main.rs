@@ -28,7 +28,8 @@ async fn main() {
             tablo_demo::models::ExpenseLine,
             tablo_demo::models::User,
             tablo_demo::models::Team,
-            tablo_demo::models::TeamUser
+            tablo_demo::models::TeamUser,
+            tablo_demo::models::AuditEntry
         ))
         .connect("sqlite::memory:")
         .await

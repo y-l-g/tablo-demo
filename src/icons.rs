@@ -3,6 +3,7 @@
 use topcoat::icon::{IconData, iconify::iconify_icon};
 
 pub const WELCOME: IconData = iconify_icon!("lucide:layout-dashboard");
+pub const AUDIT_TRAIL: IconData = iconify_icon!("lucide:rotate-ccw-clock");
 pub const SHOP_DASHBOARD: IconData = iconify_icon!("lucide:store");
 pub const HR_DASHBOARD: IconData = iconify_icon!("lucide:briefcase");
 pub const SETTINGS: IconData = iconify_icon!("lucide:settings");

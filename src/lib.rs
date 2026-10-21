@@ -1,5 +1,6 @@
 //! The Filament demo, rebuilt on Tablo.
 
+pub mod audit;
 pub mod auth;
 pub mod blog;
 pub mod cards;

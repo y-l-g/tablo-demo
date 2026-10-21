@@ -78,6 +78,8 @@ impl Resource for DepartmentResource {
             .action::<AdjustDepartmentBudget>()
             .action::<ToggleDepartmentActive>()
     }
+
+    crate::audit!();
 }
 
 /// The department's record form.
@@ -228,6 +230,8 @@ impl Resource for EmployeeResource {
             .action::<BulkSetEmployeeActive>()
             .soft_delete(lens!(Employee.deleted_at))
     }
+
+    crate::audit!();
 }
 
 /// The employee list.
@@ -556,6 +560,8 @@ impl Resource for LeaveRequestResource {
         }
         Ok(record)
     }
+
+    crate::audit!();
 }
 
 /// The days a leave request covers, counting both ends.
@@ -834,6 +840,8 @@ impl Resource for ProjectResource {
             .action::<CompleteProject>()
             .soft_delete(lens!(Project.deleted_at))
     }
+
+    crate::audit!();
 }
 
 /// How far along a project is, as the list reads it.
@@ -1084,6 +1092,8 @@ impl Resource for TaskResource {
             .action::<BulkSetTaskStatus>()
             .action::<BulkAssignTask>()
     }
+
+    crate::audit!();
 }
 
 /// The task's record form.
@@ -1456,6 +1466,8 @@ impl Resource for TimesheetResource {
         }
         Ok(record)
     }
+
+    crate::audit!();
 }
 
 /// The timesheet's record form.
@@ -1660,6 +1672,8 @@ impl Resource for ExpenseResource {
             .action::<ReimburseExpense>()
             .action::<FlagExpense>()
     }
+
+    crate::audit!();
 }
 
 /// The expense's record form.
@@ -1954,6 +1968,8 @@ impl Resource for ExpenseLineResource {
             .await?;
         refresh_expense_total(record.expense_id, ex).await
     }
+
+    crate::audit!();
 }
 
 /// Sets a claim's total to what its lines now come to.

@@ -237,3 +237,14 @@ home page have no counterpart.
   the first such column takes the table's spare width. Filament has no cap, so a
   long name, email or title that the Filament demo shows whole can read
   `Alpine Du…` here.
+
+## What the demo adds
+
+The Filament demo has no counterpart for these; the demo adds them to show
+what Tablo does beyond it.
+
+- **An audit trail.** Every write the panel makes leaves a row, written in the
+  write's own transaction: the row commits with the write or not at all, so
+  there is no window where a record changed and the trail did not. The admin
+  panel's Audit trail page lists them, newest first, with a link to the record
+  each write touched.

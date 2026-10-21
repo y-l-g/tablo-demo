@@ -1,5 +1,6 @@
 //! The demo's tables, one Toasty model each.
 
+pub mod audit;
 pub mod blog;
 pub mod hr;
 pub mod shop;
@@ -10,6 +11,7 @@ use toasty::Deferred;
 
 use crate::enums::CountryCode;
 
+pub use audit::AuditEntry;
 pub use blog::{Author, Post, PostCategory};
 pub use hr::{Department, Employee, Expense, ExpenseLine, LeaveRequest, Project, Task, Timesheet};
 pub use shop::{

@@ -48,6 +48,8 @@ impl Resource for PostResource {
             ))
             .action::<TogglePostPublish>()
     }
+
+    crate::audit!();
 }
 
 /// The post list.
@@ -186,6 +188,8 @@ impl Resource for PostCategoryResource {
             .record_title(lens!(PostCategory.name))
             .action::<ToggleCategoryVisibility>()
     }
+
+    crate::audit!();
 }
 
 /// The category's record form.
@@ -266,6 +270,8 @@ impl Resource for AuthorResource {
             ))))
             .record_title(lens!(Author.name))
     }
+
+    crate::audit!();
 }
 
 /// The author's record form.
@@ -334,6 +340,8 @@ impl Resource for CommentResource {
         }
         Ok(())
     }
+
+    crate::audit!();
 }
 
 /// The comment's record form.
