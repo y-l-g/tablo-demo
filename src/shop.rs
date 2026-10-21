@@ -619,6 +619,7 @@ impl Resource for OrderResource {
             .icon(crate::icons::ORDERS)
             .navigation_group("Shop")
             .navigation_order(1)
+            .navigation_badge(Order::fields().status().eq(OrderStatus::New))
             .policy(Allow)
             .table(order_table())
             .detail(Detail::new(

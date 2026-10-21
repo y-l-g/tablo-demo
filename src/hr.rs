@@ -459,6 +459,7 @@ impl Resource for LeaveRequestResource {
             .label("Leave request")
             .navigation_group("HR")
             .navigation_order(2)
+            .navigation_badge(LeaveRequest::fields().status().eq(LeaveStatus::Pending))
             .policy(Allow)
             .table(
                 Table::new((
@@ -763,6 +764,7 @@ impl Resource for ProjectResource {
             .icon(crate::icons::PROJECTS)
             .navigation_group("Projects")
             .navigation_order(0)
+            .navigation_badge(Project::fields().status().eq(ProjectStatus::Active))
             .policy(Allow)
             .table(
                 Table::new((
@@ -1049,6 +1051,7 @@ impl Resource for TaskResource {
             .icon(crate::icons::TASKS)
             .navigation_group("Projects")
             .navigation_order(1)
+            .navigation_badge(Task::fields().status().eq(TaskStatus::InProgress))
             .policy(Allow)
             .table(
                 Table::new((
@@ -1616,6 +1619,7 @@ impl Resource for ExpenseResource {
             .label("Expense")
             .navigation_group("HR")
             .navigation_order(3)
+            .navigation_badge(Expense::fields().status().eq(ExpenseStatus::Submitted))
             .policy(Allow)
             .table(
                 Table::new((

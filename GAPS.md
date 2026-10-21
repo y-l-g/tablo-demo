@@ -154,10 +154,13 @@ Details worth knowing:
   rather than greying out.
 - **No row classes.** `recordClasses` (the red rows for over-budget departments
   and overdue tasks) has no equivalent.
-- **No navigation badges, no global search, no stored notifications.** Tablo
-  shows one toast per write; the sidebar carries no counts, there is no
-  `command+k` search, and the demo declares no notification store, so nothing is
-  kept for later.
+- **Five of the six navigation badges.** The Filament demo badges six resources;
+  the demo badges five. The products badge counts the products whose stock is
+  below their security stock, a column-to-column comparison: a filter's right
+  side is a value, not another column, so the demo leaves that one out.
+- **No global search and no stored notifications.** Tablo shows one toast per
+  write; there is no `command+k` search, and the demo declares no notification
+  store, so nothing is kept for later.
 
 ## Auth and panels
 
