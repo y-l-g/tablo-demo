@@ -1,9 +1,9 @@
 //! The blog resources: posts, categories and authors.
 
 use tablo::{
-    Action, ActionLayout, Allow, BooleanColumn, ComputedColumn, DateColumn, DateFilter, Detail,
-    Grid, ImageColumn, Outcome, Places, Relation, RelationColumn, Resource, ResourceDef, Schema,
-    Section, Table, TextColumn, lens, relation,
+    Action, ActionLayout, Allow, BooleanColumn, Change, ComputedColumn, DateColumn, DateFilter,
+    Detail, Grid, ImageColumn, Outcome, Places, Relation, RelationColumn, Resource, ResourceDef,
+    Schema, Section, Table, TextColumn, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -325,6 +325,14 @@ impl Resource for CommentResource {
                 c.content.multiline(5),
             ))))
             .record_title(lens!(Comment.title))
+    }
+
+    /// Tells the signed-in user about a new comment, once the write committed.
+    async fn after_commit(cx: &Cx, change: Change<Comment>) -> Result<()> {
+        if let Change::Create(comment) = &change {
+            crate::notifications::new_comment(cx, comment).await?;
+        }
+        Ok(())
     }
 }
 

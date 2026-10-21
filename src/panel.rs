@@ -38,6 +38,7 @@ pub fn admin_panel() -> Panel {
         .auth(Auth::custom(DemoAuth))
         .brand(Brand::new("Filament Demo"))
         .login_hint(login_hint())
+        .notifications()
         .home::<Dashboard>()
         .page::<ShopDashboard>()
         .page::<HrDashboard>()

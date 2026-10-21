@@ -1,10 +1,10 @@
 //! The shop resources: products, brands, categories, customers and orders.
 
 use tablo::{
-    Action, ActionLayout, Allow, BooleanColumn, ColumnWidth, ComputedColumn, Currency, DateColumn,
-    DateFilter, Detail, FieldErrors, FormInput, Grid, ImageColumn, Outcome, Places, Relation,
-    RelationColumn, Resource, ResourceDef, Schema, Section, SelectFilter, Table, TernaryFilter,
-    TextColumn, lens, relation,
+    Action, ActionLayout, Allow, BooleanColumn, Change, ColumnWidth, ComputedColumn, Currency,
+    DateColumn, DateFilter, Detail, FieldErrors, FormInput, Grid, ImageColumn, Outcome, Places,
+    Relation, RelationColumn, Resource, ResourceDef, Schema, Section, SelectFilter, Table,
+    TernaryFilter, TextColumn, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -655,6 +655,14 @@ impl Resource for OrderResource {
             .action::<DeliverOrder>()
             .action::<CancelOrder>()
             .soft_delete(lens!(Order.deleted_at))
+    }
+
+    /// Tells the signed-in user about a new order, once the write committed.
+    async fn after_commit(cx: &Cx, change: Change<Order>) -> Result<()> {
+        if let Change::Create(order) = &change {
+            crate::notifications::new_order(cx, order).await?;
+        }
+        Ok(())
     }
 }
 

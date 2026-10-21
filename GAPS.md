@@ -166,9 +166,10 @@ Details worth knowing:
   the demo badges five. The products badge counts the products whose stock is
   below their security stock, a column-to-column comparison: a filter's right
   side is a value, not another column, so the demo leaves that one out.
-- **No global search and no stored notifications.** Tablo shows one toast per
-  write; there is no `command+k` search, and the demo declares no notification
-  store, so nothing is kept for later.
+- **No global search.** Tablo shows one toast per write; there is no `command+k`
+  search. The admin panel keeps its notifications in a bell, as the Filament
+  demo does, and the bell updates over the runtime connection instead of
+  polling.
 
 ## Auth and panels
 

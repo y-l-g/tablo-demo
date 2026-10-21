@@ -8,6 +8,7 @@ pub mod enums;
 pub mod hr;
 pub mod icons;
 pub mod models;
+pub mod notifications;
 pub mod panel;
 pub mod seed;
 pub mod shop;
