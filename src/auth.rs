@@ -9,7 +9,7 @@ use tablo::{
 use toasty::Db;
 use topcoat::context::Cx;
 
-use crate::models::{Team, User};
+use crate::models::{Team, TeamUser, User};
 
 /// The signed-in user and the teams they may act for.
 #[derive(Debug)]
@@ -225,7 +225,6 @@ impl tablo::auth::PasswordResetter for DemoResetter {
 
 /// Records that an account proved it reads its address.
 pub struct DemoVerifier;
-
 impl tablo::auth::EmailVerifier for DemoVerifier {
     type User = SignedIn;
 
@@ -250,5 +249,59 @@ impl tablo::auth::EmailVerifier for DemoVerifier {
             .exec(ex)
             .await?;
         Ok(())
+    }
+}
+
+/// The name of the team a signed-in user creates.
+#[derive(tablo::FormInput)]
+pub struct NewTeam {
+    #[form(label = "Name")]
+    pub name: String,
+}
+
+/// Creates a team for a signed-in user, as the Filament demo's tenant
+/// registration does.
+pub struct DemoTenantRegistrar;
+
+impl tablo::auth::TenantRegistrar for DemoTenantRegistrar {
+    type User = SignedIn;
+    type Input = NewTeam;
+
+    async fn validate(
+        &self,
+        _cx: &Cx,
+        _user: &SignedIn,
+        input: &Self::Input,
+        _ex: &mut dyn toasty::Executor,
+    ) -> topcoat::Result<FieldErrors> {
+        let mut errors = FieldErrors::new();
+        if input.name.trim().is_empty() {
+            errors.add("name", "Enter a name for your team");
+        }
+        Ok(errors)
+    }
+
+    async fn register(
+        &self,
+        _cx: &Cx,
+        user: &SignedIn,
+        input: Self::Input,
+        ex: &mut dyn toasty::Executor,
+    ) -> topcoat::Result<Membership> {
+        let name = input.name.trim().to_string();
+        let team = toasty::create!(Team {
+            name: name.clone(),
+            created_at: Timestamp::now(),
+            updated_at: Timestamp::now(),
+        })
+        .exec(ex)
+        .await?;
+        toasty::create!(TeamUser {
+            team_id: team.id,
+            user_id: user.user.id,
+        })
+        .exec(ex)
+        .await?;
+        Ok(Membership::new(team.id, team.name))
     }
 }

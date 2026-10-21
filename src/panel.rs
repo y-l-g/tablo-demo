@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use tablo::{
     Auth, Brand, Page, PageDef, Panel, RouterBuilderPanelExt,
-    auth::{AuthMail, EmailVerification, PasswordReset},
+    auth::{AuthMail, EmailVerification, PasswordReset, TenantRegistration},
     membership,
 };
 use toasty::Db;
@@ -20,7 +20,7 @@ use topcoat::{
 };
 
 use crate::{
-    auth::{DemoAuth, DemoResetter, DemoVerifier},
+    auth::{DemoAuth, DemoResetter, DemoTenantRegistrar, DemoVerifier},
     blog::{AuthorResource, CommentResource, PostCategoryResource, PostResource},
     dashboards::{Dashboard, HrDashboard, ShopDashboard},
     mailbox::Mailbox,
@@ -98,6 +98,7 @@ fn app_auth() -> Auth {
         ))
         .password_reset(PasswordReset::new(DemoResetter))
         .email_verification(EmailVerification::new(DemoVerifier))
+        .tenant_registration(TenantRegistration::new(DemoTenantRegistrar).required())
 }
 
 /// The URL the app answers on, which every mailed link starts with.

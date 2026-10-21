@@ -182,10 +182,9 @@ Details worth knowing:
   email verification, as the Filament demo's app panel has. The demo has no
   mail server, so the mails it sends land in a mailbox the admin panel's
   Mailbox page lists, links and all.
-- **No tenant registration page.** Filament's `->tenantRegistration()` asks for a
-  team after sign-up; Tablo's registrar creates the panel user in one step, so
-  the demo's sign-up form creates the account and the tenant switcher lists the
-  teams that exist.
+- **The tenant registration page.** The Filament demo's app panel asks for a
+  team after sign-up; so does the demo's, through Tablo's own registrar: its
+  page creates a team the user may then act for.
 - **The shell is Tablo's.** `->topbar(false)`, `->colors()`, a Vite theme and
   brand logos are not translated. The demo sets the brand, the login hint, the
   Albert Sans font and the blue primary colour.
