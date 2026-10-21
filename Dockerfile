@@ -5,9 +5,10 @@
 # the demo itself.
 FROM rust:1.99-bookworm AS builder
 
-# Pinned so an image always builds against the same Tablo. Bump it with the
-# demo's own dependency.
-ARG TABLO_REF=e5d5c5ea0f5c161b6b2c8d3daf7e353602c1113a
+# Pinned so an image always builds against the same Tablo: the demo follows
+# Tablo's master, and a newer Tablo can break it. Bump it with the demo's own
+# dependency.
+ARG TABLO_REF=8570f1f237fb112dc7950a227cb5306d01c47b4d
 # The CLI bundles the assets the panel loads at runtime. It must match the
 # Topcoat the demo depends on, or the bundle it writes is unreadable.
 ARG TOPCOAT_CLI_VERSION=0.10.0
@@ -18,7 +19,11 @@ RUN apt-get update \
 
 WORKDIR /src
 
-RUN git clone --depth 1 --branch "${TABLO_REF}" https://github.com/y-l-g/tablo.git filament-topcoat/tablo
+RUN git init filament-topcoat/tablo \
+    && cd filament-topcoat/tablo \
+    && git remote add origin https://github.com/y-l-g/tablo.git \
+    && git fetch --depth 1 origin "${TABLO_REF}" \
+    && git checkout FETCH_HEAD
 
 COPY . tablo-demo
 WORKDIR /src/tablo-demo
