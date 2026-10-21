@@ -1,4 +1,7 @@
+use std::sync::Arc;
+
 use toasty::Db;
+use topcoat::mail::MemoryTransport;
 
 #[tokio::main]
 async fn main() {
@@ -38,6 +41,8 @@ async fn main() {
     tablo_demo::seed::seed(&mut db)
         .await
         .expect("seed the demo data");
-    let router = tablo_demo::panel::router(db);
+    // The demo has no mail server: the mails the app panel sends land here.
+    let mailbox = Arc::new(MemoryTransport::new());
+    let router = tablo_demo::panel::router(db, mailbox);
     topcoat::start(router).await.expect("serve");
 }

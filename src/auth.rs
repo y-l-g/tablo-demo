@@ -1,8 +1,10 @@
 //! Who signs in: the demo's user table, read through Tablo's authenticator.
 
+use jiff::Timestamp;
 use tablo::{
     FieldErrors, Membership, PanelUser,
     auth::{Authenticator, Registrar, hash_password, new_password_errors, verify_password},
+    db::db,
 };
 use toasty::Db;
 use topcoat::context::Cx;
@@ -27,6 +29,11 @@ impl PanelUser for SignedIn {
 
     /// The account's email, shown under the name in the sidebar's user menu.
     fn subtitle(&self) -> Option<&str> {
+        Some(&self.user.email)
+    }
+
+    /// The address the account signs in with, and the one a mailed link goes to.
+    fn email(&self) -> Option<&str> {
         Some(&self.user.email)
     }
 
@@ -168,10 +175,80 @@ pub async fn create_user(
     toasty::create!(User {
         name: name.to_string(),
         email: email.to_string(),
+        // The seeded account is trusted, as the Filament demo's factory trusts it.
+        email_verified_at: Some(Timestamp::now()),
         password: hash_password(password)
             .await
             .expect("hash the demo password"),
     })
     .exec(db)
     .await
+}
+
+/// Resets a password, for the app panel's "Forgot your password?" page.
+pub struct DemoResetter;
+
+impl tablo::auth::PasswordResetter for DemoResetter {
+    type User = SignedIn;
+
+    async fn find_by_email(&self, cx: &Cx, email: &str) -> topcoat::Result<Option<SignedIn>> {
+        let mut handle = db(cx);
+        let user = User::filter(User::fields().email().eq(email.trim()))
+            .first()
+            .exec(&mut handle)
+            .await?;
+        let Some(user) = user else {
+            return Ok(None);
+        };
+        Ok(Some(DemoAuth::signed_in(user, &mut handle).await?))
+    }
+
+    async fn reset_password(
+        &self,
+        _cx: &Cx,
+        user_id: &str,
+        password: &str,
+        ex: &mut dyn toasty::Executor,
+    ) -> topcoat::Result<()> {
+        let id: u64 = user_id
+            .parse()
+            .map_err(|_| topcoat::Error::msg("the account's id is not a number"))?;
+        let password = hash_password(password).await?;
+        User::filter(User::fields().id().eq(id))
+            .update()
+            .password(password)
+            .exec(ex)
+            .await?;
+        Ok(())
+    }
+}
+
+/// Records that an account proved it reads its address.
+pub struct DemoVerifier;
+
+impl tablo::auth::EmailVerifier for DemoVerifier {
+    type User = SignedIn;
+
+    fn is_verified(&self, user: &SignedIn) -> bool {
+        user.user.email_verified_at.is_some()
+    }
+
+    async fn store_verified_email(
+        &self,
+        _cx: &Cx,
+        user_id: &str,
+        email: &str,
+        ex: &mut dyn toasty::Executor,
+    ) -> topcoat::Result<()> {
+        let id: u64 = user_id
+            .parse()
+            .map_err(|_| topcoat::Error::msg("the account's id is not a number"))?;
+        User::filter(User::fields().id().eq(id))
+            .update()
+            .email(email.to_string())
+            .email_verified_at(Some(Timestamp::now()))
+            .exec(ex)
+            .await?;
+        Ok(())
+    }
 }

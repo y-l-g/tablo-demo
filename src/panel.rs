@@ -2,22 +2,28 @@
 
 use std::path::PathBuf;
 
-use tablo::{Auth, Brand, Page, PageDef, Panel, RouterBuilderPanelExt, membership};
+use tablo::{
+    Auth, Brand, Page, PageDef, Panel, RouterBuilderPanelExt,
+    auth::{AuthMail, EmailVerification, PasswordReset},
+    membership,
+};
 use toasty::Db;
 use topcoat::{
     Result,
     asset::{AssetBundle, RouterBuilderAssetExt},
     context::Cx,
     font::{Font, fontsource::fontsource_font},
+    mail::{MailConfig, Mailbox as Sender, RouterBuilderMailExt},
     router::{Router, RouterBuilderDiscoverExt},
     tailwind,
     view::{View, view},
 };
 
 use crate::{
-    auth::DemoAuth,
+    auth::{DemoAuth, DemoResetter, DemoVerifier},
     blog::{AuthorResource, CommentResource, PostCategoryResource, PostResource},
     dashboards::{Dashboard, HrDashboard, ShopDashboard},
+    mailbox::Mailbox,
     seed,
 };
 
@@ -43,6 +49,7 @@ pub fn admin_panel() -> Panel {
         .page::<ShopDashboard>()
         .page::<HrDashboard>()
         .page::<crate::audit::AuditTrail>()
+        .page::<crate::mailbox::Sent>()
         // The first resource of a group fixes the group's place in the sidebar,
         // so the registration order is the demo's navigation order.
         .resource::<crate::shop::ProductResource>()
@@ -72,11 +79,30 @@ pub fn admin_panel() -> Panel {
 /// The tenant panel: sign-up, a tenant switcher and the settings page.
 pub fn app_panel() -> Panel {
     Panel::new("app")
-        .auth(Auth::custom(DemoAuth).registration(DemoAuth))
+        .auth(app_auth())
         .brand(Brand::new("Filament Demo"))
         .login_hint(login_hint())
         .home::<Dashboard>()
         .page::<Settings>()
+}
+
+/// The app panel's auth: the demo's own sign-in, with a password reset and an
+/// email verification, as the Filament demo's app panel has.
+fn app_auth() -> Auth {
+    Auth::custom(DemoAuth)
+        .registration(DemoAuth)
+        .mail(AuthMail::new(
+            Sender::named("Filament Demo", "no-reply@demo.example.com")
+                .expect("the demo's sender address"),
+            &base_url(),
+        ))
+        .password_reset(PasswordReset::new(DemoResetter))
+        .email_verification(EmailVerification::new(DemoVerifier))
+}
+
+/// The URL the app answers on, which every mailed link starts with.
+fn base_url() -> String {
+    std::env::var("TABLO_DEMO_BASE_URL").unwrap_or_else(|_| "http://127.0.0.1:3000".to_string())
 }
 
 /// The tenant panel's settings page, which the Filament demo leaves empty.
@@ -126,11 +152,15 @@ pub fn upload_dir() -> PathBuf {
 }
 
 /// Mounts both panels on a router, with the asset bundle the build script wrote.
-pub fn router(db: Db) -> Router {
+pub fn router(db: Db, mailbox: Mailbox) -> Router {
     let bundle = AssetBundle::load().expect("load the asset bundle beside the executable");
     Router::builder()
         .discover()
         .app_context(db)
+        .app_context(mailbox.clone())
+        // The demo has no mail server: the mails the app panel sends land in
+        // the mailbox, which the app panel's Mailbox page lists.
+        .mail(MailConfig::builder().transport((*mailbox).clone()).build())
         .assets(bundle)
         .panel(admin_panel().shell_assets(tailwind::stylesheet!(), ALBERT_SANS))
         .expect("the admin panel mounts")

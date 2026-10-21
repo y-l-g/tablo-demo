@@ -12,7 +12,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toasty = { version = "0.11", features = ["jiff", "serde", "sqlite"] }
 tokio = { version = "1", features = ["fs"] }
-topcoat = { version = "0.10", features = ["serve", "tailwind", "font", "font-fontsource", "asset", "runtime", "multipart"] }
+topcoat = { version = "0.10", features = ["serve", "tailwind", "font", "font-fontsource", "asset", "runtime", "multipart", "mail"] }
 uuid = "1.23"
 
 [build-dependencies]

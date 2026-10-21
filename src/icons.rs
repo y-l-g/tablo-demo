@@ -7,6 +7,7 @@ pub const AUDIT_TRAIL: IconData = iconify_icon!("lucide:rotate-ccw-clock");
 pub const SHOP_DASHBOARD: IconData = iconify_icon!("lucide:store");
 pub const HR_DASHBOARD: IconData = iconify_icon!("lucide:briefcase");
 pub const SETTINGS: IconData = iconify_icon!("lucide:settings");
+pub const MAILBOX: IconData = iconify_icon!("lucide:mail");
 
 pub const PRODUCTS: IconData = iconify_icon!("lucide:package");
 pub const ORDERS: IconData = iconify_icon!("lucide:shopping-cart");

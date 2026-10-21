@@ -8,6 +8,7 @@ pub mod dashboards;
 pub mod enums;
 pub mod hr;
 pub mod icons;
+pub mod mailbox;
 pub mod models;
 pub mod notifications;
 pub mod panel;

@@ -178,7 +178,10 @@ Details worth knowing:
   signed the user in, so signing in to `/app` ends the `/admin` session. The
   Filament demo behaves the same way in practice, and the demo's screenshots use
   one panel at a time.
-- **No password reset and no email verification**, and no per-tenant panel access.
+- **No per-tenant panel access.** The app panel has a password reset and an
+  email verification, as the Filament demo's app panel has. The demo has no
+  mail server, so the mails it sends land in a mailbox the admin panel's
+  Mailbox page lists, links and all.
 - **No tenant registration page.** Filament's `->tenantRegistration()` asks for a
   team after sign-up; Tablo's registrar creates the panel user in one step, so
   the demo's sign-up form creates the account and the tenant switcher lists the
@@ -245,6 +248,9 @@ home page have no counterpart.
 The Filament demo has no counterpart for these; the demo adds them to show
 what Tablo does beyond it.
 
+- **A mailbox.** The demo has no mail server, so the mails the app panel sends
+  land in a transport that keeps them in memory, and the admin panel's Mailbox
+  page lists them with their links.
 - **An audit trail.** Every write the panel makes leaves a row, written in the
   write's own transaction: the row commits with the write or not at all, so
   there is no window where a record changed and the trail did not. The admin

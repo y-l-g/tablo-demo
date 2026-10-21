@@ -41,7 +41,8 @@ COPY --from=builder /src/tablo-demo/target/release/assets /app/assets
 
 ENV HOST=0.0.0.0 \
     PORT=3000 \
-    TABLO_DEMO_UPLOAD_DIR=/data/uploads
+    TABLO_DEMO_UPLOAD_DIR=/data/uploads \
+    TABLO_DEMO_BASE_URL=https://demo.tablo.y-l.fr
 
 EXPOSE 3000
 
