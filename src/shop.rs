@@ -657,7 +657,7 @@ impl Resource for OrderResource {
                 Grid::new(2).schema((
                     c.number.label("Number"),
                     c.customer_id.searchable().label("Customer"),
-                    c.status,
+                    c.status.buttons(),
                     c.notes.rich_text(),
                 )),
             )))
@@ -729,6 +729,7 @@ pub struct OrderForm {
     pub number: String,
     #[form(relationship = CustomerResource)]
     pub customer_id: Option<u64>,
+    #[form(options)]
     pub status: OrderStatus,
     pub notes: Option<String>,
 }

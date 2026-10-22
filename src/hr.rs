@@ -210,7 +210,7 @@ impl Resource for EmployeeResource {
                 Section::new("Employment").schema(Grid::new(2).schema((
                     c.department_id.searchable().label("Department"),
                     c.job_title,
-                    c.employment_type,
+                    c.employment_type.radio(),
                     c.hire_date,
                     salary,
                     hourly_rate,
@@ -285,6 +285,7 @@ pub struct EmployeeForm {
     #[form(relationship = DepartmentResource)]
     pub department_id: Option<u64>,
     pub job_title: String,
+    #[form(options)]
     pub employment_type: EmploymentType,
     pub hire_date: jiff::civil::Date,
     pub salary: Option<f64>,
@@ -504,7 +505,7 @@ impl Resource for LeaveRequestResource {
             .form(Schema::new((
                 Section::new("Leave details").schema(Grid::new(2).schema((
                     c.employee_id.searchable().label("Employee"),
-                    c.kind.label("Type"),
+                    c.kind.label("Type").radio(),
                     c.start_date,
                     c.end_date,
                     c.start_time.label("Start time (half days)"),
@@ -513,7 +514,7 @@ impl Resource for LeaveRequestResource {
                     c.reason.multiline(4),
                 ))),
                 Section::new("Review").schema(Grid::new(2).schema((
-                    c.status,
+                    c.status.buttons(),
                     c.approver_id.searchable().label("Approver"),
                     c.reviewer_notes.multiline(3),
                 ))),
@@ -581,7 +582,9 @@ fn days_requested(start: jiff::civil::Date, end: jiff::civil::Date) -> f64 {
 pub struct LeaveRequestForm {
     #[form(relationship = EmployeeResource)]
     pub employee_id: u64,
+    #[form(options)]
     pub kind: LeaveType,
+    #[form(options)]
     pub status: LeaveStatus,
     pub start_date: jiff::civil::Date,
     pub end_date: jiff::civil::Date,
@@ -819,8 +822,8 @@ impl Resource for ProjectResource {
                     c.slug,
                     c.description.multiline(4),
                     c.department_id.searchable().label("Department"),
-                    c.status,
-                    c.priority,
+                    c.status.buttons(),
+                    c.priority.radio(),
                     c.color,
                     c.start_date,
                     c.end_date,
@@ -871,7 +874,9 @@ pub struct ProjectForm {
     pub department_id: Option<u64>,
     pub description: Option<String>,
     pub color: Option<String>,
+    #[form(options)]
     pub status: ProjectStatus,
+    #[form(options)]
     pub priority: TaskPriority,
     pub budget: f64,
     pub spent: f64,
@@ -1080,8 +1085,8 @@ impl Resource for TaskResource {
                     c.title,
                     c.project_id.searchable().label("Project"),
                     c.assigned_to.searchable().label("Assignee"),
-                    c.status,
-                    c.priority,
+                    c.status.buttons(),
+                    c.priority.radio(),
                     c.estimated_hours,
                     c.due_date,
                     c.description.multiline(4),
@@ -1110,7 +1115,9 @@ pub struct TaskForm {
     pub project_id: u64,
     #[form(relationship = EmployeeResource)]
     pub assigned_to: Option<u64>,
+    #[form(options)]
     pub status: TaskStatus,
+    #[form(options)]
     pub priority: TaskPriority,
     pub estimated_hours: Option<f64>,
     pub due_date: Option<jiff::civil::Date>,
@@ -1656,8 +1663,8 @@ impl Resource for ExpenseResource {
                     c.expense_number,
                     c.employee_id.searchable().label("Employee"),
                     c.project_id.searchable().label("Project"),
-                    c.category,
-                    c.status,
+                    c.category.radio(),
+                    c.status.buttons(),
                     c.description.multiline(3),
                 ))),
                 Section::new("Summary").schema(Grid::new(2).schema((
@@ -1690,7 +1697,9 @@ pub struct ExpenseForm {
     pub employee_id: u64,
     #[form(relationship = ProjectResource)]
     pub project_id: Option<u64>,
+    #[form(options)]
     pub category: ExpenseCategory,
+    #[form(options)]
     pub status: ExpenseStatus,
     pub description: String,
     pub total_amount: f64,
