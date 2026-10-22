@@ -447,6 +447,10 @@ impl Resource for LeaveRequestResource {
 
     fn declare() -> ResourceDef<Self> {
         let c = LeaveRequestForm::controls();
+        // `gte` borrows the start date it compares with, so the start date is built first and
+        // the schema takes it after the comparison.
+        let start_date = c.start_date;
+        let end_date = c.end_date.gte(&start_date);
         ResourceDef::new()
             .icon(crate::icons::LEAVE_REQUESTS)
             .label("Leave request")
@@ -506,8 +510,8 @@ impl Resource for LeaveRequestResource {
                 Section::new("Leave details").schema(Grid::new(2).schema((
                     c.employee_id.searchable().label("Employee"),
                     c.kind.label("Type").radio(),
-                    c.start_date,
-                    c.end_date,
+                    start_date,
+                    end_date,
                     c.start_time.label("Start time (half days)"),
                     c.end_time.label("End time (half days)"),
                     c.days_requested,
@@ -524,21 +528,6 @@ impl Resource for LeaveRequestResource {
             .action::<RejectLeaveRequest>()
             .action::<BulkApproveLeaveRequests>()
             .action::<BulkRejectLeaveRequests>()
-    }
-
-    /// Refuses a range that ends before it starts.
-    fn validate_record(
-        _cx: &Cx,
-        form: &LeaveRequestForm,
-    ) -> tablo::FieldErrors<LeaveRequestFormField> {
-        let mut errors = tablo::FieldErrors::new();
-        if form.end_date < form.start_date {
-            errors.add(
-                LeaveRequestFormField::EndDate,
-                "The end date cannot be before the start date",
-            );
-        }
-        errors
     }
 
     /// Stores the day count the submitted dates cover.
@@ -758,6 +747,10 @@ impl Resource for ProjectResource {
 
     fn declare() -> ResourceDef<Self> {
         let c = ProjectForm::controls();
+        // `gte` borrows the start date it compares with, so the start date is built first and
+        // the schema takes it after the comparison.
+        let start_date = c.start_date;
+        let end_date = c.end_date.gte(&start_date);
         ResourceDef::new()
             .icon(crate::icons::PROJECTS)
             .navigation_group("Projects")
@@ -825,8 +818,8 @@ impl Resource for ProjectResource {
                     c.status.buttons(),
                     c.priority.radio(),
                     c.color,
-                    c.start_date,
-                    c.end_date,
+                    start_date,
+                    end_date,
                 ))),
                 Section::new("Budget").schema(Grid::new(2).schema((
                     c.budget,
