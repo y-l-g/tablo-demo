@@ -3,9 +3,9 @@
 use jiff::{Span, Timestamp, Zoned};
 use tablo::{
     Action, ActionLayout, Allow, BooleanColumn, ColorColumn, ComputedColumn, CountColumn, Currency,
-    DateColumn, DateFilter, Detail, FileColumn, FormInput, Grid, Outcome, Places, RecordForm,
-    Relation, RelationColumn, Resource, ResourceDef, Schema, Section, SelectFilter, Table,
-    TernaryFilter, TextColumn, WriteError, lens, relation,
+    DateColumn, DateFilter, Detail, FileColumn, FormInput, GlobalSearch, Grid, Outcome, Places,
+    RecordForm, Relation, RelationColumn, Resource, ResourceDef, Schema, Section, SelectFilter,
+    Table, TernaryFilter, TextColumn, WriteError, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -218,6 +218,11 @@ impl Resource for EmployeeResource {
                 ))),
             )))
             .record_title(lens!(Employee.name))
+            .global_search(
+                GlobalSearch::new()
+                    .detail("Job title", lens!(Employee.job_title))
+                    .detail("Email", lens!(Employee.email)),
+            )
             .relation(Relation::has_many::<TimesheetResource>(
                 Timesheet::fields().employee_id(),
             ))
@@ -1889,6 +1894,7 @@ impl Resource for ExpenseLineResource {
             .navigation_group("HR")
             .navigation_order(4)
             .policy(Allow)
+            .without_global_search()
             .table(Table::new((
                 RelationColumn::of::<ExpenseResource>(relation!(ExpenseLine.expense))
                     .label("Expense"),

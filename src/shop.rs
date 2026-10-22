@@ -2,9 +2,9 @@
 
 use tablo::{
     Action, ActionLayout, Allow, BooleanColumn, Change, ColumnWidth, ComputedColumn, Currency,
-    DateColumn, DateFilter, Detail, FieldErrors, FormInput, Grid, ImageColumn, Outcome, Places,
-    Relation, RelationColumn, Resource, ResourceDef, RichTextColumn, Schema, Section, SelectFilter,
-    Table, TernaryFilter, TextColumn, WriteError, lens, relation,
+    DateColumn, DateFilter, Detail, FieldErrors, FormInput, GlobalSearch, Grid, ImageColumn,
+    Outcome, Places, Relation, RelationColumn, Resource, ResourceDef, RichTextColumn, Schema,
+    Section, SelectFilter, Table, TernaryFilter, TextColumn, WriteError, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -76,6 +76,11 @@ impl Resource for ProductResource {
                 RichTextColumn::new(lens!(Product.description)),
             )),)))
             .record_title(lens!(Product.name))
+            .global_search(
+                GlobalSearch::new()
+                    .detail("SKU", lens!(Product.sku))
+                    .detail("Price", lens!(Product.price)),
+            )
             .relation(Relation::has_many::<CommentResource>(
                 Comment::fields().product_id(),
             ))
@@ -545,6 +550,11 @@ impl Resource for CustomerResource {
                 Grid::new(2).schema((c.phone, c.birthday)),
             ))))
             .record_title(lens!(Customer.name))
+            .global_search(
+                GlobalSearch::new()
+                    .detail("Email", lens!(Customer.email))
+                    .detail("Phone", lens!(Customer.phone)),
+            )
             .relation(Relation::has_many::<AddressResource>(
                 Address::fields().customer_id(),
             ))
@@ -650,6 +660,11 @@ impl Resource for OrderResource {
                 )),
             )))
             .record_title(lens!(Order.number))
+            .global_search(
+                GlobalSearch::new()
+                    .detail("Status", lens!(Order.status))
+                    .detail("Total", lens!(Order.total_price)),
+            )
             .relation(Relation::has_many::<OrderItemResource>(
                 OrderItem::fields().order_id(),
             ))
@@ -872,6 +887,7 @@ impl Resource for OrderItemResource {
             .navigation_group("Shop")
             .navigation_order(10)
             .policy(Allow)
+            .without_global_search()
             .table(Table::new((
                 RelationColumn::of::<ProductResource>(relation!(OrderItem.product))
                     .label("Product"),
@@ -931,6 +947,7 @@ impl Resource for PaymentResource {
             .navigation_group("Shop")
             .navigation_order(11)
             .policy(Allow)
+            .without_global_search()
             .table(Table::new((
                 RelationColumn::of::<OrderResource>(relation!(Payment.order)).label("Order"),
                 TextColumn::new(lens!(Payment.reference)).searchable(),
@@ -1004,6 +1021,7 @@ impl Resource for AddressResource {
             .navigation_group("Shop")
             .navigation_order(12)
             .policy(Allow)
+            .without_global_search()
             .table(
                 Table::new((
                     TextColumn::new(lens!(Address.street)),
@@ -1072,6 +1090,7 @@ impl Resource for OrderAddressResource {
             .navigation_group("Shop")
             .navigation_order(13)
             .policy(Allow)
+            .without_global_search()
             .table(Table::new((
                 RelationColumn::of::<OrderResource>(relation!(OrderAddress.order)).label("Order"),
                 TextColumn::new(lens!(OrderAddress.street)),
