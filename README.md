@@ -52,6 +52,8 @@ beside the executable.
 - **Dashboards** that read the seeded data and render their own figures.
 - **Navigation** that swaps the page in place, and an icon of its own for every
   sidebar entry, from a Lucide subset the build stages.
+- **Global search** in the topbar, over every resource, with results that respect
+  the list's tenancy, trash and field access and open the record's page.
 
 [GAPS.md](GAPS.md) lists everything in the Filament demo that Tablo has no
 equivalent for, and what this demo does instead.

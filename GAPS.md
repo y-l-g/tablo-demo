@@ -137,12 +137,14 @@ Details worth knowing:
 - **No dependent predicate.** A Tablo dependent choice narrows by another field's
   value; "only a top-level category may be a parent" is a predicate, so every
   category is offered as a parent.
-- **No `->hidden()` or `->format()` on a form field**, no `prefix`/`suffix`,
-  `minValue`/`maxValue` or `rules()`; ranges belong in `validate_record`. A
-  placeholder is available (`.placeholder(..)`) but is not set on every field
-  Filament sets one on.
+- **No `->hidden()` or `->format()`.** Tablo now has switch, radio and button
+  controls, prefix/suffix, min/max, field comparisons, item-count rules and file
+  extension/size rules, but the demo does not declare them; ranges still belong
+  in `validate_record`. A placeholder is available (`.placeholder(..)`) but is
+  not set on every field Filament sets one on.
 - **File fields are single-file.** `multiple()`, `maxFiles(5)` and `reorderable()`
-  on the product images are not translated; a product has one image.
+  on the product images are not translated; a product has one image. The file
+  field's extension and size rules are available but not declared here.
 
 ## Actions
 
@@ -155,9 +157,11 @@ Details worth knowing:
   demo does not add one.
 - **No read-only action page.** The employee's "view profile" slide-over shows an
   infolist; the demo's detail page is the read-only view.
-- **A refused `run` shows a notification.** Filament's `before()` can throw a
-  validation error into the modal; a Tablo action that returns an error rolls the
-  transaction back and reports it as an error notification.
+- **A refused `run` re-renders the input.** Filament's `before()` can throw a
+  validation error into the modal; a Tablo action that returns
+  `WriteError::Refused` rolls the transaction back and re-renders the input page
+  with the errors under their fields, while any other error reports as an error
+  notification.
 - **`disabled()` on an action hides it.** Tablo's `can_run` decides whether the
   button renders at all, so "toggle billable" disappears on an old timesheet
   rather than greying out.
@@ -167,10 +171,6 @@ Details worth knowing:
   the demo badges five. The products badge counts the products whose stock is
   below their security stock, a column-to-column comparison: a filter's right
   side is a value, not another column, so the demo leaves that one out.
-- **No global search.** Tablo shows one toast per write; there is no `command+k`
-  search. The admin panel keeps its notifications in a bell, as the Filament
-  demo does, and the bell updates over the runtime connection instead of
-  polling.
 
 ## Auth and panels
 
@@ -232,6 +232,8 @@ home page have no counterpart.
   renders text, so only stored `Options` columns show as badges.
 - `->poll('30s')` on the expenses list has no counterpart: a Tablo table updates
   when it is asked to.
+- **Global search has no `command+k` shortcut.** The topbar box searches every
+  resource and Enter opens the results page, but no shortcut focuses it.
 - `->deferFilters()`, `FiltersLayout::AboveContentCollapsible`,
   `->stackedOnMobile()` and `->reorderable('sort')` (drag to reorder brands) have
   no counterpart.

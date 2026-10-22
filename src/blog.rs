@@ -3,7 +3,7 @@
 use tablo::{
     Action, ActionLayout, Allow, BooleanColumn, Change, ComputedColumn, DateColumn, DateFilter,
     Detail, Grid, ImageColumn, Outcome, Places, Relation, RelationColumn, Resource, ResourceDef,
-    RichTextColumn, Schema, Section, Table, TextColumn, lens, relation,
+    RichTextColumn, Schema, Section, Table, TextColumn, WriteError, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -123,7 +123,7 @@ impl Action<PostResource> for TogglePostPublish {
         posts: &[Post],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for post in posts {
             let published_at = if post.is_published() {
                 None
@@ -216,7 +216,7 @@ impl Action<PostCategoryResource> for ToggleCategoryVisibility {
         categories: &[PostCategory],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for category in categories {
             PostCategory::filter(PostCategory::fields().id().eq(category.id))
                 .update()

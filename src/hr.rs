@@ -5,7 +5,7 @@ use tablo::{
     Action, ActionLayout, Allow, BooleanColumn, ColorColumn, ComputedColumn, CountColumn, Currency,
     DateColumn, DateFilter, Detail, FileColumn, FormInput, Grid, Outcome, Places, RecordForm,
     Relation, RelationColumn, Resource, ResourceDef, Schema, Section, SelectFilter, Table,
-    TernaryFilter, TextColumn, lens, relation,
+    TernaryFilter, TextColumn, WriteError, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -117,7 +117,7 @@ impl Action<DepartmentResource> for AdjustDepartmentBudget {
         departments: &[Department],
         change: BudgetChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for department in departments {
             Department::filter(Department::fields().id().eq(department.id))
                 .update()
@@ -146,7 +146,7 @@ impl Action<DepartmentResource> for ToggleDepartmentActive {
         departments: &[Department],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for department in departments {
             Department::filter(Department::fields().id().eq(department.id))
                 .update()
@@ -301,7 +301,7 @@ impl Action<EmployeeResource> for ToggleEmployeeActive {
         employees: &[Employee],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for employee in employees {
             Employee::filter(Employee::fields().id().eq(employee.id))
                 .update()
@@ -333,7 +333,7 @@ impl Action<EmployeeResource> for ChangeEmployeeDepartment {
         employees: &[Employee],
         choice: DepartmentChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         move_department(employees, choice.department_id, ex).await
     }
 }
@@ -355,7 +355,7 @@ impl Action<EmployeeResource> for BulkChangeEmployeeDepartment {
         employees: &[Employee],
         choice: DepartmentChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         move_department(employees, choice.department_id, ex).await
     }
 
@@ -369,7 +369,7 @@ async fn move_department(
     employees: &[Employee],
     department_id: Option<u64>,
     ex: &mut dyn toasty::Executor,
-) -> Result<Outcome> {
+) -> Result<Outcome, WriteError> {
     for employee in employees {
         Employee::filter(Employee::fields().id().eq(employee.id))
             .update()
@@ -416,7 +416,7 @@ impl Action<EmployeeResource> for BulkSetEmployeeActive {
         employees: &[Employee],
         choice: ActiveChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for employee in employees {
             Employee::filter(Employee::fields().id().eq(employee.id))
                 .update()
@@ -540,7 +540,7 @@ impl Resource for LeaveRequestResource {
         _cx: &Cx,
         form: LeaveRequestForm,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<LeaveRequest> {
+    ) -> Result<LeaveRequest, WriteError<LeaveRequestFormField>> {
         let days = days_requested(form.start_date, form.end_date);
         Ok(form.into_create().days_requested(days).exec(ex).await?)
     }
@@ -551,7 +551,7 @@ impl Resource for LeaveRequestResource {
         record: LeaveRequest,
         posted: tablo::Posted<LeaveRequestForm>,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<LeaveRequest> {
+    ) -> Result<LeaveRequest, WriteError<LeaveRequestFormField>> {
         let mut record = tablo::write_update::<Self>(cx, record, posted, ex).await?;
         let days = days_requested(record.start_date, record.end_date);
         if record.days_requested != days {
@@ -614,7 +614,7 @@ impl Action<LeaveRequestResource> for ApproveLeaveRequest {
         requests: &[LeaveRequest],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         review(requests, LeaveStatus::Approved, None, ex).await
     }
 
@@ -640,7 +640,7 @@ impl Action<LeaveRequestResource> for RejectLeaveRequest {
         requests: &[LeaveRequest],
         rejection: Rejection,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         review(
             requests,
             LeaveStatus::Rejected,
@@ -677,7 +677,7 @@ impl Action<LeaveRequestResource> for BulkApproveLeaveRequests {
         requests: &[LeaveRequest],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         review(requests, LeaveStatus::Approved, None, ex).await
     }
 
@@ -707,7 +707,7 @@ impl Action<LeaveRequestResource> for BulkRejectLeaveRequests {
         requests: &[LeaveRequest],
         rejection: Rejection,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         review(
             requests,
             LeaveStatus::Rejected,
@@ -728,7 +728,7 @@ async fn review(
     status: LeaveStatus,
     notes: Option<String>,
     ex: &mut dyn toasty::Executor,
-) -> Result<Outcome> {
+) -> Result<Outcome, WriteError> {
     for request in requests {
         let mut update = LeaveRequest::filter(LeaveRequest::fields().id().eq(request.id)).update();
         update = update.status(status).reviewed_at(Some(Timestamp::now()));
@@ -896,7 +896,7 @@ impl Action<ProjectResource> for ChangeProjectStatus {
         projects: &[Project],
         change: StatusChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         set_project_status(projects, change.status, ex).await
     }
 
@@ -923,7 +923,7 @@ impl Action<ProjectResource> for HoldProject {
         projects: &[Project],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         set_project_status(projects, ProjectStatus::OnHold, ex).await
     }
 
@@ -949,7 +949,7 @@ impl Action<ProjectResource> for ResumeProject {
         projects: &[Project],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         set_project_status(projects, ProjectStatus::Active, ex).await
     }
 
@@ -979,7 +979,7 @@ impl Action<ProjectResource> for CompleteProject {
         projects: &[Project],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for project in projects {
             Project::filter(Project::fields().id().eq(project.id))
                 .update()
@@ -1001,7 +1001,7 @@ async fn set_project_status(
     projects: &[Project],
     status: ProjectStatus,
     ex: &mut dyn toasty::Executor,
-) -> Result<Outcome> {
+) -> Result<Outcome, WriteError> {
     for project in projects {
         Project::filter(Project::fields().id().eq(project.id))
             .update()
@@ -1130,7 +1130,7 @@ impl Action<TaskResource> for StartTask {
         tasks: &[Task],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         set_task_status(tasks, TaskStatus::InProgress, ex).await
     }
 
@@ -1156,7 +1156,7 @@ impl Action<TaskResource> for SendTaskToReview {
         tasks: &[Task],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         set_task_status(tasks, TaskStatus::InReview, ex).await
     }
 
@@ -1189,7 +1189,7 @@ impl Action<TaskResource> for CompleteTask {
         tasks: &[Task],
         completion: TaskCompletion,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for task in tasks {
             Task::filter(Task::fields().id().eq(task.id))
                 .update()
@@ -1227,7 +1227,7 @@ impl Action<TaskResource> for AssignTask {
         tasks: &[Task],
         choice: AssigneeChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         assign(tasks, choice.assigned_to, ex).await
     }
 }
@@ -1249,7 +1249,7 @@ impl Action<TaskResource> for BulkAssignTask {
         tasks: &[Task],
         choice: AssigneeChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         assign(tasks, choice.assigned_to, ex).await
     }
 
@@ -1263,7 +1263,7 @@ async fn assign(
     tasks: &[Task],
     assigned_to: Option<u64>,
     ex: &mut dyn toasty::Executor,
-) -> Result<Outcome> {
+) -> Result<Outcome, WriteError> {
     for task in tasks {
         Task::filter(Task::fields().id().eq(task.id))
             .update()
@@ -1294,7 +1294,7 @@ impl Action<TaskResource> for SetTaskPriority {
         tasks: &[Task],
         change: PriorityChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for task in tasks {
             Task::filter(Task::fields().id().eq(task.id))
                 .update()
@@ -1330,7 +1330,7 @@ impl Action<TaskResource> for BulkSetTaskStatus {
         tasks: &[Task],
         change: TaskStatusChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         set_task_status(tasks, change.status, ex).await
     }
 
@@ -1344,7 +1344,7 @@ async fn set_task_status(
     tasks: &[Task],
     status: TaskStatus,
     ex: &mut dyn toasty::Executor,
-) -> Result<Outcome> {
+) -> Result<Outcome, WriteError> {
     for task in tasks {
         Task::filter(Task::fields().id().eq(task.id))
             .update()
@@ -1446,7 +1446,7 @@ impl Resource for TimesheetResource {
         _cx: &Cx,
         form: TimesheetForm,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Timesheet> {
+    ) -> Result<Timesheet, WriteError<TimesheetFormField>> {
         let cost = form.hours * form.hourly_rate;
         Ok(form.into_create().total_cost(cost).exec(ex).await?)
     }
@@ -1457,7 +1457,7 @@ impl Resource for TimesheetResource {
         record: Timesheet,
         posted: tablo::Posted<TimesheetForm>,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Timesheet> {
+    ) -> Result<Timesheet, WriteError<TimesheetFormField>> {
         let mut record = tablo::write_update::<Self>(cx, record, posted, ex).await?;
         let cost = record.hours * record.hourly_rate;
         if record.total_cost != cost {
@@ -1511,7 +1511,7 @@ impl Action<TimesheetResource> for ToggleTimesheetBillable {
         timesheets: &[Timesheet],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for timesheet in timesheets {
             Timesheet::filter(Timesheet::fields().id().eq(timesheet.id))
                 .update()
@@ -1537,7 +1537,7 @@ impl Action<TimesheetResource> for BulkMarkBillable {
         timesheets: &[Timesheet],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         set_billable(timesheets, true, ex).await
     }
 
@@ -1560,7 +1560,7 @@ impl Action<TimesheetResource> for BulkMarkNonBillable {
         timesheets: &[Timesheet],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         set_billable(timesheets, false, ex).await
     }
 
@@ -1574,7 +1574,7 @@ async fn set_billable(
     timesheets: &[Timesheet],
     billable: bool,
     ex: &mut dyn toasty::Executor,
-) -> Result<Outcome> {
+) -> Result<Outcome, WriteError> {
     for timesheet in timesheets {
         Timesheet::filter(Timesheet::fields().id().eq(timesheet.id))
             .update()
@@ -1713,12 +1713,10 @@ impl Action<ExpenseResource> for SubmitExpense {
         expenses: &[Expense],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for expense in expenses {
             if expense.total_amount <= 0.0 {
-                return Err(topcoat::Error::msg(
-                    "Cannot submit an expense with no amount",
-                ));
+                return Err(topcoat::Error::msg("Cannot submit an expense with no amount").into());
             }
             Expense::filter(Expense::fields().id().eq(expense.id))
                 .update()
@@ -1753,7 +1751,7 @@ impl Action<ExpenseResource> for ApproveExpense {
         expenses: &[Expense],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for expense in expenses {
             Expense::filter(Expense::fields().id().eq(expense.id))
                 .update()
@@ -1794,7 +1792,7 @@ impl Action<ExpenseResource> for RejectExpense {
         expenses: &[Expense],
         rejection: RejectionReason,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for expense in expenses {
             Expense::filter(Expense::fields().id().eq(expense.id))
                 .update()
@@ -1829,7 +1827,7 @@ impl Action<ExpenseResource> for ReimburseExpense {
         expenses: &[Expense],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for expense in expenses {
             Expense::filter(Expense::fields().id().eq(expense.id))
                 .update()
@@ -1858,7 +1856,7 @@ impl Action<ExpenseResource> for FlagExpense {
         expenses: &[Expense],
         flag: RejectionReason,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for expense in expenses {
             Expense::filter(Expense::fields().id().eq(expense.id))
                 .update()
@@ -1928,7 +1926,7 @@ impl Resource for ExpenseLineResource {
         _cx: &Cx,
         form: ExpenseLineForm,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<ExpenseLine> {
+    ) -> Result<ExpenseLine, WriteError<ExpenseLineFormField>> {
         let amount = round(form.quantity as f64 * form.unit_price);
         let line = form.into_create().amount(amount).exec(&mut *ex).await?;
         refresh_expense_total(line.expense_id, ex).await?;
@@ -1941,7 +1939,7 @@ impl Resource for ExpenseLineResource {
         record: ExpenseLine,
         posted: tablo::Posted<ExpenseLineForm>,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<ExpenseLine> {
+    ) -> Result<ExpenseLine, WriteError<ExpenseLineFormField>> {
         let previous = record.expense_id;
         let mut record = tablo::write_update::<Self>(cx, record, posted, ex).await?;
         let amount = round(record.quantity as f64 * record.unit_price);

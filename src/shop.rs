@@ -4,7 +4,7 @@ use tablo::{
     Action, ActionLayout, Allow, BooleanColumn, Change, ColumnWidth, ComputedColumn, Currency,
     DateColumn, DateFilter, Detail, FieldErrors, FormInput, Grid, ImageColumn, Outcome, Places,
     Relation, RelationColumn, Resource, ResourceDef, RichTextColumn, Schema, Section, SelectFilter,
-    Table, TernaryFilter, TextColumn, lens, relation,
+    Table, TernaryFilter, TextColumn, WriteError, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -175,7 +175,7 @@ impl Action<ProductResource> for ToggleProductVisibility {
         products: &[Product],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for product in products {
             Product::filter(Product::fields().id().eq(product.id))
                 .update()
@@ -219,7 +219,7 @@ impl Action<ProductResource> for BulkSetProductVisibility {
         products: &[Product],
         choice: VisibilityChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for product in products {
             Product::filter(Product::fields().id().eq(product.id))
                 .update()
@@ -257,7 +257,7 @@ impl Action<ProductResource> for AdjustProductPrice {
         products: &[Product],
         change: PriceChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for product in products {
             Product::filter(Product::fields().id().eq(product.id))
                 .update()
@@ -298,7 +298,7 @@ impl Action<ProductResource> for AdjustProductStock {
         products: &[Product],
         change: StockChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for product in products {
             Product::filter(Product::fields().id().eq(product.id))
                 .update()
@@ -388,7 +388,7 @@ impl Action<BrandResource> for ToggleBrandVisibility {
         brands: &[Brand],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for brand in brands {
             Brand::filter(Brand::fields().id().eq(brand.id))
                 .update()
@@ -488,7 +488,7 @@ impl Action<ProductCategoryResource> for ToggleCategoryVisibility {
         categories: &[ProductCategory],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for category in categories {
             ProductCategory::filter(ProductCategory::fields().id().eq(category.id))
                 .update()
@@ -600,7 +600,7 @@ impl Action<CustomerResource> for SendCustomerEmail {
         _customers: &[Customer],
         _draft: EmailDraft,
         _ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         Ok(Outcome::done())
     }
 
@@ -733,7 +733,7 @@ impl Action<OrderResource> for ProcessOrder {
         orders: &[Order],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         set_status(orders, OrderStatus::Processing, ex).await
     }
 
@@ -766,7 +766,7 @@ impl Action<OrderResource> for ShipOrder {
         orders: &[Order],
         shipping: ShippingNotes,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         for order in orders {
             Order::filter(Order::fields().id().eq(order.id))
                 .update()
@@ -801,7 +801,7 @@ impl Action<OrderResource> for DeliverOrder {
         orders: &[Order],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         set_status(orders, OrderStatus::Delivered, ex).await
     }
 
@@ -831,7 +831,7 @@ impl Action<OrderResource> for CancelOrder {
         orders: &[Order],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome> {
+    ) -> Result<Outcome, WriteError> {
         set_status(orders, OrderStatus::Cancelled, ex).await
     }
 
@@ -845,7 +845,7 @@ async fn set_status(
     orders: &[Order],
     status: OrderStatus,
     ex: &mut dyn toasty::Executor,
-) -> Result<Outcome> {
+) -> Result<Outcome, WriteError> {
     for order in orders {
         Order::filter(Order::fields().id().eq(order.id))
             .update()

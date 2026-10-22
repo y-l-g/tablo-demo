@@ -2,8 +2,8 @@
 
 use jiff::Timestamp;
 use tablo::{
-    FieldErrors, Membership, PanelUser,
-    auth::{Authenticator, Registrar, hash_password, new_password_errors, verify_password},
+    Authenticator, FieldErrors, Membership, PanelUser, Registrar,
+    auth::{hash_password, new_password_errors, verify_password},
     db::db,
 };
 use toasty::Db;

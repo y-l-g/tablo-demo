@@ -1,6 +1,6 @@
 //! The notifications the demo stores for the bell of the admin panel.
 
-use tablo::{Notification, PanelUser, notification::Notifications};
+use tablo::{Notification, Notifications, PanelUser};
 use topcoat::{Result, context::Cx};
 
 use crate::auth::SignedIn;

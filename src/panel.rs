@@ -3,9 +3,8 @@
 use std::path::PathBuf;
 
 use tablo::{
-    Auth, Brand, Page, PageDef, Panel, RouterBuilderPanelExt,
-    auth::{AuthMail, EmailVerification, PasswordReset, TenantRegistration},
-    membership,
+    Auth, AuthMail, Brand, EmailVerification, Page, PageDef, Panel, PasswordReset,
+    RouterBuilderPanelExt, TenantRegistration, auth::membership,
 };
 use toasty::Db;
 use topcoat::{
@@ -94,7 +93,7 @@ fn app_auth() -> Auth {
         .mail(AuthMail::new(
             Sender::named("Filament Demo", "no-reply@demo.example.com")
                 .expect("the demo's sender address"),
-            &base_url(),
+            base_url(),
         ))
         .password_reset(PasswordReset::new(DemoResetter))
         .email_verification(EmailVerification::new(DemoVerifier))

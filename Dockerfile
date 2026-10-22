@@ -8,7 +8,7 @@ FROM rust:1.99-bookworm AS builder
 # Pinned so an image always builds against the same Tablo: the demo follows
 # Tablo's master, and a newer Tablo can break it. Bump it with the demo's own
 # dependency.
-ARG TABLO_REF=e5d5c5ea0f5c161b6b2c8d3daf7e353602c1113a
+ARG TABLO_REF=0ba17af00fe755e40c1f01602e5606ac8139b81c
 # The CLI bundles the assets the panel loads at runtime. It must match the
 # Topcoat the demo depends on, or the bundle it writes is unreadable.
 ARG TOPCOAT_CLI_VERSION=0.10.0
