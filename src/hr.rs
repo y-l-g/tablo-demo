@@ -179,6 +179,9 @@ impl Resource for EmployeeResource {
             .prefix("$")
             .suffix("per hour")
             .visible_when(&c.employment_type, ["contractor", "intern"]);
+        let job_title = c
+            .job_title
+            .suggestions(crate::seed::JOB_TITLES.iter().copied());
         ResourceDef::new()
             .icon(crate::icons::EMPLOYEES)
             .label("Employee")
@@ -213,7 +216,7 @@ impl Resource for EmployeeResource {
                 ))),
                 Section::new("Employment").schema(Grid::new(2).schema((
                     c.department_id.searchable().label("Department"),
-                    c.job_title,
+                    job_title,
                     c.employment_type.radio(),
                     c.hire_date,
                     salary,

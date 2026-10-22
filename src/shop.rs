@@ -1047,7 +1047,7 @@ impl Resource for AddressResource {
                 c.country.searchable(),
                 c.street.label("Street address"),
                 Grid::new(3).schema((
-                    c.city,
+                    c.city.suggestions(crate::seed::CITIES.iter().copied()),
                     c.state.label("State / Province"),
                     c.zip.label("Zip / Postal code"),
                 )),
@@ -1114,7 +1114,7 @@ impl Resource for OrderAddressResource {
                 c.country.searchable(),
                 c.street.label("Street address"),
                 Grid::new(3).schema((
-                    c.city,
+                    c.city.suggestions(crate::seed::CITIES.iter().copied()),
                     c.state.label("State / Province"),
                     c.zip.label("Zip / Postal code"),
                 )),

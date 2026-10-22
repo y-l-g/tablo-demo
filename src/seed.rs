@@ -1179,7 +1179,8 @@ const DEPARTMENT_NAMES: &[&str] = &["Engineering", "Operations", "Marketing", "P
 
 const SUBDEPARTMENTS: &[&str] = &["Frontend", "Backend", "DevOps", "QA", "Content", "SEO"];
 
-const JOB_TITLES: &[&str] = &[
+/// The job titles the seeded employees hold, and the forms suggest.
+pub const JOB_TITLES: &[&str] = &[
     "Software Engineer",
     "Senior Engineer",
     "Designer",
@@ -1304,7 +1305,8 @@ const EXPENSE_LINES: &[&str] = &[
 
 const STREETS: &[&str] = &["Main St", "Oak Ave", "Cedar Lane", "Market St", "Hill Rd"];
 
-const CITIES: &[&str] = &[
+/// The cities the seeded addresses are in, and the forms suggest.
+pub const CITIES: &[&str] = &[
     "Portland", "Austin", "Denver", "Boston", "Seattle", "Chicago", "Toronto", "Dublin",
 ];
 
