@@ -14,6 +14,7 @@ use crate::models::{
     Address, Brand, Comment, Customer, Order, OrderAddress, OrderItem, Payment, Product,
     ProductCategory,
 };
+use crate::panel::{IMAGE_EXTENSIONS, IMAGE_MAX_BYTES};
 
 /// Products.
 pub struct ProductResource;
@@ -35,7 +36,12 @@ impl Resource for ProductResource {
                     Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
                     c.description.rich_text(),
                 )),
-                Section::new("Images").schema(c.image.label("Image")),
+                Section::new("Images").schema(
+                    c.image
+                        .label("Image")
+                        .extensions(IMAGE_EXTENSIONS)
+                        .max_bytes(IMAGE_MAX_BYTES),
+                ),
                 Section::new("Pricing").schema(Grid::new(2).schema((
                     c.price.prefix("$"),
                     c.old_price.prefix("$").label("Compare at price"),

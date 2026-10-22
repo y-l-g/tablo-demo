@@ -144,8 +144,9 @@ Details worth knowing:
   in `validate_record`. A placeholder is available (`.placeholder(..)`) but is
   not set on every field Filament sets one on.
 - **File fields are single-file.** `multiple()`, `maxFiles(5)` and `reorderable()`
-  on the product images are not translated; a product has one image. The file
-  field's extension and size rules are available but not declared here.
+  on the product images are not translated; a product has one image. The
+  product and post images and the expense receipts declare their extensions and
+  a size cap, which the server checks before it stores the file.
 
 ## Actions
 

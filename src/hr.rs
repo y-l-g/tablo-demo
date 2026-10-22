@@ -16,6 +16,7 @@ use crate::enums::{
 use crate::models::{
     Department, Employee, Expense, ExpenseLine, LeaveRequest, Project, Task, Timesheet, round,
 };
+use crate::panel::{RECEIPT_EXTENSIONS, RECEIPT_MAX_BYTES};
 
 /// Departments.
 pub struct DepartmentResource;
@@ -1667,12 +1668,16 @@ impl Resource for ExpenseResource {
                     c.status.buttons(),
                     c.description.multiline(3),
                 ))),
-                Section::new("Summary").schema(Grid::new(2).schema((
-                    c.total_amount,
-                    c.currency.choice().options(["USD"]),
-                    c.receipt_path,
-                    c.notes.multiline(3),
-                ))),
+                Section::new("Summary").schema(
+                    Grid::new(2).schema((
+                        c.total_amount,
+                        c.currency.choice().options(["USD"]),
+                        c.receipt_path
+                            .extensions(RECEIPT_EXTENSIONS)
+                            .max_bytes(RECEIPT_MAX_BYTES),
+                        c.notes.multiline(3),
+                    )),
+                ),
             )))
             .record_title(lens!(Expense.expense_number))
             .relation(Relation::has_many::<ExpenseLineResource>(

@@ -32,6 +32,14 @@ const ALBERT_SANS: Font = fontsource_font!(ALBERT_SANS, host: Asset);
 /// The URL prefix uploaded images are served under.
 pub const UPLOAD_URL_PREFIX: &str = "/uploads";
 
+/// The image types a product or a post takes, and the most bytes an image may hold.
+pub const IMAGE_EXTENSIONS: [&str; 4] = ["jpg", "jpeg", "png", "webp"];
+pub const IMAGE_MAX_BYTES: usize = 2 * 1024 * 1024;
+
+/// The file types an expense's receipt takes, and the most bytes a receipt may hold.
+pub const RECEIPT_EXTENSIONS: [&str; 5] = ["jpg", "jpeg", "png", "webp", "pdf"];
+pub const RECEIPT_MAX_BYTES: usize = 5 * 1024 * 1024;
+
 /// The login hint both panels show, with the demo account the seed creates.
 pub fn login_hint() -> String {
     format!("{} / {}", seed::ADMIN_EMAIL, seed::ADMIN_PASSWORD)

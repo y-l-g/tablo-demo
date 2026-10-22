@@ -8,6 +8,7 @@ use tablo::{
 use topcoat::{Result, context::Cx};
 
 use crate::models::{Author, Comment, Post, PostCategory};
+use crate::panel::{IMAGE_EXTENSIONS, IMAGE_MAX_BYTES};
 
 /// Posts, their comments, and the categories and authors they are filed under.
 pub struct PostResource;
@@ -39,7 +40,12 @@ impl Resource for PostResource {
                             .placeholder("Comma separated, as Spatie's tag input stores them"),
                     )),
                 ),
-                Section::new("Image").schema(c.image.label("Image")),
+                Section::new("Image").schema(
+                    c.image
+                        .label("Image")
+                        .extensions(IMAGE_EXTENSIONS)
+                        .max_bytes(IMAGE_MAX_BYTES),
+                ),
             )))
             .record_title(lens!(Post.title))
             // The comments of a post, as `ManagePostComments` manages them.
