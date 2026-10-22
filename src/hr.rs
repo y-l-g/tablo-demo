@@ -64,7 +64,7 @@ impl Resource for DepartmentResource {
                 )),
             ))
             .form(Schema::new(Section::new("Department").schema((
-                Grid::new(2).schema((c.name, c.slug)),
+                Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
                 c.parent_id.label("Parent department"),
                 c.description.multiline(3),
                 Grid::new(2).schema((c.budget.prefix("$"), c.headcount_limit)),
@@ -819,7 +819,7 @@ impl Resource for ProjectResource {
             .form(Schema::new((
                 Section::new("Overview").schema(Grid::new(2).schema((
                     c.name,
-                    c.slug,
+                    c.slug.disabled_on_edit(),
                     c.description.multiline(4),
                     c.department_id.searchable().label("Department"),
                     c.status.buttons(),
@@ -1660,7 +1660,7 @@ impl Resource for ExpenseResource {
             )))
             .form(Schema::new((
                 Section::new("Details").schema(Grid::new(2).schema((
-                    c.expense_number,
+                    c.expense_number.disabled_on_edit(),
                     c.employee_id.searchable().label("Employee"),
                     c.project_id.searchable().label("Project"),
                     c.category.radio(),

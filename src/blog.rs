@@ -29,7 +29,7 @@ impl Resource for PostResource {
                 Section::new("Post").schema(
                     Grid::new(2).schema((
                         c.title.placeholder("A title readers click"),
-                        c.slug,
+                        c.slug.disabled_on_edit(),
                         c.content.rich_text(),
                         c.author_id.searchable().label("Author"),
                         c.post_category_id.searchable().label("Category"),
@@ -182,7 +182,7 @@ impl Resource for PostCategoryResource {
             ))))
             .form(Schema::new(Section::new("Category").schema((
                 c.name,
-                c.slug,
+                c.slug.disabled_on_edit(),
                 c.description.multiline(3),
                 c.is_visible.switch().label("Visibility"),
             ))))

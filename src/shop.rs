@@ -32,7 +32,7 @@ impl Resource for ProductResource {
             .table(product_table())
             .form(Schema::new((
                 Section::new("Product").schema((
-                    Grid::new(2).schema((c.name, c.slug)),
+                    Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
                     c.description.rich_text(),
                 )),
                 Section::new("Images").schema(c.image.label("Image")),
@@ -353,7 +353,7 @@ impl Resource for BrandResource {
                 DateColumn::new(lens!(Brand.updated_at)).label("Last modified at"),
             ))))
             .form(Schema::new(Section::new("Brand").schema((
-                Grid::new(2).schema((c.name, c.slug)),
+                Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
                 c.website.url(),
                 c.is_visible.switch().label("Visibility"),
                 c.description.multiline(4),
@@ -455,7 +455,7 @@ impl Resource for ProductCategoryResource {
                 )),
             ))
             .form(Schema::new(Section::new("Category").schema((
-                Grid::new(2).schema((c.name, c.slug)),
+                Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
                 c.parent_id.label("Parent category"),
                 c.is_visible.switch().label("Visibility"),
                 c.description.multiline(4),

@@ -108,10 +108,11 @@ Details worth knowing:
   the dates, the cost from hours × rate and the line amount from quantity × price
   in the browser. Tablo has no `Set`/`Get` pair, so slugs are typed, and the
   derived amounts are recomputed server-side in `create_record`/`update_record`.
-- **No `disabled()->dehydrated()`.** Tablo's `.disabled()` means the browser posts
-  nothing and an edit keeps the stored value, so a column that Filament disables
-  and re-posts (`slug`, `expense_number`, `days_requested`, `total_cost`) is an
-  ordinary field here, or one the server recomputes.
+- **`disabled()->dehydrated()` is `disabled_on_edit()`.** Tablo's `.disabled()`
+  means the browser posts nothing and an edit keeps the stored value, so the
+  demo's `slug` fields and `expense_number` use `.disabled_on_edit()` instead:
+  the create form sets them, and no edit changes them. `days_requested` and
+  `total_cost` stay ordinary fields the server recomputes.
 - **No nested relationship forms.** `AddressForm` inside the order form is a
   has-one sub-form, and `Repeater::relationship('orderItems')` /
   `('expenseLines')` edit related rows. A Tablo repeater edits a `#[document]`
