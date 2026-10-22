@@ -538,17 +538,27 @@ impl Resource for LeaveRequestResource {
             .action::<BulkRejectLeaveRequests>()
     }
 
-    /// Stores the day count the submitted dates cover.
+    /// Refuses dates that overlap another request of the employee, then stores the day count
+    /// the submitted dates cover.
     async fn create_record(
         _cx: &Cx,
         form: LeaveRequestForm,
         ex: &mut dyn toasty::Executor,
     ) -> Result<LeaveRequest, WriteError<LeaveRequestFormField>> {
+        refuse_overlap(
+            &mut *ex,
+            form.employee_id,
+            form.start_date,
+            form.end_date,
+            None,
+        )
+        .await?;
         let days = days_requested(form.start_date, form.end_date);
         Ok(form.into_create().days_requested(days).exec(ex).await?)
     }
 
-    /// Recomputes the day count from the stored dates.
+    /// Refuses dates that overlap another request of the employee, then recomputes the day
+    /// count from the stored dates. A refusal rolls the edit back.
     async fn update_record(
         cx: &Cx,
         record: LeaveRequest,
@@ -556,6 +566,14 @@ impl Resource for LeaveRequestResource {
         ex: &mut dyn toasty::Executor,
     ) -> Result<LeaveRequest, WriteError<LeaveRequestFormField>> {
         let mut record = tablo::write_update::<Self>(cx, record, posted, ex).await?;
+        refuse_overlap(
+            &mut *ex,
+            record.employee_id,
+            record.start_date,
+            record.end_date,
+            Some(record.id),
+        )
+        .await?;
         let days = days_requested(record.start_date, record.end_date);
         if record.days_requested != days {
             record.update().days_requested(days).exec(&mut *ex).await?;
@@ -565,6 +583,37 @@ impl Resource for LeaveRequestResource {
     }
 
     crate::audit!();
+}
+
+/// Refuses the dates `start` to `end` of `employee_id` when another request of that employee
+/// covers any of them and is neither rejected nor cancelled. `except` is the request being
+/// edited, which would otherwise overlap its own dates.
+async fn refuse_overlap(
+    ex: &mut dyn toasty::Executor,
+    employee_id: u64,
+    start: jiff::civil::Date,
+    end: jiff::civil::Date,
+    except: Option<u64>,
+) -> Result<(), WriteError<LeaveRequestFormField>> {
+    let fields = LeaveRequest::fields();
+    let overlapping = LeaveRequest::filter(
+        fields
+            .employee_id()
+            .eq(employee_id)
+            .and(fields.start_date().le(end))
+            .and(fields.end_date().ge(start))
+            .and(fields.status().ne(LeaveStatus::Rejected))
+            .and(fields.status().ne(LeaveStatus::Cancelled)),
+    )
+    .exec(&mut *ex)
+    .await?;
+    if overlapping.iter().any(|leave| Some(leave.id) != except) {
+        return Err(WriteError::field(
+            LeaveRequestFormField::StartDate,
+            "These dates overlap another leave request of this employee",
+        ));
+    }
+    Ok(())
 }
 
 /// The days a leave request covers, counting both ends.
