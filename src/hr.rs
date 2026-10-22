@@ -69,7 +69,7 @@ impl Resource for DepartmentResource {
                 c.description.multiline(3),
                 Grid::new(2).schema((c.budget, c.headcount_limit)),
                 c.color,
-                c.is_active.label("Active"),
+                c.is_active.switch().label("Active"),
             ))))
             .record_title(lens!(Department.name))
             .relation(Relation::has_many::<EmployeeResource>(
@@ -214,7 +214,7 @@ impl Resource for EmployeeResource {
                     c.hire_date,
                     salary,
                     hourly_rate,
-                    c.is_active.label("Active"),
+                    c.is_active.switch().label("Active"),
                 ))),
             )))
             .record_title(lens!(Employee.name))
@@ -1435,7 +1435,7 @@ impl Resource for TimesheetResource {
                     c.date,
                     c.hours,
                     c.minutes,
-                    c.is_billable.label("Billable"),
+                    c.is_billable.switch().label("Billable"),
                     c.hourly_rate,
                     c.total_cost,
                     c.description.multiline(2),

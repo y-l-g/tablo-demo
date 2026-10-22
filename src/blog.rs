@@ -184,7 +184,7 @@ impl Resource for PostCategoryResource {
                 c.name,
                 c.slug,
                 c.description.multiline(3),
-                c.is_visible.label("Visibility"),
+                c.is_visible.switch().label("Visibility"),
             ))))
             .record_title(lens!(PostCategory.name))
             .action::<ToggleCategoryVisibility>()
@@ -328,7 +328,7 @@ impl Resource for CommentResource {
                 c.customer_id.searchable().label("Customer"),
                 c.post_id.searchable().label("Post"),
                 c.product_id.searchable().label("Product"),
-                c.is_visible.label("Public visibility"),
+                c.is_visible.switch().label("Public visibility"),
                 c.content.rich_text(),
             ))))
             .record_title(lens!(Comment.title))

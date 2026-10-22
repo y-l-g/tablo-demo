@@ -47,10 +47,12 @@ impl Resource for ProductResource {
                     c.qty.label("Quantity"),
                     c.security_stock,
                 ))),
-                Section::new("Shipping")
-                    .schema(Grid::new(2).schema((c.backorder, c.requires_shipping))),
+                Section::new("Shipping").schema(
+                    Grid::new(2).schema((c.backorder.switch(), c.requires_shipping.switch())),
+                ),
                 Section::new("Status").schema(
-                    Grid::new(2).schema((c.is_visible.label("Visibility"), c.published_at)),
+                    Grid::new(2)
+                        .schema((c.is_visible.switch().label("Visibility"), c.published_at)),
                 ),
                 Section::new("Associations").schema((
                     c.brand_id.searchable().label("Brand"),
@@ -353,7 +355,7 @@ impl Resource for BrandResource {
             .form(Schema::new(Section::new("Brand").schema((
                 Grid::new(2).schema((c.name, c.slug)),
                 c.website,
-                c.is_visible.label("Visibility"),
+                c.is_visible.switch().label("Visibility"),
                 c.description.multiline(4),
             ))))
             .record_title(lens!(Brand.name))
@@ -455,7 +457,7 @@ impl Resource for ProductCategoryResource {
             .form(Schema::new(Section::new("Category").schema((
                 Grid::new(2).schema((c.name, c.slug)),
                 c.parent_id.label("Parent category"),
-                c.is_visible.label("Visibility"),
+                c.is_visible.switch().label("Visibility"),
                 c.description.multiline(4),
             ))))
             .record_title(lens!(ProductCategory.name))
