@@ -67,7 +67,7 @@ impl Resource for DepartmentResource {
                 Grid::new(2).schema((c.name, c.slug)),
                 c.parent_id.label("Parent department"),
                 c.description.multiline(3),
-                Grid::new(2).schema((c.budget, c.headcount_limit)),
+                Grid::new(2).schema((c.budget.prefix("$"), c.headcount_limit)),
                 c.color,
                 c.is_active.switch().label("Active"),
             ))))
@@ -171,9 +171,13 @@ impl Resource for EmployeeResource {
         // controls are built before the schema takes them.
         let salary = c
             .salary
+            .prefix("$")
+            .suffix("per year")
             .visible_when(&c.employment_type, ["full_time", "part_time"]);
         let hourly_rate = c
             .hourly_rate
+            .prefix("$")
+            .suffix("per hour")
             .visible_when(&c.employment_type, ["contractor", "intern"]);
         ResourceDef::new()
             .icon(crate::icons::EMPLOYEES)
@@ -822,10 +826,10 @@ impl Resource for ProjectResource {
                     end_date,
                 ))),
                 Section::new("Budget").schema(Grid::new(2).schema((
-                    c.budget,
-                    c.spent,
-                    c.estimated_hours,
-                    c.actual_hours,
+                    c.budget.prefix("$"),
+                    c.spent.prefix("$"),
+                    c.estimated_hours.suffix("hours"),
+                    c.actual_hours.suffix("hours"),
                 ))),
             )))
             .record_title(lens!(Project.name))
@@ -1080,7 +1084,7 @@ impl Resource for TaskResource {
                     c.assigned_to.searchable().label("Assignee"),
                     c.status.buttons(),
                     c.priority.radio(),
-                    c.estimated_hours,
+                    c.estimated_hours.suffix("hours"),
                     c.due_date,
                     c.description.multiline(4),
                     completed_at,
@@ -1433,11 +1437,11 @@ impl Resource for TimesheetResource {
                     c.project_id.searchable().label("Project"),
                     task_id,
                     c.date,
-                    c.hours,
-                    c.minutes,
+                    c.hours.suffix("hours"),
+                    c.minutes.suffix("minutes"),
                     c.is_billable.switch().label("Billable"),
-                    c.hourly_rate,
-                    c.total_cost,
+                    c.hourly_rate.prefix("$"),
+                    c.total_cost.prefix("$"),
                     c.description.multiline(2),
                 )),
             )))

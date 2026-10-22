@@ -37,9 +37,9 @@ impl Resource for ProductResource {
                 )),
                 Section::new("Images").schema(c.image.label("Image")),
                 Section::new("Pricing").schema(Grid::new(2).schema((
-                    c.price,
-                    c.old_price.label("Compare at price"),
-                    c.cost.label("Cost per item"),
+                    c.price.prefix("$"),
+                    c.old_price.prefix("$").label("Compare at price"),
+                    c.cost.prefix("$").label("Cost per item"),
                 ))),
                 Section::new("Inventory").schema(Grid::new(2).schema((
                     c.sku.label("SKU (Stock Keeping Unit)"),
