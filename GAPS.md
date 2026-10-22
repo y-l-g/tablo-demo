@@ -138,11 +138,13 @@ Details worth knowing:
 - **No dependent predicate.** A Tablo dependent choice narrows by another field's
   value; "only a top-level category may be a parent" is a predicate, so every
   category is offered as a parent.
-- **No `->hidden()` or `->format()`.** Tablo now has switch, radio and button
-  controls, prefix/suffix, min/max, field comparisons, item-count rules and file
-  extension/size rules, but the demo does not declare them; ranges still belong
-  in `validate_record`. A placeholder is available (`.placeholder(..)`) but is
-  not set on every field Filament sets one on.
+- **No `->hidden()`.** Tablo has no hidden control: a field a form leaves out is
+  not posted at all. `->format()` is Tablo's column formatter, which the demo
+  uses for the day and hour columns. The switch, radio and button
+  controls, prefix and suffix, field comparisons and the file extension and size
+  rules are declared where the demo needs them. Item-count rules have no field
+  here, since the demo has no multiple choice. A placeholder is available
+  (`.placeholder(..)`) but is not set on every field Filament sets one on.
 - **File fields are single-file.** `multiple()`, `maxFiles(5)` and `reorderable()`
   on the product images are not translated; a product has one image. The
   product and post images and the expense receipts declare their extensions and
