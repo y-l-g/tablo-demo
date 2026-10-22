@@ -354,7 +354,7 @@ impl Resource for BrandResource {
             ))))
             .form(Schema::new(Section::new("Brand").schema((
                 Grid::new(2).schema((c.name, c.slug)),
-                c.website,
+                c.website.url(),
                 c.is_visible.switch().label("Visibility"),
                 c.description.multiline(4),
             ))))
@@ -549,7 +549,7 @@ impl Resource for CustomerResource {
             ))))
             .form(Schema::new(Section::new("Customer").schema((
                 Grid::new(2).schema((c.name, c.email.email().unique().label("Email address"))),
-                Grid::new(2).schema((c.phone, c.birthday)),
+                Grid::new(2).schema((c.phone.tel(), c.birthday)),
             ))))
             .record_title(lens!(Customer.name))
             .global_search(

@@ -203,7 +203,7 @@ impl Resource for EmployeeResource {
                 Section::new("Personal").schema(Grid::new(2).schema((
                     c.name,
                     c.email.email().unique(),
-                    c.phone,
+                    c.phone.tel(),
                     c.date_of_birth,
                     c.team_color,
                 ))),
