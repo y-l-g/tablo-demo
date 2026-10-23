@@ -14,7 +14,8 @@ use crate::enums::{
     TaskPriority, TaskStatus,
 };
 use crate::models::{
-    Department, Employee, Expense, ExpenseLine, LeaveRequest, Project, Task, Timesheet, round,
+    Department, Employee, Expense, ExpenseLine, LeaveRequest, Project, Task, Timesheet,
+    replica_suffix, round,
 };
 use crate::panel::{RECEIPT_EXTENSIONS, RECEIPT_MAX_BYTES};
 
@@ -39,13 +40,14 @@ impl Resource for DepartmentResource {
                         .searchable()
                         .sortable(),
                     RelationColumn::of::<DepartmentResource>(relation!(Department.parent))
-                        .label("Parent"),
+                        .label("Parent")
+                        .toggleable(),
                     CountColumn::of::<EmployeeResource>(relation!(Department.employees))
                         .label("Headcount"),
                     TextColumn::new(lens!(Department.budget))
                         .money(Currency::USD)
                         .sortable(),
-                    ColorColumn::new(lens!(Department.color)),
+                    ColorColumn::new(lens!(Department.color)).toggleable(),
                     BooleanColumn::new(lens!(Department.is_active)).label("Active"),
                 ))
                 .default_sort(lens!(Department.name))
@@ -78,6 +80,7 @@ impl Resource for DepartmentResource {
             ))
             .action::<AdjustDepartmentBudget>()
             .action::<ToggleDepartmentActive>()
+            .action::<ReplicateDepartment>()
     }
 
     crate::audit!();
@@ -131,6 +134,43 @@ impl Action<DepartmentResource> for AdjustDepartmentBudget {
 
     fn success(_cx: &Cx, _count: usize) -> String {
         "Budget saved".to_string()
+    }
+}
+
+/// Copies a department under a fresh slug, confirming first.
+pub struct ReplicateDepartment;
+
+impl Action<DepartmentResource> for ReplicateDepartment {
+    type Input = ();
+    const NAME: &'static str = "replicate";
+    const PLACES: Places = Places::ROW;
+    const CONFIRM: bool = true;
+
+    async fn run(
+        _cx: &Cx,
+        departments: &[Department],
+        (): (),
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<Outcome, WriteError> {
+        for department in departments {
+            toasty::create!(Department {
+                parent_id: department.parent_id,
+                name: department.name.clone(),
+                slug: format!("{}-{}", department.slug, replica_suffix().to_lowercase()),
+                description: department.description.clone(),
+                budget: department.budget,
+                headcount_limit: department.headcount_limit,
+                color: department.color.clone(),
+                is_active: department.is_active,
+            })
+            .exec(&mut *ex)
+            .await?;
+        }
+        Ok(Outcome::done())
+    }
+
+    fn success(_cx: &Cx, _count: usize) -> String {
+        "Department replicated".to_string()
     }
 }
 
@@ -257,16 +297,23 @@ fn employee_table() -> Table<Employee> {
             .searchable()
             .sortable(),
         RelationColumn::of::<DepartmentResource>(relation!(Employee.department))
-            .label("Department"),
+            .label("Department")
+            .toggleable(),
         TextColumn::new(lens!(Employee.job_title))
             .searchable()
-            .sortable(),
+            .sortable()
+            .toggleable(),
         TextColumn::new(lens!(Employee.employment_type)).badge(),
         TextColumn::new(lens!(Employee.salary))
             .money(Currency::USD)
-            .sortable(),
-        ColorColumn::new(lens!(Employee.team_color)),
-        DateColumn::new(lens!(Employee.hire_date)).sortable(),
+            .sortable()
+            .toggleable(),
+        ColorColumn::new(lens!(Employee.team_color))
+            .toggleable()
+            .hidden_by_default(),
+        DateColumn::new(lens!(Employee.hire_date))
+            .sortable()
+            .toggleable(),
         BooleanColumn::new(lens!(Employee.is_active))
             .label("Active")
             .sortable(),
@@ -480,7 +527,9 @@ impl Resource for LeaveRequestResource {
                         .numeric(1)
                         .sortable(),
                     RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.approver))
-                        .label("Approver"),
+                        .label("Approver")
+                        .toggleable()
+                        .hidden_by_default(),
                 ))
                 .default_sort_desc(lens!(LeaveRequest.start_date))
                 .action_layout(ActionLayout::Menu)
@@ -820,7 +869,8 @@ impl Resource for ProjectResource {
                     TextColumn::new(lens!(Project.status)).badge(),
                     TextColumn::new(lens!(Project.priority)).badge(),
                     RelationColumn::of::<DepartmentResource>(relation!(Project.department))
-                        .label("Department"),
+                        .label("Department")
+                        .toggleable(),
                     TextColumn::new(lens!(Project.budget))
                         .money(Currency::USD)
                         .sortable(),
@@ -828,8 +878,12 @@ impl Resource for ProjectResource {
                         .money(Currency::USD)
                         .sortable(),
                     ComputedColumn::new("Progress", |project: &Project| progress(project)),
-                    DateColumn::new(lens!(Project.start_date)).sortable(),
-                    DateColumn::new(lens!(Project.end_date)).sortable(),
+                    DateColumn::new(lens!(Project.start_date))
+                        .sortable()
+                        .toggleable(),
+                    DateColumn::new(lens!(Project.end_date))
+                        .sortable()
+                        .toggleable(),
                 ))
                 .default_sort_desc(lens!(Project.start_date))
                 .action_layout(ActionLayout::Menu)
@@ -1093,13 +1147,17 @@ impl Resource for TaskResource {
                     TextColumn::new(lens!(Task.title)).searchable().sortable(),
                     RelationColumn::of::<ProjectResource>(relation!(Task.project)).label("Project"),
                     RelationColumn::of::<EmployeeResource>(relation!(Task.assignee))
-                        .label("Assignee"),
+                        .label("Assignee")
+                        .toggleable(),
                     TextColumn::new(lens!(Task.status)).badge(),
                     TextColumn::new(lens!(Task.priority)).badge(),
                     TextColumn::new(lens!(Task.estimated_hours))
                         .numeric(1)
-                        .sortable(),
-                    DateColumn::new(lens!(Task.due_date)).sortable(),
+                        .sortable()
+                        .toggleable(),
+                    DateColumn::new(lens!(Task.due_date))
+                        .sortable()
+                        .toggleable(),
                 ))
                 .action_layout(ActionLayout::Menu)
                 .filters((
@@ -1151,6 +1209,7 @@ impl Resource for TaskResource {
             .action::<SetTaskPriority>()
             .action::<BulkSetTaskStatus>()
             .action::<BulkAssignTask>()
+            .action::<ReplicateTask>()
     }
 
     crate::audit!();
@@ -1401,6 +1460,44 @@ impl Action<TaskResource> for BulkSetTaskStatus {
     }
 }
 
+/// Copies a task, leaving out the hours booked and the completion, confirming first.
+pub struct ReplicateTask;
+
+impl Action<TaskResource> for ReplicateTask {
+    type Input = ();
+    const NAME: &'static str = "replicate";
+    const PLACES: Places = Places::ROW;
+    const CONFIRM: bool = true;
+
+    async fn run(
+        _cx: &Cx,
+        tasks: &[Task],
+        (): (),
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<Outcome, WriteError> {
+        for task in tasks {
+            toasty::create!(Task {
+                project_id: task.project_id,
+                assigned_to: task.assigned_to,
+                title: task.title.clone(),
+                description: task.description.clone(),
+                status: task.status,
+                priority: task.priority,
+                estimated_hours: task.estimated_hours,
+                due_date: task.due_date,
+                labels: task.labels.clone(),
+            })
+            .exec(&mut *ex)
+            .await?;
+        }
+        Ok(Outcome::done())
+    }
+
+    fn success(_cx: &Cx, _count: usize) -> String {
+        "Task replicated".to_string()
+    }
+}
+
 /// Moves every task of `tasks` to `status`.
 async fn set_task_status(
     tasks: &[Task],
@@ -1443,15 +1540,20 @@ impl Resource for TimesheetResource {
                         .label("Employee"),
                     RelationColumn::of::<ProjectResource>(relation!(Timesheet.project))
                         .label("Project"),
-                    RelationColumn::of::<TaskResource>(relation!(Timesheet.task)).label("Task"),
+                    RelationColumn::of::<TaskResource>(relation!(Timesheet.task))
+                        .label("Task")
+                        .toggleable(),
                     TextColumn::new(lens!(Timesheet.date)).sortable(),
                     TextColumn::new(lens!(Timesheet.hours))
                         .numeric(1)
                         .sortable(),
-                    BooleanColumn::new(lens!(Timesheet.is_billable)).label("Billable"),
+                    BooleanColumn::new(lens!(Timesheet.is_billable))
+                        .label("Billable")
+                        .toggleable(),
                     TextColumn::new(lens!(Timesheet.hourly_rate))
                         .money(Currency::USD)
-                        .sortable(),
+                        .sortable()
+                        .toggleable(),
                     TextColumn::new(lens!(Timesheet.total_cost))
                         .money(Currency::USD)
                         .sortable(),
@@ -1676,8 +1778,11 @@ impl Resource for ExpenseResource {
                         .money(Currency::USD)
                         .sortable(),
                     RelationColumn::of::<ProjectResource>(relation!(Expense.project))
-                        .label("Project"),
-                    DateColumn::new(lens!(Expense.submitted_at)).sortable(),
+                        .label("Project")
+                        .toggleable(),
+                    DateColumn::new(lens!(Expense.submitted_at))
+                        .sortable()
+                        .toggleable(),
                 ))
                 .action_layout(ActionLayout::Menu)
                 .filters((

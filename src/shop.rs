@@ -10,6 +10,7 @@ use topcoat::{Result, context::Cx};
 
 use crate::blog::CommentResource;
 use crate::enums::OrderStatus;
+use crate::models::replica_suffix;
 use crate::models::{
     Address, Brand, Comment, Customer, Order, OrderAddress, OrderItem, Payment, Product,
     ProductCategory,
@@ -29,6 +30,11 @@ impl Resource for ProductResource {
             .icon(crate::icons::PRODUCTS)
             .navigation_group("Shop")
             .navigation_order(0)
+            .navigation_badge(
+                Product::fields()
+                    .qty()
+                    .lt(Product::fields().security_stock()),
+            )
             .policy(Allow)
             .table(product_table())
             .form(Schema::new((
@@ -342,11 +348,14 @@ impl Resource for BrandResource {
                     TextColumn::new(lens!(Brand.name)).searchable().sortable(),
                     TextColumn::new(lens!(Brand.website))
                         .searchable()
-                        .sortable(),
+                        .sortable()
+                        .toggleable(),
                     BooleanColumn::new(lens!(Brand.is_visible)).label("Visibility"),
                     DateColumn::new(lens!(Brand.updated_at))
                         .label("Last modified at")
-                        .sortable(),
+                        .sortable()
+                        .toggleable()
+                        .hidden_by_default(),
                 ))
                 .action_layout(ActionLayout::Menu),
             )
@@ -438,11 +447,14 @@ impl Resource for ProductCategoryResource {
                     RelationColumn::of::<ProductCategoryResource>(relation!(
                         ProductCategory.parent
                     ))
-                    .label("Parent"),
+                    .label("Parent")
+                    .toggleable(),
                     BooleanColumn::new(lens!(ProductCategory.is_visible)).label("Visibility"),
                     DateColumn::new(lens!(ProductCategory.updated_at))
                         .label("Last modified at")
-                        .sortable(),
+                        .sortable()
+                        .toggleable()
+                        .hidden_by_default(),
                 ))
                 .default_sort(lens!(ProductCategory.name))
                 .action_layout(ActionLayout::Menu),
@@ -539,10 +551,12 @@ impl Resource for CustomerResource {
                     ComputedColumn::new("Country", |customer: &Customer| {
                         customer_country(customer).unwrap_or_default()
                     })
-                    .include_unscoped(Customer::fields().addresses()),
+                    .include_unscoped(Customer::fields().addresses())
+                    .toggleable(),
                     TextColumn::new(lens!(Customer.phone))
                         .searchable()
-                        .sortable(),
+                        .sortable()
+                        .toggleable(),
                 ))
                 .default_sort(lens!(Customer.name))
                 .action_layout(ActionLayout::Menu),
@@ -685,6 +699,7 @@ impl Resource for OrderResource {
             .action::<ProcessOrder>()
             .action::<ShipOrder>()
             .action::<DeliverOrder>()
+            .action::<ReplicateOrder>()
             .action::<CancelOrder>()
             .soft_delete(lens!(Order.deleted_at))
     }
@@ -831,6 +846,42 @@ impl Action<OrderResource> for DeliverOrder {
 
     fn success(_cx: &Cx, _count: usize) -> String {
         "Order marked as delivered".to_string()
+    }
+}
+
+/// Copies an order as a new one under a fresh number, confirming first.
+pub struct ReplicateOrder;
+
+impl Action<OrderResource> for ReplicateOrder {
+    type Input = ();
+    const NAME: &'static str = "replicate";
+    const PLACES: Places = Places::EDIT;
+    const CONFIRM: bool = true;
+
+    async fn run(
+        _cx: &Cx,
+        orders: &[Order],
+        (): (),
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<Outcome, WriteError> {
+        let date = jiff::Zoned::now().strftime("%Y%m%d").to_string();
+        for order in orders {
+            toasty::create!(Order {
+                customer_id: order.customer_id,
+                number: format!("OR-{date}-{}", replica_suffix()),
+                total_price: order.total_price,
+                shipping_price: order.shipping_price,
+                shipping_method: order.shipping_method.clone(),
+                notes: order.notes.clone(),
+            })
+            .exec(&mut *ex)
+            .await?;
+        }
+        Ok(Outcome::done())
+    }
+
+    fn success(_cx: &Cx, _count: usize) -> String {
+        "Order replicated".to_string()
     }
 }
 

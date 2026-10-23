@@ -84,6 +84,19 @@ pub fn round(amount: f64) -> f64 {
     (amount * 100.0).round() / 100.0
 }
 
+/// Five characters that tell a replica's slug or number apart from its original's.
+pub fn replica_suffix() -> String {
+    const DIGITS: &[u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let mut n = Timestamp::now().as_nanosecond().unsigned_abs();
+    (0..5)
+        .map(|_| {
+            let digit = DIGITS[(n % 36) as usize] as char;
+            n /= 36;
+            digit
+        })
+        .collect()
+}
+
 /// How a dashboard amount renders: two decimals behind a dollar sign.
 pub fn money(amount: &f64) -> String {
     format!("${amount:.2}")

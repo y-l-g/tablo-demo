@@ -63,11 +63,19 @@ fn post_table() -> Table<Post> {
     Table::new((
         ImageColumn::new(lens!(Post.image)).label("Image"),
         TextColumn::new(lens!(Post.title)).searchable().sortable(),
-        TextColumn::new(lens!(Post.slug)).searchable().sortable(),
-        RelationColumn::of::<AuthorResource>(relation!(Post.author)).label("Author"),
+        TextColumn::new(lens!(Post.slug))
+            .searchable()
+            .sortable()
+            .toggleable()
+            .hidden_by_default(),
+        RelationColumn::of::<AuthorResource>(relation!(Post.author))
+            .label("Author")
+            .toggleable(),
         ComputedColumn::new("Status", |post: &Post| post.status().to_string()),
         RelationColumn::of::<PostCategoryResource>(relation!(Post.post_category))
-            .label("Post category"),
+            .label("Post category")
+            .toggleable()
+            .hidden_by_default(),
         DateColumn::new(lens!(Post.published_at))
             .label("Publishing date")
             .sortable(),
@@ -170,11 +178,14 @@ impl Resource for PostCategoryResource {
                         .sortable(),
                     TextColumn::new(lens!(PostCategory.slug))
                         .searchable()
-                        .sortable(),
+                        .sortable()
+                        .toggleable(),
                     BooleanColumn::new(lens!(PostCategory.is_visible)).label("Visibility"),
                     DateColumn::new(lens!(PostCategory.updated_at))
                         .label("Last modified at")
-                        .sortable(),
+                        .sortable()
+                        .toggleable()
+                        .hidden_by_default(),
                 ))
                 .default_sort(lens!(PostCategory.name))
                 .action_layout(ActionLayout::Menu),

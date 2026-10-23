@@ -55,5 +55,5 @@ beside the executable.
 - **Global search** in the topbar, over every resource, with results that respect
   the list's tenancy, trash and field access and open the record's page.
 
-[GAPS.md](GAPS.md) lists everything in the Filament demo that Tablo has no
-equivalent for, and what this demo does instead.
+[GAPS.md](GAPS.md) lists what the Filament demo does that this demo cannot,
+and what blocks it.
