@@ -39,7 +39,6 @@ cannot, and what blocks it. Everything not listed here is translated.
 | Reactive fields (slug from title, derived amounts) | no `Set`/`Get`; slugs are typed, amounts recomputed server-side |
 | Nested relationship forms (order address, order items, expense lines) | a repeater edits a `#[document]` list, not related rows; they are separate resources on the parent's detail page |
 | Wizards (create order, create expense) | no wizard |
-| Tabs in the employee and project forms | no tabs layout; sections instead |
 | `createOptionForm` on the order's customer | no create-in-place |
 | `hiddenOn('create')` (leave request review) | a condition watches a field, not the operation |
 | Skills and labels checkbox lists | a multiple choice must bind a many-to-many field, not `Vec<String>` |

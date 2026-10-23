@@ -1,7 +1,7 @@
-//! The cards the dashboards draw.
+//! The lists the dashboards draw.
 //!
-//! Tablo ships no dashboard widgets, so a dashboard is a [`Page`](tablo::Page)
-//! that renders these directly: one card per figure or list.
+//! The figures are Tablo's `ui::stat` tiles; Tablo ships no list widget, so a
+//! dashboard draws its ranked lists here.
 
 use topcoat::{
     context::Cx,
@@ -10,25 +10,6 @@ use topcoat::{
 
 /// One row of a card: its label and its value.
 pub type Point = (String, f64);
-
-/// A card showing one figure, its caption and where it came from.
-pub fn stat_card<'a>(
-    cx: &'a Cx,
-    label: impl Into<String>,
-    value: impl Into<String>,
-    caption: impl Into<String>,
-) -> BoxView<'a> {
-    let (label, value, caption) = (label.into(), value.into(), caption.into());
-    view! {
-        cx =>
-        <div class="rounded-xl border border-border bg-card p-4 text-card-foreground">
-            <p class="text-sm font-medium text-muted-foreground">(label)</p>
-            <p class="mt-1 text-3xl font-semibold tracking-tight">(value)</p>
-            <p class="mt-1 text-sm text-muted-foreground">(caption)</p>
-        </div>
-    }
-    .boxed()
-}
 
 /// A table of `rows`, one `(label, value)` pair per line.
 pub fn table_card<'a>(cx: &'a Cx, caption: impl Into<String>, rows: &[Point]) -> BoxView<'a> {

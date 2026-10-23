@@ -45,15 +45,19 @@ beside the executable.
   record form, a detail page and its relations.
 - **Tables** with search, sort, filters, grouping, pagination and CSV export.
 - **Forms** with choice enums, relationship choices, dependent choices,
-  conditional fields, embedded values, `has_many` and `belongs_to` writes, and
-  file uploads.
+  conditional fields, tabs, embedded values, `has_many` and `belongs_to` writes,
+  and file uploads.
 - **Actions**, record and bulk, with input dialogs, confirmation and success
   notifications.
-- **Dashboards** that read the seeded data and render their own figures.
+- **Dashboards** that read the seeded data: figures as Tablo's stat tiles,
+  linked to their lists, and ranked lists the demo draws itself.
 - **Navigation** that swaps the page in place, and an icon of its own for every
   sidebar entry, from a Lucide subset the build stages.
 - **Global search** in the topbar, over every resource, with results that respect
   the list's tenancy, trash and field access and open the record's page.
+- **Translations** in English and French, the browser's `Accept-Language`
+  choosing. The demo's own words are in [`locales/`](locales/), beside Tablo's
+  catalog.
 
 [GAPS.md](GAPS.md) lists what the Filament demo does that this demo cannot,
 and what blocks it.

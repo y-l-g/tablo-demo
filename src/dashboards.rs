@@ -11,12 +11,17 @@ use topcoat::{
 };
 
 use crate::{
-    cards::{Point, stat_card, table_card},
+    blog::PostResource,
+    cards::{Point, table_card},
     enums::{EmploymentType, OrderStatus},
+    hr::{
+        EmployeeResource, ExpenseResource, LeaveRequestResource, TaskResource, TimesheetResource,
+    },
     models::{
         Customer, Department, Employee, Expense, LeaveRequest, Order, OrderItem, Product, Task,
         Timesheet,
     },
+    shop::{OrderResource, ProductResource},
 };
 
 /// The panel home: what the demo covers.
@@ -25,7 +30,7 @@ pub struct Dashboard;
 impl Page for Dashboard {
     fn declare() -> PageDef {
         PageDef::new()
-            .label("Welcome")
+            .label(tablo::text!("page-welcome"))
             .icon(crate::icons::WELCOME)
             .navigation_order(-2)
     }
@@ -47,17 +52,39 @@ impl Page for Dashboard {
             cx =>
             tablo::ui::page(
                 tablo::ui::page_header(
-                    tablo::ui::page_title("Welcome to the Filament demo!")
-                    tablo::ui::page_description(
-                        "The same demo application, rebuilt on Tablo."
-                    )
+                    tablo::ui::page_title((tablo::t!(cx, "page-welcome-title")))
+                    tablo::ui::page_description((tablo::t!(cx, "page-welcome-description")))
                 )
                 tablo::ui::page_content(
                     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        (stat_card(cx, "Posts", posts.to_string(), "the blog's articles"))
-                        (stat_card(cx, "Products", products.to_string(), "what the shop sells"))
-                        (stat_card(cx, "Orders", orders.to_string(), "placed by customers"))
-                        (stat_card(cx, "Employees", employees.to_string(), "across every department"))
+                        tablo::ui::stat(
+                            label: tablo::t!(cx, "resource-post.plural"),
+                            value: posts.to_string(),
+                            detail: tablo::t!(cx, "stat-detail-posts"),
+                            icon: crate::icons::POSTS,
+                            href: tablo::url::resource::<PostResource>(cx)
+                        )
+                        tablo::ui::stat(
+                            label: tablo::t!(cx, "resource-product.plural"),
+                            value: products.to_string(),
+                            detail: tablo::t!(cx, "stat-detail-products"),
+                            icon: crate::icons::PRODUCTS,
+                            href: tablo::url::resource::<ProductResource>(cx)
+                        )
+                        tablo::ui::stat(
+                            label: tablo::t!(cx, "resource-order.plural"),
+                            value: orders.to_string(),
+                            detail: tablo::t!(cx, "stat-detail-orders"),
+                            icon: crate::icons::ORDERS,
+                            href: tablo::url::resource::<OrderResource>(cx)
+                        )
+                        tablo::ui::stat(
+                            label: tablo::t!(cx, "resource-employee.plural"),
+                            value: employees.to_string(),
+                            detail: tablo::t!(cx, "stat-detail-employees"),
+                            icon: crate::icons::EMPLOYEES,
+                            href: tablo::url::resource::<EmployeeResource>(cx)
+                        )
                     </div>
                 )
             )
@@ -72,7 +99,7 @@ impl Page for ShopDashboard {
     fn declare() -> PageDef {
         PageDef::new()
             .slug("shop")
-            .label("Shop dashboard")
+            .label(tablo::text!("page-shop-dashboard"))
             .icon(crate::icons::SHOP_DASHBOARD)
             .navigation_order(2)
     }
@@ -134,25 +161,60 @@ impl Page for ShopDashboard {
                 .filter(|item| item.order_id.is_some_and(|id| sold_ids.contains(&id))),
             &products,
         );
+        let customer_count = customers.len().to_string();
+        let order_count = orders.len().to_string();
+        let item_count = items.len().to_string();
 
         Ok(view! {
             cx =>
             tablo::ui::page(
                 tablo::ui::page_header(
-                    tablo::ui::page_title("Shop dashboard")
-                    tablo::ui::page_description(
-                        "How the shop is doing, over every customer and order."
-                    )
+                    tablo::ui::page_title((tablo::t!(cx, "page-shop-dashboard")))
+                    tablo::ui::page_description((tablo::t!(cx, "dashboard-shop-description")))
                 )
                 tablo::ui::page_content(
                     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        (stat_card(cx, "Repeat customer rate", percent(repeat_rate), format!("{repeat} of {} customers", customers.len())))
-                        (stat_card(cx, "Avg items / order", format!("{items_per_order:.1}"), format!("{} items, {} orders", items.len(), orders.len())))
-                        (stat_card(cx, "Cancellation rate", percent(cancellation_rate), format!("{cancelled} cancelled orders")))
-                        (stat_card(cx, "Revenue / customer", crate::models::money(&revenue_per_customer), format!("{} total revenue", crate::models::dollars(revenue))))
+                        tablo::ui::stat(
+                            label: tablo::t!(cx, "stat-repeat-customer-rate"),
+                            value: percent(repeat_rate),
+                            detail: tablo::t!(
+                                cx,
+                                "stat-detail-repeat",
+                                repeat = repeat.to_string(),
+                                total = customer_count
+                            )
+                        )
+                        tablo::ui::stat(
+                            label: tablo::t!(cx, "stat-avg-items-per-order"),
+                            value: format!("{items_per_order:.1}"),
+                            detail: tablo::t!(
+                                cx,
+                                "stat-detail-items",
+                                items = item_count,
+                                orders = order_count
+                            )
+                        )
+                        tablo::ui::stat(
+                            label: tablo::t!(cx, "stat-cancellation-rate"),
+                            value: percent(cancellation_rate),
+                            detail: tablo::t!(
+                                cx,
+                                "stat-detail-cancelled",
+                                count = cancelled.to_string()
+                            )
+                        )
+                        tablo::ui::stat(
+                            label: tablo::t!(cx, "stat-revenue-per-customer"),
+                            value: crate::models::money(&revenue_per_customer),
+                            detail: tablo::t!(
+                                cx,
+                                "stat-detail-revenue",
+                                total = crate::models::dollars(revenue)
+                            )
+                        )
                     </div>
                     <div class="grid gap-6 lg:grid-cols-2">
-                        (table_card(cx, "Top products by revenue", &top_products))
+                        (table_card(cx, tablo::t!(cx, "caption-top-products"), &top_products))
                         (flagged_orders(cx, &orders))
                     </div>
                 )
@@ -185,7 +247,7 @@ fn flagged_orders<'a>(cx: &'a Cx, orders: &[Order]) -> BoxView<'a> {
         .take(5)
         .map(|order| (order.number.clone(), order.total_price.unwrap_or(0.0)))
         .collect();
-    table_card(cx, "Flagged orders (oldest first)", &rows)
+    table_card(cx, tablo::t!(cx, "caption-flagged-orders"), &rows)
 }
 
 /// The HR dashboard.
@@ -195,7 +257,7 @@ impl Page for HrDashboard {
     fn declare() -> PageDef {
         PageDef::new()
             .slug("hr")
-            .label("HR dashboard")
+            .label(tablo::text!("page-hr-dashboard"))
             .icon(crate::icons::HR_DASHBOARD)
             .navigation_order(3)
     }
@@ -239,28 +301,80 @@ impl Page for HrDashboard {
             .map(|department| department.headcount_limit)
             .sum();
         let open_capacity = (capacity - active_count as i64).max(0);
+        let employee_count = employees.len().to_string();
 
         Ok(view! {
             cx =>
             tablo::ui::page(
                 tablo::ui::page_header(
-                    tablo::ui::page_title("HR dashboard")
-                    tablo::ui::page_description(
-                        "The workforce, its leave, its projects and what they cost."
-                    )
+                    tablo::ui::page_title((tablo::t!(cx, "page-hr-dashboard")))
+                    tablo::ui::page_description((tablo::t!(cx, "dashboard-hr-description")))
                 )
                 tablo::ui::page_content(
                     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        (stat_card(cx, "Avg tenure", format!("{tenure:.1} yrs"), format!("{active_count} active employees")))
-                        (stat_card(cx, "Turnover rate", percent(share(inactive, employees.len())), format!("{inactive} of {} inactive", employees.len())))
-                        (stat_card(cx, "Open capacity", open_capacity.to_string(), format!("{capacity} seats across the active departments")))
-                        (stat_card(cx, "Contractor ratio", percent(share(contractors, active_count)), format!("{contractors} contractors")))
+                        tablo::ui::stat(
+                            label: tablo::t!(cx, "stat-avg-tenure"),
+                            value: tablo::t!(cx, "stat-years", years = format!("{tenure:.1}")),
+                            detail: tablo::t!(
+                                cx,
+                                "stat-detail-active",
+                                count = active_count.to_string()
+                            )
+                        )
+                        tablo::ui::stat(
+                            label: tablo::t!(cx, "stat-turnover-rate"),
+                            value: percent(share(inactive, employees.len())),
+                            detail: tablo::t!(
+                                cx,
+                                "stat-detail-inactive",
+                                inactive = inactive.to_string(),
+                                total = employee_count
+                            )
+                        )
+                        tablo::ui::stat(
+                            label: tablo::t!(cx, "stat-open-capacity"),
+                            value: open_capacity.to_string(),
+                            detail: tablo::t!(cx, "stat-detail-seats", seats = capacity.to_string())
+                        )
+                        tablo::ui::stat(
+                            label: tablo::t!(cx, "stat-contractor-ratio"),
+                            value: percent(share(contractors, active_count)),
+                            detail: tablo::t!(
+                                cx,
+                                "stat-detail-contractors",
+                                count = contractors.to_string()
+                            )
+                        )
                     </div>
                     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        (stat_card(cx, "Tasks", tasks.len().to_string(), "across every project"))
-                        (stat_card(cx, "Timesheets", timesheets.len().to_string(), "booked entries"))
-                        (stat_card(cx, "Leave requests", leave.len().to_string(), "all statuses"))
-                        (stat_card(cx, "Expenses", expenses.len().to_string(), "claims filed"))
+                        tablo::ui::stat(
+                            label: tablo::t!(cx, "resource-task.plural"),
+                            value: tasks.len().to_string(),
+                            detail: tablo::t!(cx, "stat-detail-tasks"),
+                            icon: crate::icons::TASKS,
+                            href: tablo::url::resource::<TaskResource>(cx)
+                        )
+                        tablo::ui::stat(
+                            label: tablo::t!(cx, "resource-timesheet.plural"),
+                            value: timesheets.len().to_string(),
+                            detail: tablo::t!(cx, "stat-detail-timesheets"),
+                            icon: crate::icons::TIMESHEETS,
+                            href: tablo::url::resource::<TimesheetResource>(cx)
+                        )
+                        tablo::ui::stat(
+                            label: tablo::t!(cx, "resource-leave-request.plural"),
+                            value: leave.len().to_string(),
+                            detail: tablo::t!(cx, "stat-detail-leave"),
+                            icon: crate::icons::LEAVE_REQUESTS,
+                            href: tablo::url::resource::<LeaveRequestResource>(cx)
+                        )
+                        tablo::ui::stat(
+                            label: tablo::t!(cx, "resource-expense.plural"),
+                            value: expenses.len().to_string(),
+                            detail: tablo::t!(cx, "stat-detail-expenses"),
+                            icon: crate::icons::EXPENSES,
+                            href: tablo::url::resource::<ExpenseResource>(cx)
+                        )
                     </div>
                 )
             )
