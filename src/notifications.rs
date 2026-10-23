@@ -10,12 +10,12 @@ use crate::models::{Comment, Customer, Order};
 pub async fn new_order(cx: &Cx, order: &Order) -> Result<()> {
     let customer = customer_name(cx, order.customer_id).await;
     let description = match customer {
-        Some(name) => format!("{name} placed an order."),
-        None => "An order was placed.".to_string(),
+        Some(name) => tablo::t!(cx, "notice-order-placed", customer = name),
+        None => tablo::t!(cx, "notice-order-placed-unknown"),
     };
     send(
         cx,
-        Notification::success("New order").description(description),
+        Notification::success(tablo::t!(cx, "notice-new-order")).description(description),
         tablo::url::edit::<crate::shop::OrderResource>(cx, order),
     )
     .await
@@ -25,12 +25,12 @@ pub async fn new_order(cx: &Cx, order: &Order) -> Result<()> {
 pub async fn new_comment(cx: &Cx, comment: &Comment) -> Result<()> {
     let customer = customer_name(cx, comment.customer_id).await;
     let description = match customer {
-        Some(name) => format!("{name} left a comment."),
-        None => "A comment was left.".to_string(),
+        Some(name) => tablo::t!(cx, "notice-comment-left", customer = name),
+        None => tablo::t!(cx, "notice-comment-left-unknown"),
     };
     send(
         cx,
-        Notification::success("New comment").description(description),
+        Notification::success(tablo::t!(cx, "notice-new-comment")).description(description),
         tablo::url::edit::<crate::blog::CommentResource>(cx, comment),
     )
     .await
@@ -43,7 +43,7 @@ async fn send(cx: &Cx, notification: Notification, url: Option<String>) -> Resul
     };
     let user_id = user.user_id();
     let notification = match url {
-        Some(url) => notification.action("View", url),
+        Some(url) => notification.action(tablo::t!(cx, "notice-view"), url),
         None => notification,
     };
     Notifications::of(cx)?.send(&user_id, notification).await?;

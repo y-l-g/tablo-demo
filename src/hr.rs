@@ -5,7 +5,7 @@ use tablo::{
     Action, ActionLayout, Allow, BooleanColumn, ColorColumn, ComputedColumn, CountColumn, Currency,
     DateColumn, DateFilter, Detail, FileColumn, FormInput, GlobalSearch, Grid, Outcome, Places,
     RecordForm, Relation, RelationColumn, Resource, ResourceDef, Schema, Section, SelectFilter,
-    Table, TernaryFilter, TextColumn, WriteError, lens, relation,
+    Tab, Table, Tabs, TernaryFilter, TextColumn, WriteError, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -30,8 +30,7 @@ impl Resource for DepartmentResource {
         let c = DepartmentForm::controls();
         ResourceDef::new()
             .icon(crate::icons::DEPARTMENTS)
-            .label("Department")
-            .navigation_group("HR")
+            .navigation_group(tablo::text!("navigation-hr"))
             .navigation_order(1)
             .policy(Allow)
             .table(
@@ -40,40 +39,44 @@ impl Resource for DepartmentResource {
                         .searchable()
                         .sortable(),
                     RelationColumn::of::<DepartmentResource>(relation!(Department.parent))
-                        .label("Parent")
+                        .label(tablo::text!("label-parent"))
                         .toggleable(),
                     CountColumn::of::<EmployeeResource>(relation!(Department.employees))
-                        .label("Headcount"),
+                        .label(tablo::text!("label-headcount")),
                     TextColumn::new(lens!(Department.budget))
                         .money(Currency::USD)
                         .sortable(),
                     ColorColumn::new(lens!(Department.color)).toggleable(),
-                    BooleanColumn::new(lens!(Department.is_active)).label("Active"),
+                    BooleanColumn::new(lens!(Department.is_active))
+                        .label(tablo::text!("label-active")),
                 ))
                 .default_sort(lens!(Department.name))
                 .action_layout(ActionLayout::Menu),
             )
             .detail(Detail::new(
-                Section::new("Department").columns((
+                Section::new(tablo::text!("section-department")).columns((
                     TextColumn::new(lens!(Department.name)),
                     TextColumn::new(lens!(Department.slug)),
                     RelationColumn::of::<DepartmentResource>(relation!(Department.parent))
-                        .label("Parent"),
+                        .label(tablo::text!("label-parent")),
                     TextColumn::new(lens!(Department.description)),
                     TextColumn::new(lens!(Department.budget)).money(Currency::USD),
                     TextColumn::new(lens!(Department.headcount_limit)).numeric(0),
                     ColorColumn::new(lens!(Department.color)),
-                    BooleanColumn::new(lens!(Department.is_active)).label("Active"),
+                    BooleanColumn::new(lens!(Department.is_active))
+                        .label(tablo::text!("label-active")),
                 )),
             ))
-            .form(Schema::new(Section::new("Department").schema((
-                Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
-                c.parent_id.label("Parent department"),
-                c.description.multiline(3),
-                Grid::new(2).schema((c.budget.prefix("$"), c.headcount_limit)),
-                c.color,
-                c.is_active.switch().label("Active"),
-            ))))
+            .form(Schema::new(
+                Section::new(tablo::text!("section-department")).schema((
+                    Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
+                    c.parent_id.label(tablo::text!("label-parent-department")),
+                    c.description.multiline(3),
+                    Grid::new(2).schema((c.budget.prefix("$"), c.headcount_limit)),
+                    c.color,
+                    c.is_active.switch().label(tablo::text!("label-active")),
+                )),
+            ))
             .record_title(lens!(Department.name))
             .relation(Relation::has_many::<EmployeeResource>(
                 Employee::fields().department_id(),
@@ -104,7 +107,6 @@ pub struct DepartmentForm {
 /// What `AdjustDepartmentBudget` asks for.
 #[derive(FormInput)]
 pub struct BudgetChange {
-    #[form(label = "Budget")]
     pub budget: f64,
 }
 
@@ -132,8 +134,8 @@ impl Action<DepartmentResource> for AdjustDepartmentBudget {
         Ok(Outcome::done())
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Budget saved".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-budget-saved")
     }
 }
 
@@ -169,8 +171,8 @@ impl Action<DepartmentResource> for ReplicateDepartment {
         Ok(Outcome::done())
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Department replicated".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-department-replicated")
     }
 }
 
@@ -213,63 +215,70 @@ impl Resource for EmployeeResource {
         let salary = c
             .salary
             .prefix("$")
-            .suffix("per year")
+            .suffix(tablo::text!("unit-per-year"))
             .visible_when(&c.employment_type, ["full_time", "part_time"]);
         let hourly_rate = c
             .hourly_rate
             .prefix("$")
-            .suffix("per hour")
+            .suffix(tablo::text!("unit-per-hour"))
             .visible_when(&c.employment_type, ["contractor", "intern"]);
         let job_title = c
             .job_title
             .suggestions(crate::seed::JOB_TITLES.iter().copied());
         ResourceDef::new()
             .icon(crate::icons::EMPLOYEES)
-            .label("Employee")
-            .navigation_group("HR")
+            .navigation_group(tablo::text!("navigation-hr"))
             .navigation_order(0)
             .policy(Allow)
             .table(employee_table())
-            .detail(Detail::new(
-                Section::new("Employee").columns((
+            .detail(Detail::new(Tabs::new([
+                Tab::new(tablo::text!("tab-personal")).columns(Grid::new(2).columns((
+                    TextColumn::new(lens!(Employee.name)),
+                    TextColumn::new(lens!(Employee.email)),
+                    TextColumn::new(lens!(Employee.phone)),
+                    DateColumn::new(lens!(Employee.date_of_birth)),
+                    ColorColumn::new(lens!(Employee.team_color)),
+                ))),
+                Tab::new(tablo::text!("tab-employment")).columns(
                     Grid::new(2).columns((
-                        TextColumn::new(lens!(Employee.name)),
-                        TextColumn::new(lens!(Employee.email)),
-                        TextColumn::new(lens!(Employee.phone)),
                         RelationColumn::of::<DepartmentResource>(relation!(Employee.department))
-                            .label("Department"),
+                            .label(tablo::text!("label-department")),
                         TextColumn::new(lens!(Employee.job_title)),
                         TextColumn::new(lens!(Employee.employment_type)).badge(),
-                        TextColumn::new(lens!(Employee.salary)).money(Currency::USD),
                         DateColumn::new(lens!(Employee.hire_date)),
-                        BooleanColumn::new(lens!(Employee.is_active)).label("Active"),
+                        TextColumn::new(lens!(Employee.salary)).money(Currency::USD),
+                        BooleanColumn::new(lens!(Employee.is_active))
+                            .label(tablo::text!("label-active")),
                     )),
-                    ColorColumn::new(lens!(Employee.team_color)),
-                )),
-            ))
-            .form(Schema::new((
-                Section::new("Personal").schema(Grid::new(2).schema((
+                ),
+            ])))
+            .form(Schema::new(Tabs::new([
+                Tab::new(tablo::text!("tab-personal")).schema(Grid::new(2).schema((
                     c.name,
                     c.email.email().unique(),
                     c.phone.tel(),
                     c.date_of_birth,
                     c.team_color,
                 ))),
-                Section::new("Employment").schema(Grid::new(2).schema((
-                    c.department_id.searchable().label("Department"),
-                    job_title,
-                    c.employment_type.radio(),
-                    c.hire_date,
-                    salary,
-                    hourly_rate,
-                    c.is_active.switch().label("Active"),
-                ))),
-            )))
+                Tab::new(tablo::text!("tab-employment")).schema(
+                    Grid::new(2).schema((
+                        c.department_id
+                            .searchable()
+                            .label(tablo::text!("label-department")),
+                        job_title,
+                        c.employment_type.radio(),
+                        c.hire_date,
+                        salary,
+                        hourly_rate,
+                        c.is_active.switch().label(tablo::text!("label-active")),
+                    )),
+                ),
+            ])))
             .record_title(lens!(Employee.name))
             .global_search(
                 GlobalSearch::new()
-                    .detail("Job title", lens!(Employee.job_title))
-                    .detail("Email", lens!(Employee.email)),
+                    .detail(tablo::text!("label-job-title"), lens!(Employee.job_title))
+                    .detail(tablo::text!("label-email"), lens!(Employee.email)),
             )
             .relation(Relation::has_many::<TimesheetResource>(
                 Timesheet::fields().employee_id(),
@@ -297,7 +306,7 @@ fn employee_table() -> Table<Employee> {
             .searchable()
             .sortable(),
         RelationColumn::of::<DepartmentResource>(relation!(Employee.department))
-            .label("Department")
+            .label(tablo::text!("label-department"))
             .toggleable(),
         TextColumn::new(lens!(Employee.job_title))
             .searchable()
@@ -315,7 +324,7 @@ fn employee_table() -> Table<Employee> {
             .sortable()
             .toggleable(),
         BooleanColumn::new(lens!(Employee.is_active))
-            .label("Active")
+            .label(tablo::text!("label-active"))
             .sortable(),
     ))
     .default_sort(lens!(Employee.name))
@@ -323,7 +332,7 @@ fn employee_table() -> Table<Employee> {
     .filters((
         SelectFilter::of(lens!(Employee.employment_type)),
         SelectFilter::relationship::<DepartmentResource>(lens!(Employee.department_id))
-            .label("Department"),
+            .label(tablo::text!("label-department")),
         TernaryFilter::new(lens!(Employee.is_active)),
     ))
 }
@@ -377,7 +386,6 @@ impl Action<EmployeeResource> for ToggleEmployeeActive {
 /// What a department choice asks for.
 #[derive(FormInput)]
 pub struct DepartmentChoice {
-    #[form(label = "Department")]
     pub department_id: Option<u64>,
 }
 
@@ -407,8 +415,8 @@ impl Action<EmployeeResource> for BulkChangeEmployeeDepartment {
     const NAME: &'static str = "bulk-change-department";
     const PLACES: Places = Places::BULK;
 
-    fn label(_cx: &Cx) -> String {
-        "Change department".to_string()
+    fn label(cx: &Cx) -> String {
+        tablo::t!(cx, "action-bulk-change-department")
     }
 
     async fn run(
@@ -420,8 +428,8 @@ impl Action<EmployeeResource> for BulkChangeEmployeeDepartment {
         move_department(employees, choice.department_id, ex).await
     }
 
-    fn success(_cx: &Cx, count: usize) -> String {
-        format!("Moved {count} employee(s)")
+    fn success(cx: &Cx, count: usize) -> String {
+        tablo::t!(cx, "flash-employees-moved", count = count)
     }
 }
 
@@ -444,7 +452,7 @@ async fn move_department(
 /// What a yes or no choice asks for.
 #[derive(FormInput)]
 pub struct ActiveChoice {
-    #[form(options = ActiveOptions, label = "Active")]
+    #[form(options = ActiveOptions)]
     pub is_active: bool,
 }
 
@@ -452,10 +460,10 @@ pub struct ActiveChoice {
 pub struct ActiveOptions;
 
 impl tablo::Options for ActiveOptions {
-    fn options() -> Vec<(String, String)> {
+    fn options() -> Vec<(String, tablo::Text)> {
         vec![
-            ("true".to_string(), "Active".to_string()),
-            ("false".to_string(), "Inactive".to_string()),
+            ("true".to_string(), tablo::text!("label-active")),
+            ("false".to_string(), tablo::text!("label-inactive")),
         ]
     }
 }
@@ -468,8 +476,8 @@ impl Action<EmployeeResource> for BulkSetEmployeeActive {
     const NAME: &'static str = "bulk-set-active";
     const PLACES: Places = Places::BULK;
 
-    fn label(_cx: &Cx) -> String {
-        "Set active".to_string()
+    fn label(cx: &Cx) -> String {
+        tablo::t!(cx, "action-bulk-set-active")
     }
 
     async fn run(
@@ -488,8 +496,8 @@ impl Action<EmployeeResource> for BulkSetEmployeeActive {
         Ok(Outcome::done())
     }
 
-    fn success(_cx: &Cx, count: usize) -> String {
-        format!("Updated {count} employee(s)")
+    fn success(cx: &Cx, count: usize) -> String {
+        tablo::t!(cx, "flash-employees-updated", count = count)
     }
 }
 
@@ -508,18 +516,17 @@ impl Resource for LeaveRequestResource {
         let end_date = c.end_date.gte(&start_date);
         ResourceDef::new()
             .icon(crate::icons::LEAVE_REQUESTS)
-            .label("Leave request")
-            .navigation_group("HR")
+            .navigation_group(tablo::text!("navigation-hr"))
             .navigation_order(2)
             .navigation_badge(LeaveRequest::fields().status().eq(LeaveStatus::Pending))
             .policy(Allow)
             .table(
                 Table::new((
                     RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.employee))
-                        .label("Employee"),
+                        .label(tablo::text!("label-employee")),
                     TextColumn::new(lens!(LeaveRequest.kind))
                         .badge()
-                        .label("Type"),
+                        .label(tablo::text!("label-type")),
                     TextColumn::new(lens!(LeaveRequest.status)).badge(),
                     DateColumn::new(lens!(LeaveRequest.start_date)).sortable(),
                     DateColumn::new(lens!(LeaveRequest.end_date)).sortable(),
@@ -527,7 +534,7 @@ impl Resource for LeaveRequestResource {
                         .numeric(1)
                         .sortable(),
                     RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.approver))
-                        .label("Approver")
+                        .label(tablo::text!("label-approver"))
                         .toggleable()
                         .hidden_by_default(),
                 ))
@@ -535,50 +542,61 @@ impl Resource for LeaveRequestResource {
                 .action_layout(ActionLayout::Menu)
                 .filters((
                     SelectFilter::of(lens!(LeaveRequest.status)),
-                    SelectFilter::of(lens!(LeaveRequest.kind)).label("Type"),
+                    SelectFilter::of(lens!(LeaveRequest.kind)).label(tablo::text!("label-type")),
                 )),
             )
             .detail(Detail::new((
-                Section::new("Leave details").columns(
+                Section::new(tablo::text!("section-leave-details")).columns(
                     Grid::new(3).columns((
                         RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.employee))
-                            .label("Employee"),
+                            .label(tablo::text!("label-employee")),
                         TextColumn::new(lens!(LeaveRequest.kind))
                             .badge()
-                            .label("Type"),
+                            .label(tablo::text!("label-type")),
                         TextColumn::new(lens!(LeaveRequest.status)).badge(),
                         DateColumn::new(lens!(LeaveRequest.start_date)),
                         DateColumn::new(lens!(LeaveRequest.end_date)),
-                        TextColumn::new(lens!(LeaveRequest.days_requested))
-                            .format(|days| format!("{days:.1} days")),
+                        TextColumn::new(lens!(LeaveRequest.days_requested)).format(|days| {
+                            tablo::text!("value-days", value = format!("{days:.1}"))
+                        }),
                         TextColumn::new(lens!(LeaveRequest.start_time)),
                         TextColumn::new(lens!(LeaveRequest.end_time)),
                         TextColumn::new(lens!(LeaveRequest.reason)),
                     )),
                 ),
-                Section::new("Review").columns((
+                Section::new(tablo::text!("section-review")).columns((
                     RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.approver))
-                        .label("Approver"),
-                    DateColumn::new(lens!(LeaveRequest.reviewed_at)).label("Reviewed at"),
+                        .label(tablo::text!("label-approver")),
+                    DateColumn::new(lens!(LeaveRequest.reviewed_at))
+                        .label(tablo::text!("label-reviewed-at")),
                     TextColumn::new(lens!(LeaveRequest.reviewer_notes)),
                 )),
             )))
             .form(Schema::new((
-                Section::new("Leave details").schema(Grid::new(2).schema((
-                    c.employee_id.searchable().label("Employee"),
-                    c.kind.label("Type").radio(),
-                    start_date,
-                    end_date,
-                    c.start_time.label("Start time (half days)"),
-                    c.end_time.label("End time (half days)"),
-                    c.days_requested,
-                    c.reason.multiline(4),
-                ))),
-                Section::new("Review").schema(Grid::new(2).schema((
-                    c.status.buttons(),
-                    c.approver_id.searchable().label("Approver"),
-                    c.reviewer_notes.multiline(3),
-                ))),
+                Section::new(tablo::text!("section-leave-details")).schema(
+                    Grid::new(2).schema((
+                        c.employee_id
+                            .searchable()
+                            .label(tablo::text!("label-employee")),
+                        c.kind.label(tablo::text!("label-type")).radio(),
+                        start_date,
+                        end_date,
+                        c.start_time
+                            .label(tablo::text!("label-start-time-half-days")),
+                        c.end_time.label(tablo::text!("label-end-time-half-days")),
+                        c.days_requested,
+                        c.reason.multiline(4),
+                    )),
+                ),
+                Section::new(tablo::text!("section-review")).schema(
+                    Grid::new(2).schema((
+                        c.status.buttons(),
+                        c.approver_id
+                            .searchable()
+                            .label(tablo::text!("label-approver")),
+                        c.reviewer_notes.multiline(3),
+                    )),
+                ),
             )))
             .record_title(lens!(LeaveRequest.reason))
             .action::<ApproveLeaveRequest>()
@@ -659,7 +677,7 @@ async fn refuse_overlap(
     if overlapping.iter().any(|leave| Some(leave.id) != except) {
         return Err(WriteError::field(
             LeaveRequestFormField::StartDate,
-            "These dates overlap another leave request of this employee",
+            tablo::text!("error-leave-overlap"),
         ));
     }
     Ok(())
@@ -695,8 +713,8 @@ pub struct LeaveRequestForm {
 /// What a rejection asks for.
 #[derive(FormInput)]
 pub struct Rejection {
-    #[form(label = "Reason for rejection", multiline = 3)]
-    pub reviewer_notes: String,
+    #[form(multiline = 3)]
+    pub rejection_reason: String,
 }
 
 /// Approves a pending leave request, confirming first.
@@ -721,8 +739,8 @@ impl Action<LeaveRequestResource> for ApproveLeaveRequest {
         review(requests, LeaveStatus::Approved, None, ex).await
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Leave request approved".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-leave-approved")
     }
 }
 
@@ -747,14 +765,14 @@ impl Action<LeaveRequestResource> for RejectLeaveRequest {
         review(
             requests,
             LeaveStatus::Rejected,
-            Some(rejection.reviewer_notes),
+            Some(rejection.rejection_reason),
             ex,
         )
         .await
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Leave request rejected".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-leave-rejected")
     }
 }
 
@@ -766,8 +784,8 @@ impl Action<LeaveRequestResource> for BulkApproveLeaveRequests {
     const NAME: &'static str = "bulk-approve";
     const PLACES: Places = Places::BULK;
 
-    fn label(_cx: &Cx) -> String {
-        "Approve".to_string()
+    fn label(cx: &Cx) -> String {
+        tablo::t!(cx, "action-bulk-approve")
     }
     const CONFIRM: bool = true;
 
@@ -784,8 +802,8 @@ impl Action<LeaveRequestResource> for BulkApproveLeaveRequests {
         review(requests, LeaveStatus::Approved, None, ex).await
     }
 
-    fn success(_cx: &Cx, count: usize) -> String {
-        format!("Approved {count} leave request(s)")
+    fn success(cx: &Cx, count: usize) -> String {
+        tablo::t!(cx, "flash-leaves-approved", count = count)
     }
 }
 
@@ -797,8 +815,8 @@ impl Action<LeaveRequestResource> for BulkRejectLeaveRequests {
     const NAME: &'static str = "bulk-reject";
     const PLACES: Places = Places::BULK;
 
-    fn label(_cx: &Cx) -> String {
-        "Reject".to_string()
+    fn label(cx: &Cx) -> String {
+        tablo::t!(cx, "action-bulk-reject")
     }
 
     fn can_run(_cx: &Cx, request: &LeaveRequest) -> bool {
@@ -814,14 +832,14 @@ impl Action<LeaveRequestResource> for BulkRejectLeaveRequests {
         review(
             requests,
             LeaveStatus::Rejected,
-            Some(rejection.reviewer_notes),
+            Some(rejection.rejection_reason),
             ex,
         )
         .await
     }
 
-    fn success(_cx: &Cx, count: usize) -> String {
-        format!("Rejected {count} leave request(s)")
+    fn success(cx: &Cx, count: usize) -> String {
+        tablo::t!(cx, "flash-leaves-rejected", count = count)
     }
 }
 
@@ -859,7 +877,7 @@ impl Resource for ProjectResource {
         let end_date = c.end_date.gte(&start_date);
         ResourceDef::new()
             .icon(crate::icons::PROJECTS)
-            .navigation_group("Projects")
+            .navigation_group(tablo::text!("navigation-projects"))
             .navigation_order(0)
             .navigation_badge(Project::fields().status().eq(ProjectStatus::Active))
             .policy(Allow)
@@ -869,7 +887,7 @@ impl Resource for ProjectResource {
                     TextColumn::new(lens!(Project.status)).badge(),
                     TextColumn::new(lens!(Project.priority)).badge(),
                     RelationColumn::of::<DepartmentResource>(relation!(Project.department))
-                        .label("Department")
+                        .label(tablo::text!("label-department"))
                         .toggleable(),
                     TextColumn::new(lens!(Project.budget))
                         .money(Currency::USD)
@@ -877,7 +895,9 @@ impl Resource for ProjectResource {
                     TextColumn::new(lens!(Project.spent))
                         .money(Currency::USD)
                         .sortable(),
-                    ComputedColumn::new("Progress", |project: &Project| progress(project)),
+                    ComputedColumn::new(tablo::text!("label-progress"), |project: &Project| {
+                        progress(project)
+                    }),
                     DateColumn::new(lens!(Project.start_date))
                         .sortable()
                         .toggleable(),
@@ -891,16 +911,16 @@ impl Resource for ProjectResource {
                     SelectFilter::of(lens!(Project.status)),
                     SelectFilter::of(lens!(Project.priority)),
                     SelectFilter::relationship::<DepartmentResource>(lens!(Project.department_id))
-                        .label("Department"),
+                        .label(tablo::text!("label-department")),
                 )),
             )
-            .detail(Detail::new((
-                Section::new("Overview").columns(
+            .detail(Detail::new(Tabs::new([
+                Tab::new(tablo::text!("tab-overview")).columns(
                     Grid::new(2).columns((
                         TextColumn::new(lens!(Project.name)),
                         TextColumn::new(lens!(Project.slug)),
                         RelationColumn::of::<DepartmentResource>(relation!(Project.department))
-                            .label("Department"),
+                            .label(tablo::text!("label-department")),
                         TextColumn::new(lens!(Project.status)).badge(),
                         TextColumn::new(lens!(Project.priority)).badge(),
                         ColorColumn::new(lens!(Project.color)),
@@ -909,36 +929,42 @@ impl Resource for ProjectResource {
                         TextColumn::new(lens!(Project.description)),
                     )),
                 ),
-                Section::new("Budget").columns(
-                    Grid::new(2).columns((
+                Tab::new(tablo::text!("tab-budget")).columns(Grid::new(2).columns(
+                    (
                         TextColumn::new(lens!(Project.budget)).money(Currency::USD),
                         TextColumn::new(lens!(Project.spent)).money(Currency::USD),
-                        TextColumn::new(lens!(Project.estimated_hours))
-                            .format(|hours| format!("{hours:.1} hours")),
-                        TextColumn::new(lens!(Project.actual_hours))
-                            .format(|hours| format!("{hours:.1} hours")),
+                        TextColumn::new(lens!(Project.estimated_hours)).format(|hours| {
+                            tablo::text!("value-hours", value = format!("{hours:.1}"))
+                        }),
+                        TextColumn::new(lens!(Project.actual_hours)).format(|hours| {
+                            tablo::text!("value-hours", value = format!("{hours:.1}"))
+                        }),
+                    ),
+                )),
+            ])))
+            .form(Schema::new(Tabs::new([
+                Tab::new(tablo::text!("tab-overview")).schema(
+                    Grid::new(2).schema((
+                        c.name,
+                        c.slug.disabled_on_edit(),
+                        c.description.multiline(4),
+                        c.department_id
+                            .searchable()
+                            .label(tablo::text!("label-department")),
+                        c.status.buttons(),
+                        c.priority.radio(),
+                        c.color,
+                        start_date,
+                        end_date,
                     )),
                 ),
-            )))
-            .form(Schema::new((
-                Section::new("Overview").schema(Grid::new(2).schema((
-                    c.name,
-                    c.slug.disabled_on_edit(),
-                    c.description.multiline(4),
-                    c.department_id.searchable().label("Department"),
-                    c.status.buttons(),
-                    c.priority.radio(),
-                    c.color,
-                    start_date,
-                    end_date,
-                ))),
-                Section::new("Budget").schema(Grid::new(2).schema((
+                Tab::new(tablo::text!("tab-budget")).schema(Grid::new(2).schema((
                     c.budget.prefix("$"),
                     c.spent.prefix("$"),
-                    c.estimated_hours.suffix("hours"),
-                    c.actual_hours.suffix("hours"),
+                    c.estimated_hours.suffix(tablo::text!("unit-hours")),
+                    c.actual_hours.suffix(tablo::text!("unit-hours")),
                 ))),
-            )))
+            ])))
             .record_title(lens!(Project.name))
             .relation(Relation::has_many::<TaskResource>(
                 Task::fields().project_id(),
@@ -1014,8 +1040,8 @@ impl Action<ProjectResource> for ChangeProjectStatus {
         set_project_status(projects, change.status, ex).await
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Project status saved".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-project-saved")
     }
 }
 
@@ -1041,8 +1067,8 @@ impl Action<ProjectResource> for HoldProject {
         set_project_status(projects, ProjectStatus::OnHold, ex).await
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Project put on hold".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-project-on-hold")
     }
 }
 
@@ -1067,8 +1093,8 @@ impl Action<ProjectResource> for ResumeProject {
         set_project_status(projects, ProjectStatus::Active, ex).await
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Project resumed".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-project-resumed")
     }
 }
 
@@ -1105,8 +1131,8 @@ impl Action<ProjectResource> for CompleteProject {
         Ok(Outcome::done())
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Project completed".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-project-completed")
     }
 }
 
@@ -1138,16 +1164,17 @@ impl Resource for TaskResource {
         let completed_at = c.completed_at.visible_when(&c.status, ["completed"]);
         ResourceDef::new()
             .icon(crate::icons::TASKS)
-            .navigation_group("Projects")
+            .navigation_group(tablo::text!("navigation-projects"))
             .navigation_order(1)
             .navigation_badge(Task::fields().status().eq(TaskStatus::InProgress))
             .policy(Allow)
             .table(
                 Table::new((
                     TextColumn::new(lens!(Task.title)).searchable().sortable(),
-                    RelationColumn::of::<ProjectResource>(relation!(Task.project)).label("Project"),
+                    RelationColumn::of::<ProjectResource>(relation!(Task.project))
+                        .label(tablo::text!("label-project")),
                     RelationColumn::of::<EmployeeResource>(relation!(Task.assignee))
-                        .label("Assignee")
+                        .label(tablo::text!("label-assignee"))
                         .toggleable(),
                     TextColumn::new(lens!(Task.status)).badge(),
                     TextColumn::new(lens!(Task.priority)).badge(),
@@ -1164,20 +1191,20 @@ impl Resource for TaskResource {
                     SelectFilter::of(lens!(Task.status)),
                     SelectFilter::of(lens!(Task.priority)),
                     SelectFilter::relationship::<ProjectResource>(lens!(Task.project_id))
-                        .label("Project"),
+                        .label(tablo::text!("label-project")),
                     SelectFilter::relationship::<EmployeeResource>(lens!(Task.assigned_to))
-                        .label("Assignee"),
+                        .label(tablo::text!("label-assignee")),
                 ))
                 .group_by(lens!(Task.status)),
             )
             .detail(Detail::new(
-                Section::new("Task").columns((
+                Section::new(tablo::text!("section-task")).columns((
                     Grid::new(2).columns((
                         TextColumn::new(lens!(Task.title)),
                         RelationColumn::of::<ProjectResource>(relation!(Task.project))
-                            .label("Project"),
+                            .label(tablo::text!("label-project")),
                         RelationColumn::of::<EmployeeResource>(relation!(Task.assignee))
-                            .label("Assignee"),
+                            .label(tablo::text!("label-assignee")),
                         TextColumn::new(lens!(Task.status)).badge(),
                         TextColumn::new(lens!(Task.priority)).badge(),
                         TextColumn::new(lens!(Task.estimated_hours)),
@@ -1188,19 +1215,25 @@ impl Resource for TaskResource {
                     TextColumn::new(lens!(Task.description)),
                 )),
             ))
-            .form(Schema::new(Section::new("Task details").schema(
-                Grid::new(2).schema((
-                    c.title,
-                    c.project_id.searchable().label("Project"),
-                    c.assigned_to.searchable().label("Assignee"),
-                    c.status.buttons(),
-                    c.priority.radio(),
-                    c.estimated_hours.suffix("hours"),
-                    c.due_date,
-                    c.description.multiline(4),
-                    completed_at,
-                )),
-            )))
+            .form(Schema::new(
+                Section::new(tablo::text!("section-task-details")).schema(
+                    Grid::new(2).schema((
+                        c.title,
+                        c.project_id
+                            .searchable()
+                            .label(tablo::text!("label-project")),
+                        c.assigned_to
+                            .searchable()
+                            .label(tablo::text!("label-assignee")),
+                        c.status.buttons(),
+                        c.priority.radio(),
+                        c.estimated_hours.suffix(tablo::text!("unit-hours")),
+                        c.due_date,
+                        c.description.multiline(4),
+                        completed_at,
+                    )),
+                ),
+            ))
             .record_title(lens!(Task.title))
             .action::<StartTask>()
             .action::<SendTaskToReview>()
@@ -1255,8 +1288,8 @@ impl Action<TaskResource> for StartTask {
         set_task_status(tasks, TaskStatus::InProgress, ex).await
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Task started".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-task-started")
     }
 }
 
@@ -1281,15 +1314,14 @@ impl Action<TaskResource> for SendTaskToReview {
         set_task_status(tasks, TaskStatus::InReview, ex).await
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Task sent to review".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-task-sent-to-review")
     }
 }
 
 /// What completing a task asks for.
 #[derive(FormInput)]
 pub struct TaskCompletion {
-    #[form(label = "Actual hours")]
     pub actual_hours: Option<f64>,
 }
 
@@ -1323,15 +1355,14 @@ impl Action<TaskResource> for CompleteTask {
         Ok(Outcome::done())
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Task completed".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-task-completed")
     }
 }
 
 /// What assigning a task asks for.
 #[derive(FormInput)]
 pub struct AssigneeChoice {
-    #[form(label = "Assignee")]
     pub assigned_to: Option<u64>,
 }
 
@@ -1361,8 +1392,8 @@ impl Action<TaskResource> for BulkAssignTask {
     const NAME: &'static str = "bulk-assign";
     const PLACES: Places = Places::BULK;
 
-    fn label(_cx: &Cx) -> String {
-        "Assign".to_string()
+    fn label(cx: &Cx) -> String {
+        tablo::t!(cx, "action-bulk-assign")
     }
 
     async fn run(
@@ -1374,8 +1405,8 @@ impl Action<TaskResource> for BulkAssignTask {
         assign(tasks, choice.assigned_to, ex).await
     }
 
-    fn success(_cx: &Cx, count: usize) -> String {
-        format!("Assigned {count} task(s)")
+    fn success(cx: &Cx, count: usize) -> String {
+        tablo::t!(cx, "flash-tasks-assigned", count = count)
     }
 }
 
@@ -1442,8 +1473,8 @@ impl Action<TaskResource> for BulkSetTaskStatus {
     const NAME: &'static str = "bulk-set-status";
     const PLACES: Places = Places::BULK;
 
-    fn label(_cx: &Cx) -> String {
-        "Set status".to_string()
+    fn label(cx: &Cx) -> String {
+        tablo::t!(cx, "action-bulk-set-status")
     }
 
     async fn run(
@@ -1455,8 +1486,8 @@ impl Action<TaskResource> for BulkSetTaskStatus {
         set_task_status(tasks, change.status, ex).await
     }
 
-    fn success(_cx: &Cx, count: usize) -> String {
-        format!("Updated {count} task(s)")
+    fn success(cx: &Cx, count: usize) -> String {
+        tablo::t!(cx, "flash-tasks-updated", count = count)
     }
 }
 
@@ -1493,8 +1524,8 @@ impl Action<TaskResource> for ReplicateTask {
         Ok(Outcome::done())
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Task replicated".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-task-replicated")
     }
 }
 
@@ -1526,29 +1557,28 @@ impl Resource for TimesheetResource {
         let task_id = c
             .task_id
             .searchable()
-            .label("Task")
+            .label(tablo::text!("label-task"))
             .depends_on(&c.project_id, Task::fields().project_id());
         ResourceDef::new()
             .icon(crate::icons::TIMESHEETS)
-            .plural_label("Timesheets")
-            .navigation_group("Projects")
+            .navigation_group(tablo::text!("navigation-projects"))
             .navigation_order(2)
             .policy(Allow)
             .table(
                 Table::new((
                     RelationColumn::of::<EmployeeResource>(relation!(Timesheet.employee))
-                        .label("Employee"),
+                        .label(tablo::text!("label-employee")),
                     RelationColumn::of::<ProjectResource>(relation!(Timesheet.project))
-                        .label("Project"),
+                        .label(tablo::text!("label-project")),
                     RelationColumn::of::<TaskResource>(relation!(Timesheet.task))
-                        .label("Task")
+                        .label(tablo::text!("label-task"))
                         .toggleable(),
                     TextColumn::new(lens!(Timesheet.date)).sortable(),
                     TextColumn::new(lens!(Timesheet.hours))
                         .numeric(1)
                         .sortable(),
                     BooleanColumn::new(lens!(Timesheet.is_billable))
-                        .label("Billable")
+                        .label(tablo::text!("label-billable"))
                         .toggleable(),
                     TextColumn::new(lens!(Timesheet.hourly_rate))
                         .money(Currency::USD)
@@ -1562,44 +1592,54 @@ impl Resource for TimesheetResource {
                 .action_layout(ActionLayout::Menu)
                 .filters((
                     SelectFilter::relationship::<EmployeeResource>(lens!(Timesheet.employee_id))
-                        .label("Employee"),
+                        .label(tablo::text!("label-employee")),
                     SelectFilter::relationship::<ProjectResource>(lens!(Timesheet.project_id))
-                        .label("Project"),
+                        .label(tablo::text!("label-project")),
                     TernaryFilter::new(lens!(Timesheet.is_billable)),
-                    DateFilter::new(lens!(Timesheet.date)).label("Date").range(),
+                    DateFilter::new(lens!(Timesheet.date))
+                        .label(tablo::text!("label-date"))
+                        .range(),
                 ))
                 .group_by(lens!(Timesheet.date)),
             )
             .detail(Detail::new(
-                Section::new("Timesheet").columns((
+                Section::new(tablo::text!("section-timesheet")).columns((
                     RelationColumn::of::<EmployeeResource>(relation!(Timesheet.employee))
-                        .label("Employee"),
+                        .label(tablo::text!("label-employee")),
                     RelationColumn::of::<ProjectResource>(relation!(Timesheet.project))
-                        .label("Project"),
-                    RelationColumn::of::<TaskResource>(relation!(Timesheet.task)).label("Task"),
+                        .label(tablo::text!("label-project")),
+                    RelationColumn::of::<TaskResource>(relation!(Timesheet.task))
+                        .label(tablo::text!("label-task")),
                     TextColumn::new(lens!(Timesheet.date)),
                     TextColumn::new(lens!(Timesheet.hours)),
                     TextColumn::new(lens!(Timesheet.minutes)),
-                    BooleanColumn::new(lens!(Timesheet.is_billable)).label("Billable"),
+                    BooleanColumn::new(lens!(Timesheet.is_billable))
+                        .label(tablo::text!("label-billable")),
                     TextColumn::new(lens!(Timesheet.hourly_rate)).money(Currency::USD),
                     TextColumn::new(lens!(Timesheet.total_cost)).money(Currency::USD),
                     TextColumn::new(lens!(Timesheet.description)),
                 )),
             ))
-            .form(Schema::new(Section::new("Timesheet entry").schema(
-                Grid::new(2).schema((
-                    c.employee_id.searchable().label("Employee"),
-                    c.project_id.searchable().label("Project"),
-                    task_id,
-                    c.date,
-                    c.hours.suffix("hours"),
-                    c.minutes.suffix("minutes"),
-                    c.is_billable.switch().label("Billable"),
-                    c.hourly_rate.prefix("$"),
-                    c.total_cost.prefix("$"),
-                    c.description.multiline(2),
-                )),
-            )))
+            .form(Schema::new(
+                Section::new(tablo::text!("section-timesheet-entry")).schema(
+                    Grid::new(2).schema((
+                        c.employee_id
+                            .searchable()
+                            .label(tablo::text!("label-employee")),
+                        c.project_id
+                            .searchable()
+                            .label(tablo::text!("label-project")),
+                        task_id,
+                        c.date,
+                        c.hours.suffix(tablo::text!("unit-hours")),
+                        c.minutes.suffix(tablo::text!("unit-minutes")),
+                        c.is_billable.switch().label(tablo::text!("label-billable")),
+                        c.hourly_rate.prefix("$"),
+                        c.total_cost.prefix("$"),
+                        c.description.multiline(2),
+                    )),
+                ),
+            ))
             .action::<ToggleTimesheetBillable>()
             .action::<BulkMarkBillable>()
             .action::<BulkMarkNonBillable>()
@@ -1705,8 +1745,8 @@ impl Action<TimesheetResource> for BulkMarkBillable {
         set_billable(timesheets, true, ex).await
     }
 
-    fn success(_cx: &Cx, count: usize) -> String {
-        format!("Marked {count} timesheet(s) billable")
+    fn success(cx: &Cx, count: usize) -> String {
+        tablo::t!(cx, "flash-timesheets-billable", count = count)
     }
 }
 
@@ -1728,8 +1768,8 @@ impl Action<TimesheetResource> for BulkMarkNonBillable {
         set_billable(timesheets, false, ex).await
     }
 
-    fn success(_cx: &Cx, count: usize) -> String {
-        format!("Marked {count} timesheet(s) not billable")
+    fn success(cx: &Cx, count: usize) -> String {
+        tablo::t!(cx, "flash-timesheets-not-billable", count = count)
     }
 }
 
@@ -1760,8 +1800,7 @@ impl Resource for ExpenseResource {
         let c = ExpenseForm::controls();
         ResourceDef::new()
             .icon(crate::icons::EXPENSES)
-            .label("Expense")
-            .navigation_group("HR")
+            .navigation_group(tablo::text!("navigation-hr"))
             .navigation_order(3)
             .navigation_badge(Expense::fields().status().eq(ExpenseStatus::Submitted))
             .policy(Allow)
@@ -1771,14 +1810,14 @@ impl Resource for ExpenseResource {
                         .searchable()
                         .sortable(),
                     RelationColumn::of::<EmployeeResource>(relation!(Expense.employee))
-                        .label("Employee"),
+                        .label(tablo::text!("label-employee")),
                     TextColumn::new(lens!(Expense.category)).badge(),
                     TextColumn::new(lens!(Expense.status)).badge(),
                     TextColumn::new(lens!(Expense.total_amount))
                         .money(Currency::USD)
                         .sortable(),
                     RelationColumn::of::<ProjectResource>(relation!(Expense.project))
-                        .label("Project")
+                        .label(tablo::text!("label-project"))
                         .toggleable(),
                     DateColumn::new(lens!(Expense.submitted_at))
                         .sortable()
@@ -1789,40 +1828,48 @@ impl Resource for ExpenseResource {
                     SelectFilter::of(lens!(Expense.status)),
                     SelectFilter::of(lens!(Expense.category)),
                     SelectFilter::relationship::<EmployeeResource>(lens!(Expense.employee_id))
-                        .label("Employee"),
+                        .label(tablo::text!("label-employee")),
                 )),
             )
             .detail(Detail::new((
-                Section::new("Expense details").columns(
+                Section::new(tablo::text!("section-expense-details")).columns(
                     Grid::new(3).columns((
                         TextColumn::new(lens!(Expense.expense_number)),
                         RelationColumn::of::<EmployeeResource>(relation!(Expense.employee))
-                            .label("Employee"),
+                            .label(tablo::text!("label-employee")),
                         TextColumn::new(lens!(Expense.category)).badge(),
                         TextColumn::new(lens!(Expense.status)).badge(),
                         TextColumn::new(lens!(Expense.total_amount)).money(Currency::USD),
                         TextColumn::new(lens!(Expense.currency)),
                         RelationColumn::of::<ProjectResource>(relation!(Expense.project))
-                            .label("Project"),
+                            .label(tablo::text!("label-project")),
                         DateColumn::new(lens!(Expense.submitted_at)),
                         DateColumn::new(lens!(Expense.approved_at)),
                         TextColumn::new(lens!(Expense.description)),
                         TextColumn::new(lens!(Expense.notes)),
                     )),
                 ),
-                Section::new("Receipt")
-                    .columns(FileColumn::new(lens!(Expense.receipt_path)).label("Receipt")),
+                Section::new(tablo::text!("section-receipt")).columns(
+                    FileColumn::new(lens!(Expense.receipt_path))
+                        .label(tablo::text!("label-receipt")),
+                ),
             )))
             .form(Schema::new((
-                Section::new("Details").schema(Grid::new(2).schema((
-                    c.expense_number.disabled_on_edit(),
-                    c.employee_id.searchable().label("Employee"),
-                    c.project_id.searchable().label("Project"),
-                    c.category.radio(),
-                    c.status.buttons(),
-                    c.description.multiline(3),
-                ))),
-                Section::new("Summary").schema(
+                Section::new(tablo::text!("section-details")).schema(
+                    Grid::new(2).schema((
+                        c.expense_number.disabled_on_edit(),
+                        c.employee_id
+                            .searchable()
+                            .label(tablo::text!("label-employee")),
+                        c.project_id
+                            .searchable()
+                            .label(tablo::text!("label-project")),
+                        c.category.radio(),
+                        c.status.buttons(),
+                        c.description.multiline(3),
+                    )),
+                ),
+                Section::new(tablo::text!("section-summary")).schema(
                     Grid::new(2).schema((
                         c.total_amount,
                         c.currency.choice().options(["USD"]),
@@ -1901,8 +1948,8 @@ impl Action<ExpenseResource> for SubmitExpense {
         Ok(Outcome::done())
     }
 
-    fn success(_cx: &Cx, count: usize) -> String {
-        format!("Submitted {count} expense(s) for approval")
+    fn success(cx: &Cx, count: usize) -> String {
+        tablo::t!(cx, "flash-expenses-submitted", count = count)
     }
 }
 
@@ -1936,15 +1983,15 @@ impl Action<ExpenseResource> for ApproveExpense {
         Ok(Outcome::done())
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Expense approved".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-expense-approved")
     }
 }
 
 /// What a rejection asks for.
 #[derive(FormInput)]
 pub struct RejectionReason {
-    #[form(label = "Reason for rejection", multiline = 3)]
+    #[form(multiline = 3)]
     pub reason: String,
 }
 
@@ -1977,8 +2024,8 @@ impl Action<ExpenseResource> for RejectExpense {
         Ok(Outcome::done())
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Expense rejected".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-expense-rejected")
     }
 }
 
@@ -2011,8 +2058,8 @@ impl Action<ExpenseResource> for ReimburseExpense {
         Ok(Outcome::done())
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Expense reimbursed".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-expense-reimbursed")
     }
 }
 
@@ -2041,8 +2088,8 @@ impl Action<ExpenseResource> for FlagExpense {
         Ok(Outcome::done())
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Expense flagged and returned to draft".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-expense-flagged")
     }
 }
 
@@ -2057,15 +2104,13 @@ impl Resource for ExpenseLineResource {
         let c = ExpenseLineForm::controls();
         ResourceDef::new()
             .icon(crate::icons::EXPENSE_LINES)
-            .label("Expense line")
-            .plural_label("Expense lines")
-            .navigation_group("HR")
+            .navigation_group(tablo::text!("navigation-hr"))
             .navigation_order(4)
             .policy(Allow)
             .without_global_search()
             .table(Table::new((
                 RelationColumn::of::<ExpenseResource>(relation!(ExpenseLine.expense))
-                    .label("Expense"),
+                    .label(tablo::text!("label-expense")),
                 TextColumn::new(lens!(ExpenseLine.description)).searchable(),
                 TextColumn::new(lens!(ExpenseLine.quantity)).numeric(0),
                 TextColumn::new(lens!(ExpenseLine.unit_price)).money(Currency::USD),
@@ -2073,9 +2118,9 @@ impl Resource for ExpenseLineResource {
                 TextColumn::new(lens!(ExpenseLine.date)),
             )))
             .detail(Detail::new(
-                Section::new("Expense line").columns((
+                Section::new(tablo::text!("section-expense-line")).columns((
                     RelationColumn::of::<ExpenseResource>(relation!(ExpenseLine.expense))
-                        .label("Expense"),
+                        .label(tablo::text!("label-expense")),
                     TextColumn::new(lens!(ExpenseLine.description)),
                     TextColumn::new(lens!(ExpenseLine.quantity)).numeric(0),
                     TextColumn::new(lens!(ExpenseLine.unit_price)).money(Currency::USD),
@@ -2083,16 +2128,20 @@ impl Resource for ExpenseLineResource {
                     TextColumn::new(lens!(ExpenseLine.date)),
                 )),
             ))
-            .form(Schema::new(Section::new("Expense line").schema(
-                Grid::new(2).schema((
-                    c.expense_id.searchable().label("Expense"),
-                    c.description,
-                    c.quantity,
-                    c.unit_price,
-                    c.amount,
-                    c.date,
-                )),
-            )))
+            .form(Schema::new(
+                Section::new(tablo::text!("section-expense-line")).schema(
+                    Grid::new(2).schema((
+                        c.expense_id
+                            .searchable()
+                            .label(tablo::text!("label-expense")),
+                        c.description,
+                        c.quantity,
+                        c.unit_price,
+                        c.amount,
+                        c.date,
+                    )),
+                ),
+            ))
     }
 
     /// Stores the amount the quantity and the unit price come to.

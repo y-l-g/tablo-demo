@@ -21,17 +21,24 @@ pub async fn write<R: Resource>(
     ex: &mut dyn toasty::Executor,
 ) -> Result<()> {
     let (kind, record) = match change {
-        Change::Create(record) => ("create".to_string(), url::<R>(cx, record)),
-        Change::Update { after, .. } => ("update".to_string(), url::<R>(cx, after)),
-        Change::Delete(records) => ("delete".to_string(), first_url::<R>(cx, records)),
-        Change::Restore(records) => ("restore".to_string(), first_url::<R>(cx, records)),
-        Change::ForceDelete(records) => ("force delete".to_string(), first_url::<R>(cx, records)),
-        Change::Action { name, records } => {
-            (format!("action: {name}"), first_url::<R>(cx, records))
-        }
-        Change::HeaderAction { name } => (format!("header action: {name}"), String::new()),
-        Change::Attach { owner, .. } => ("attach".to_string(), url::<R>(cx, owner)),
-        Change::Detach { owner, .. } => ("detach".to_string(), url::<R>(cx, owner)),
+        Change::Create(record) => (tablo::t!(cx, "audit-create"), url::<R>(cx, record)),
+        Change::Update { after, .. } => (tablo::t!(cx, "audit-update"), url::<R>(cx, after)),
+        Change::Delete(records) => (tablo::t!(cx, "audit-delete"), first_url::<R>(cx, records)),
+        Change::Restore(records) => (tablo::t!(cx, "audit-restore"), first_url::<R>(cx, records)),
+        Change::ForceDelete(records) => (
+            tablo::t!(cx, "audit-force-delete"),
+            first_url::<R>(cx, records),
+        ),
+        Change::Action { name, records } => (
+            tablo::t!(cx, "audit-action", name = *name),
+            first_url::<R>(cx, records),
+        ),
+        Change::HeaderAction { name } => (
+            tablo::t!(cx, "audit-header-action", name = *name),
+            String::new(),
+        ),
+        Change::Attach { owner, .. } => (tablo::t!(cx, "audit-attach"), url::<R>(cx, owner)),
+        Change::Detach { owner, .. } => (tablo::t!(cx, "audit-detach"), url::<R>(cx, owner)),
     };
     let user = match tablo::auth::user::<SignedIn>(cx) {
         Some(user) => user.user.email.clone(),
@@ -72,7 +79,6 @@ pub struct AuditTrail;
 impl Page for AuditTrail {
     fn declare() -> PageDef {
         PageDef::new()
-            .label("Audit trail")
             .icon(crate::icons::AUDIT_TRAIL)
             .navigation_order(-1)
     }
@@ -86,20 +92,20 @@ impl Page for AuditTrail {
             cx =>
             tablo::ui::page(
                 tablo::ui::page_header(
-                    tablo::ui::page_title("Audit trail")
+                    tablo::ui::page_title((tablo::t!(cx, "page-audit-trail")))
                     tablo::ui::page_description(
-                        "Every write the panel made, recorded in the write's own transaction."
+                        (tablo::t!(cx, "copy-audit-description"))
                     )
                 )
                 tablo::ui::page_content(
                     tablo::ui::table(
                         tablo::ui::table_header(
                             tablo::ui::table_row(
-                                tablo::ui::table_head("When")
-                                tablo::ui::table_head("Resource")
-                                tablo::ui::table_head("Change")
-                                tablo::ui::table_head("Record")
-                                tablo::ui::table_head("By")
+                                tablo::ui::table_head((tablo::t!(cx, "label-when")))
+                                tablo::ui::table_head((tablo::t!(cx, "label-resource")))
+                                tablo::ui::table_head((tablo::t!(cx, "label-change")))
+                                tablo::ui::table_head((tablo::t!(cx, "label-record")))
+                                tablo::ui::table_head((tablo::t!(cx, "label-by")))
                             )
                         )
                         tablo::ui::table_body(

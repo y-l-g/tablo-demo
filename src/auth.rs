@@ -117,13 +117,12 @@ impl Authenticator for DemoAuth {
 /// What the `app` panel's sign-up page asks for.
 #[derive(tablo::FormInput)]
 pub struct SignUp {
-    #[form(label = "Name")]
     pub name: String,
-    #[form(label = "Email address", email)]
+    #[form(email)]
     pub email: String,
     #[form(password)]
     pub password: String,
-    #[form(password, label = "Confirm password")]
+    #[form(password)]
     pub password_confirmation: String,
 }
 
@@ -143,7 +142,7 @@ impl Registrar for DemoAuth {
             .exec(ex)
             .await?;
         if taken.is_some() {
-            errors.add("email", "Email has already been taken");
+            errors.add("email", tablo::text!("error-email-taken"));
         }
         Ok(errors)
     }
@@ -255,7 +254,6 @@ impl tablo::auth::EmailVerifier for DemoVerifier {
 /// The name of the team a signed-in user creates.
 #[derive(tablo::FormInput)]
 pub struct NewTeam {
-    #[form(label = "Name")]
     pub name: String,
 }
 
@@ -276,7 +274,7 @@ impl tablo::auth::TenantRegistrar for DemoTenantRegistrar {
     ) -> topcoat::Result<FieldErrors> {
         let mut errors = FieldErrors::new();
         if input.name.trim().is_empty() {
-            errors.add("name", "Enter a name for your team");
+            errors.add("name", tablo::text!("error-team-name-required"));
         }
         Ok(errors)
     }

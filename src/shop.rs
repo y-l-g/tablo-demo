@@ -1,15 +1,17 @@
 //! The shop resources: products, brands, categories, customers and orders.
 
 use tablo::{
-    Action, ActionLayout, Allow, BooleanColumn, Change, ColumnWidth, ComputedColumn, Currency,
+    Action, ActionLayout, Allow, BooleanColumn, Change, ColumnToggle, ColumnWidth, Currency,
     DateColumn, DateFilter, Detail, FieldErrors, FormInput, GlobalSearch, Grid, ImageColumn,
     Outcome, Places, Relation, RelationColumn, Resource, ResourceDef, RichTextColumn, Schema,
-    Section, SelectFilter, Table, TernaryFilter, TextColumn, WriteError, lens, relation,
+    Section, SelectFilter, Table, TernaryFilter, Text, TextColumn, WriteError,
+    extend::{Column, Includes},
+    lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
 use crate::blog::CommentResource;
-use crate::enums::OrderStatus;
+use crate::enums::{CountryCode, OrderStatus};
 use crate::models::replica_suffix;
 use crate::models::{
     Address, Brand, Comment, Customer, Order, OrderAddress, OrderItem, Payment, Product,
@@ -28,7 +30,7 @@ impl Resource for ProductResource {
         let c = ProductForm::controls();
         ResourceDef::new()
             .icon(crate::icons::PRODUCTS)
-            .navigation_group("Shop")
+            .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(0)
             .navigation_badge(
                 Product::fields()
@@ -38,62 +40,75 @@ impl Resource for ProductResource {
             .policy(Allow)
             .table(product_table())
             .form(Schema::new((
-                Section::new("Product").schema((
+                Section::new(tablo::text!("section-product")).schema((
                     Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
                     c.description.rich_text(),
                 )),
-                Section::new("Images").schema(
+                Section::new(tablo::text!("section-images")).schema(
                     c.image
-                        .label("Image")
                         .extensions(IMAGE_EXTENSIONS)
                         .max_bytes(IMAGE_MAX_BYTES),
                 ),
-                Section::new("Pricing").schema(Grid::new(2).schema((
-                    c.price.prefix("$"),
-                    c.old_price.prefix("$").label("Compare at price"),
-                    c.cost.prefix("$").label("Cost per item"),
-                ))),
-                Section::new("Inventory").schema(Grid::new(2).schema((
-                    c.sku.label("SKU (Stock Keeping Unit)"),
-                    c.barcode.label("Barcode (ISBN, UPC, GTIN, etc.)"),
-                    c.qty.label("Quantity"),
-                    c.security_stock,
-                ))),
-                Section::new("Shipping").schema(
+                Section::new(tablo::text!("section-pricing")).schema(
+                    Grid::new(2).schema((
+                        c.price.prefix("$"),
+                        c.old_price
+                            .prefix("$")
+                            .label(tablo::text!("label-compare-at-price")),
+                        c.cost
+                            .prefix("$")
+                            .label(tablo::text!("label-cost-per-item")),
+                    )),
+                ),
+                Section::new(tablo::text!("section-inventory")).schema(
+                    Grid::new(2).schema((
+                        c.sku.label(tablo::text!("label-sku-stock-keeping-unit")),
+                        c.barcode
+                            .label(tablo::text!("label-barcode-isbn-upc-gtin-etc")),
+                        c.qty.label(tablo::text!("label-quantity")),
+                        c.security_stock,
+                    )),
+                ),
+                Section::new(tablo::text!("section-shipping")).schema(
                     Grid::new(2).schema((c.backorder.switch(), c.requires_shipping.switch())),
                 ),
-                Section::new("Status").schema(
-                    Grid::new(2)
-                        .schema((c.is_visible.switch().label("Visibility"), c.published_at)),
+                Section::new(tablo::text!("section-status")).schema(
+                    Grid::new(2).schema((
+                        c.is_visible
+                            .switch()
+                            .label(tablo::text!("label-visibility")),
+                        c.published_at,
+                    )),
                 ),
-                Section::new("Associations").schema((
-                    c.brand_id.searchable().label("Brand"),
+                Section::new(tablo::text!("section-associations")).schema((
+                    c.brand_id.searchable().label(tablo::text!("label-brand")),
                     c.categories.searchable(),
                 )),
             )))
-            .detail(Detail::new((Section::new("Product").columns((
-                TextColumn::new(lens!(Product.name)),
-                TextColumn::new(lens!(Product.slug)),
-                ImageColumn::new(lens!(Product.image)).label("Image"),
-                RelationColumn::of::<BrandResource>(relation!(Product.brand)).label("Brand"),
-                RelationColumn::list::<ProductCategoryResource>(relation!(Product.categories))
-                    .label("Categories"),
-                BooleanColumn::new(lens!(Product.is_visible)).label("Visibility"),
-                TextColumn::new(lens!(Product.price))
-                    .money(Currency::USD)
-                    .label("Price"),
-                TextColumn::new(lens!(Product.sku)).label("SKU"),
-                TextColumn::new(lens!(Product.qty))
-                    .numeric(0)
-                    .label("Quantity"),
-                DateColumn::new(lens!(Product.published_at)).label("Publishing date"),
-                RichTextColumn::new(lens!(Product.description)),
-            )),)))
+            .detail(Detail::new((Section::new(tablo::text!("section-product"))
+                .columns((
+                    TextColumn::new(lens!(Product.name)),
+                    TextColumn::new(lens!(Product.slug)),
+                    ImageColumn::new(lens!(Product.image)),
+                    RelationColumn::of::<BrandResource>(relation!(Product.brand))
+                        .label(tablo::text!("label-brand")),
+                    RelationColumn::list::<ProductCategoryResource>(relation!(Product.categories)),
+                    BooleanColumn::new(lens!(Product.is_visible))
+                        .label(tablo::text!("label-visibility")),
+                    TextColumn::new(lens!(Product.price)).money(Currency::USD),
+                    TextColumn::new(lens!(Product.sku)).label(tablo::text!("label-sku")),
+                    TextColumn::new(lens!(Product.qty))
+                        .numeric(0)
+                        .label(tablo::text!("label-quantity")),
+                    DateColumn::new(lens!(Product.published_at))
+                        .label(tablo::text!("label-publishing-date")),
+                    RichTextColumn::new(lens!(Product.description)),
+                )),)))
             .record_title(lens!(Product.name))
             .global_search(
                 GlobalSearch::new()
-                    .detail("SKU", lens!(Product.sku))
-                    .detail("Price", lens!(Product.price)),
+                    .detail(tablo::text!("label-sku"), lens!(Product.sku))
+                    .detail(tablo::text!("label-price"), lens!(Product.price)),
             )
             .relation(Relation::has_many::<CommentResource>(
                 Comment::fields().product_id(),
@@ -110,26 +125,25 @@ impl Resource for ProductResource {
 /// The product list.
 fn product_table() -> Table<Product> {
     Table::new((
-        ImageColumn::new(lens!(Product.image)).label("Image"),
+        ImageColumn::new(lens!(Product.image)),
         TextColumn::new(lens!(Product.name)).searchable().sortable(),
         RelationColumn::of::<BrandResource>(relation!(Product.brand))
-            .label("Brand")
+            .label(tablo::text!("label-brand"))
             .toggleable(),
         BooleanColumn::new(lens!(Product.is_visible))
-            .label("Visibility")
+            .label(tablo::text!("label-visibility"))
             .toggleable(),
         TextColumn::new(lens!(Product.price))
             .money(Currency::USD)
-            .sortable()
-            .label("Price"),
+            .sortable(),
         TextColumn::new(lens!(Product.sku))
-            .label("SKU")
+            .label(tablo::text!("label-sku"))
             .searchable()
             .sortable()
             .toggleable(),
         TextColumn::new(lens!(Product.qty))
             .numeric(0)
-            .label("Quantity")
+            .label(tablo::text!("label-quantity"))
             .sortable()
             .toggleable(),
         TextColumn::new(lens!(Product.security_stock))
@@ -138,7 +152,7 @@ fn product_table() -> Table<Product> {
             .toggleable()
             .hidden_by_default(),
         DateColumn::new(lens!(Product.published_at))
-            .label("Publishing date")
+            .label(tablo::text!("label-publishing-date"))
             .sortable()
             .toggleable()
             .hidden_by_default(),
@@ -146,12 +160,13 @@ fn product_table() -> Table<Product> {
     .default_sort(lens!(Product.name))
     .action_layout(ActionLayout::Menu)
     .filters((
-        SelectFilter::relationship::<BrandResource>(lens!(Product.brand_id)).label("Brand"),
-        TernaryFilter::new(lens!(Product.is_visible)).label("Visibility"),
+        SelectFilter::relationship::<BrandResource>(lens!(Product.brand_id))
+            .label(tablo::text!("label-brand")),
+        TernaryFilter::new(lens!(Product.is_visible)).label(tablo::text!("label-visibility")),
         TernaryFilter::new(lens!(Product.featured)),
         TernaryFilter::new(lens!(Product.backorder)),
         TernaryFilter::new(lens!(Product.requires_shipping)),
-        DateFilter::new(lens!(Product.published_at)).label("Publishing date"),
+        DateFilter::new(lens!(Product.published_at)).label(tablo::text!("label-publishing-date")),
     ))
 }
 
@@ -209,7 +224,7 @@ impl Action<ProductResource> for ToggleProductVisibility {
 /// What showing or hiding the selection asks for.
 #[derive(FormInput)]
 pub struct VisibilityChoice {
-    #[form(options = VisibilityOptions, label = "Visibility")]
+    #[form(options = VisibilityOptions)]
     pub is_visible: bool,
 }
 
@@ -217,10 +232,10 @@ pub struct VisibilityChoice {
 pub struct VisibilityOptions;
 
 impl tablo::Options for VisibilityOptions {
-    fn options() -> Vec<(String, String)> {
+    fn options() -> Vec<(String, tablo::Text)> {
         vec![
-            ("true".to_string(), "Visible".to_string()),
-            ("false".to_string(), "Hidden".to_string()),
+            ("true".to_string(), tablo::text!("label-visible")),
+            ("false".to_string(), tablo::text!("label-hidden")),
         ]
     }
 }
@@ -249,17 +264,15 @@ impl Action<ProductResource> for BulkSetProductVisibility {
         Ok(Outcome::done())
     }
 
-    fn label(_cx: &Cx) -> String {
-        "Set visibility".to_string()
+    fn label(cx: &Cx) -> String {
+        tablo::t!(cx, "action-set-visibility")
     }
 }
 
 /// What `AdjustProductPrice` asks for.
 #[derive(FormInput)]
 pub struct PriceChange {
-    #[form(label = "Price")]
     pub price: f64,
-    #[form(label = "Compare at price")]
     pub old_price: Option<f64>,
 }
 
@@ -292,7 +305,6 @@ impl Action<ProductResource> for AdjustProductPrice {
 /// What `AdjustProductStock` asks for.
 #[derive(FormInput)]
 pub struct StockChange {
-    #[form(label = "Quantity")]
     pub qty: i64,
 }
 
@@ -307,7 +319,7 @@ impl Action<ProductResource> for AdjustProductStock {
     fn validate_input(_cx: &Cx, input: &StockChange) -> FieldErrors {
         let mut errors = FieldErrors::new();
         if input.qty < 0 {
-            errors.add("qty", "Quantity must be zero or more");
+            errors.add("qty", tablo::text!("error-quantity-negative"));
         }
         errors
     }
@@ -340,7 +352,7 @@ impl Resource for BrandResource {
         let c = BrandForm::controls();
         ResourceDef::new()
             .icon(crate::icons::BRANDS)
-            .navigation_group("Shop")
+            .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(3)
             .policy(Allow)
             .table(
@@ -350,29 +362,38 @@ impl Resource for BrandResource {
                         .searchable()
                         .sortable()
                         .toggleable(),
-                    BooleanColumn::new(lens!(Brand.is_visible)).label("Visibility"),
+                    BooleanColumn::new(lens!(Brand.is_visible))
+                        .label(tablo::text!("label-visibility")),
                     DateColumn::new(lens!(Brand.updated_at))
-                        .label("Last modified at")
+                        .label(tablo::text!("label-last-modified-at"))
                         .sortable()
                         .toggleable()
                         .hidden_by_default(),
                 ))
                 .action_layout(ActionLayout::Menu),
             )
-            .detail(Detail::new(Section::new("Brand").columns((
-                TextColumn::new(lens!(Brand.name)),
-                TextColumn::new(lens!(Brand.slug)),
-                TextColumn::new(lens!(Brand.website)),
-                TextColumn::new(lens!(Brand.description)),
-                BooleanColumn::new(lens!(Brand.is_visible)).label("Visibility"),
-                DateColumn::new(lens!(Brand.updated_at)).label("Last modified at"),
-            ))))
-            .form(Schema::new(Section::new("Brand").schema((
-                Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
-                c.website.url(),
-                c.is_visible.switch().label("Visibility"),
-                c.description.multiline(4),
-            ))))
+            .detail(Detail::new(
+                Section::new(tablo::text!("section-brand")).columns((
+                    TextColumn::new(lens!(Brand.name)),
+                    TextColumn::new(lens!(Brand.slug)),
+                    TextColumn::new(lens!(Brand.website)),
+                    TextColumn::new(lens!(Brand.description)),
+                    BooleanColumn::new(lens!(Brand.is_visible))
+                        .label(tablo::text!("label-visibility")),
+                    DateColumn::new(lens!(Brand.updated_at))
+                        .label(tablo::text!("label-last-modified-at")),
+                )),
+            ))
+            .form(Schema::new(
+                Section::new(tablo::text!("section-brand")).schema((
+                    Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
+                    c.website.url(),
+                    c.is_visible
+                        .switch()
+                        .label(tablo::text!("label-visibility")),
+                    c.description.multiline(4),
+                )),
+            ))
             .record_title(lens!(Brand.name))
             .relation(Relation::has_many::<ProductResource>(
                 Product::fields().brand_id(),
@@ -432,10 +453,8 @@ impl Resource for ProductCategoryResource {
     fn declare() -> ResourceDef<Self> {
         let c = ProductCategoryForm::controls();
         ResourceDef::new()
-            .label("Product category")
-            .plural_label("Product categories")
             .icon(crate::icons::PRODUCT_CATEGORIES)
-            .navigation_group("Shop")
+            .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(4)
             .importable()
             .policy(Allow)
@@ -447,11 +466,12 @@ impl Resource for ProductCategoryResource {
                     RelationColumn::of::<ProductCategoryResource>(relation!(
                         ProductCategory.parent
                     ))
-                    .label("Parent")
+                    .label(tablo::text!("label-parent"))
                     .toggleable(),
-                    BooleanColumn::new(lens!(ProductCategory.is_visible)).label("Visibility"),
+                    BooleanColumn::new(lens!(ProductCategory.is_visible))
+                        .label(tablo::text!("label-visibility")),
                     DateColumn::new(lens!(ProductCategory.updated_at))
-                        .label("Last modified at")
+                        .label(tablo::text!("label-last-modified-at"))
                         .sortable()
                         .toggleable()
                         .hidden_by_default(),
@@ -460,24 +480,30 @@ impl Resource for ProductCategoryResource {
                 .action_layout(ActionLayout::Menu),
             )
             .detail(Detail::new(
-                Section::new("Category").columns((
+                Section::new(tablo::text!("section-category")).columns((
                     TextColumn::new(lens!(ProductCategory.name)),
                     TextColumn::new(lens!(ProductCategory.slug)),
                     RelationColumn::of::<ProductCategoryResource>(relation!(
                         ProductCategory.parent
                     ))
-                    .label("Parent"),
-                    BooleanColumn::new(lens!(ProductCategory.is_visible)).label("Visibility"),
+                    .label(tablo::text!("label-parent")),
+                    BooleanColumn::new(lens!(ProductCategory.is_visible))
+                        .label(tablo::text!("label-visibility")),
                     TextColumn::new(lens!(ProductCategory.description)),
-                    DateColumn::new(lens!(ProductCategory.updated_at)).label("Last modified at"),
+                    DateColumn::new(lens!(ProductCategory.updated_at))
+                        .label(tablo::text!("label-last-modified-at")),
                 )),
             ))
-            .form(Schema::new(Section::new("Category").schema((
-                Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
-                c.parent_id.label("Parent category"),
-                c.is_visible.switch().label("Visibility"),
-                c.description.multiline(4),
-            ))))
+            .form(Schema::new(
+                Section::new(tablo::text!("section-category")).schema((
+                    Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
+                    c.parent_id.label(tablo::text!("label-parent-category")),
+                    c.is_visible
+                        .switch()
+                        .label(tablo::text!("label-visibility")),
+                    c.description.multiline(4),
+                )),
+            ))
             .record_title(lens!(ProductCategory.name))
             .relation(Relation::belongs_to_many::<ProductResource>(
                 ProductCategory::fields().products(),
@@ -536,7 +562,7 @@ impl Resource for CustomerResource {
         let c = CustomerForm::controls();
         ResourceDef::new()
             .icon(crate::icons::CUSTOMERS)
-            .navigation_group("Shop")
+            .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(2)
             .policy(Allow)
             .table(
@@ -545,14 +571,10 @@ impl Resource for CustomerResource {
                         .searchable()
                         .sortable(),
                     TextColumn::new(lens!(Customer.email))
-                        .label("Email address")
+                        .label(tablo::text!("label-email-address"))
                         .searchable()
                         .sortable(),
-                    ComputedColumn::new("Country", |customer: &Customer| {
-                        customer_country(customer).unwrap_or_default()
-                    })
-                    .include_unscoped(Customer::fields().addresses())
-                    .toggleable(),
+                    CustomerCountryColumn::new(),
                     TextColumn::new(lens!(Customer.phone))
                         .searchable()
                         .sortable()
@@ -561,21 +583,32 @@ impl Resource for CustomerResource {
                 .default_sort(lens!(Customer.name))
                 .action_layout(ActionLayout::Menu),
             )
-            .detail(Detail::new(Section::new("Customer").columns((
-                TextColumn::new(lens!(Customer.name)),
-                TextColumn::new(lens!(Customer.email)).label("Email address"),
-                TextColumn::new(lens!(Customer.phone)),
-                TextColumn::new(lens!(Customer.birthday)),
-            ))))
-            .form(Schema::new(Section::new("Customer").schema((
-                Grid::new(2).schema((c.name, c.email.email().unique().label("Email address"))),
-                Grid::new(2).schema((c.phone.tel(), c.birthday)),
-            ))))
+            .detail(Detail::new(
+                Section::new(tablo::text!("section-customer")).columns((
+                    TextColumn::new(lens!(Customer.name)),
+                    TextColumn::new(lens!(Customer.email))
+                        .label(tablo::text!("label-email-address")),
+                    TextColumn::new(lens!(Customer.phone)),
+                    TextColumn::new(lens!(Customer.birthday)),
+                )),
+            ))
+            .form(Schema::new(
+                Section::new(tablo::text!("section-customer")).schema((
+                    Grid::new(2).schema((
+                        c.name,
+                        c.email
+                            .email()
+                            .unique()
+                            .label(tablo::text!("label-email-address")),
+                    )),
+                    Grid::new(2).schema((c.phone.tel(), c.birthday)),
+                )),
+            ))
             .record_title(lens!(Customer.name))
             .global_search(
                 GlobalSearch::new()
-                    .detail("Email", lens!(Customer.email))
-                    .detail("Phone", lens!(Customer.phone)),
+                    .detail(tablo::text!("label-email"), lens!(Customer.email))
+                    .detail(tablo::text!("label-phone"), lens!(Customer.phone)),
             )
             .relation(Relation::has_many::<AddressResource>(
                 Address::fields().customer_id(),
@@ -587,8 +620,8 @@ impl Resource for CustomerResource {
     crate::audit!();
 }
 
-/// The first address's country, as the list's country column reads it.
-fn customer_country(customer: &Customer) -> Option<String> {
+/// The customer's country, the first address's.
+fn customer_country(customer: &Customer) -> Option<CountryCode> {
     if customer.addresses.is_unloaded() {
         return None;
     }
@@ -597,7 +630,44 @@ fn customer_country(customer: &Customer) -> Option<String> {
         .get()
         .first()
         .and_then(|address| address.country)
-        .map(|country| country.label().to_string())
+}
+
+/// The customer list's country column: the first address's country, labelled in
+/// the request's locale.
+struct CustomerCountryColumn {
+    includes: Includes<Customer>,
+}
+
+impl CustomerCountryColumn {
+    fn new() -> Self {
+        Self {
+            includes: Includes::new().with(Customer::fields().addresses()),
+        }
+    }
+}
+
+impl Column<Customer> for CustomerCountryColumn {
+    fn name(&self) -> &str {
+        "country"
+    }
+
+    fn label(&self) -> Text {
+        tablo::text!("field-country")
+    }
+
+    fn text(&self, cx: &Cx, customer: &Customer) -> String {
+        customer_country(customer)
+            .map(|country| country.label().localize(cx))
+            .unwrap_or_default()
+    }
+
+    fn toggle(&self) -> ColumnToggle {
+        ColumnToggle::ShownByDefault
+    }
+
+    fn includes(&self) -> Includes<Customer> {
+        self.includes.clone()
+    }
 }
 
 /// The customer's record form.
@@ -613,9 +683,8 @@ pub struct CustomerForm {
 /// What `SendCustomerEmail` asks for.
 #[derive(FormInput)]
 pub struct EmailDraft {
-    #[form(label = "Subject")]
     pub subject: String,
-    #[form(label = "Message", multiline = 5)]
+    #[form(multiline = 5)]
     pub body: String,
 }
 
@@ -636,8 +705,8 @@ impl Action<CustomerResource> for SendCustomerEmail {
         Ok(Outcome::done())
     }
 
-    fn success(_cx: &Cx, count: usize) -> String {
-        format!("Email sent to {count} customer(s)")
+    fn success(cx: &Cx, count: usize) -> String {
+        tablo::t!(cx, "flash-email-sent", count = count)
     }
 }
 
@@ -652,40 +721,45 @@ impl Resource for OrderResource {
         let c = OrderForm::controls();
         ResourceDef::new()
             .icon(crate::icons::ORDERS)
-            .navigation_group("Shop")
+            .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(1)
             .navigation_badge(Order::fields().status().eq(OrderStatus::New))
             .policy(Allow)
             .table(order_table())
             .detail(Detail::new(
-                Section::new("Order").columns((
+                Section::new(tablo::text!("section-order")).columns((
                     Grid::new(2).columns((
                         TextColumn::new(lens!(Order.number)),
                         RelationColumn::of::<CustomerResource>(relation!(Order.customer))
-                            .label("Customer"),
+                            .label(tablo::text!("label-customer")),
                         TextColumn::new(lens!(Order.status)).badge(),
                         TextColumn::new(lens!(Order.total_price)).money(Currency::USD),
                         TextColumn::new(lens!(Order.shipping_price))
                             .money(Currency::USD)
-                            .label("Shipping cost"),
-                        DateColumn::new(lens!(Order.created_at)).label("Order date"),
+                            .label(tablo::text!("label-shipping-cost")),
+                        DateColumn::new(lens!(Order.created_at))
+                            .label(tablo::text!("label-order-date")),
                     )),
                     RichTextColumn::new(lens!(Order.notes)),
                 )),
             ))
-            .form(Schema::new(Section::new("Order").schema(
-                Grid::new(2).schema((
-                    c.number.label("Number"),
-                    c.customer_id.searchable().label("Customer"),
-                    c.status.buttons(),
-                    c.notes.rich_text(),
-                )),
-            )))
+            .form(Schema::new(
+                Section::new(tablo::text!("section-order")).schema(
+                    Grid::new(2).schema((
+                        c.number.label(tablo::text!("label-number")),
+                        c.customer_id
+                            .searchable()
+                            .label(tablo::text!("label-customer")),
+                        c.status.buttons(),
+                        c.notes.rich_text(),
+                    )),
+                ),
+            ))
             .record_title(lens!(Order.number))
             .global_search(
                 GlobalSearch::new()
-                    .detail("Status", lens!(Order.status))
-                    .detail("Total", lens!(Order.total_price)),
+                    .detail(tablo::text!("label-status"), lens!(Order.status))
+                    .detail(tablo::text!("label-total"), lens!(Order.total_price)),
             )
             .relation(Relation::has_many::<OrderItemResource>(
                 OrderItem::fields().order_id(),
@@ -720,16 +794,16 @@ fn order_table() -> Table<Order> {
     Table::new((
         TextColumn::new(lens!(Order.number)).searchable().sortable(),
         RelationColumn::of::<CustomerResource>(relation!(Order.customer))
-            .label("Customer")
+            .label(tablo::text!("label-customer"))
             .toggleable(),
         TextColumn::new(lens!(Order.status)).badge(),
         TextColumn::new(lens!(Order.total_price)).money(Currency::USD),
         TextColumn::new(lens!(Order.shipping_price))
             .money(Currency::USD)
-            .label("Shipping cost")
+            .label(tablo::text!("label-shipping-cost"))
             .toggleable(),
         DateColumn::new(lens!(Order.created_at))
-            .label("Order date")
+            .label(tablo::text!("label-order-date"))
             .sortable()
             .toggleable(),
     ))
@@ -737,7 +811,7 @@ fn order_table() -> Table<Order> {
     .action_layout(ActionLayout::Menu)
     .filters((
         DateFilter::new(lens!(Order.created_at))
-            .label("Order date")
+            .label(tablo::text!("label-order-date"))
             .range(),
         SelectFilter::of(lens!(Order.status)),
     ))
@@ -776,16 +850,16 @@ impl Action<OrderResource> for ProcessOrder {
         set_status(orders, OrderStatus::Processing, ex).await
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Order is now processing".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-order-processing")
     }
 }
 
 /// What `ShipOrder` asks for.
 #[derive(FormInput)]
 pub struct ShippingNotes {
-    #[form(label = "Shipping notes", multiline = 3)]
-    pub notes: Option<String>,
+    #[form(multiline = 3)]
+    pub shipping_notes: Option<String>,
 }
 
 /// Ships a processing order.
@@ -810,15 +884,15 @@ impl Action<OrderResource> for ShipOrder {
             Order::filter(Order::fields().id().eq(order.id))
                 .update()
                 .status(OrderStatus::Shipped)
-                .notes(shipping.notes.clone())
+                .notes(shipping.shipping_notes.clone())
                 .exec(&mut *ex)
                 .await?;
         }
         Ok(Outcome::done())
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Order shipped".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-order-shipped")
     }
 }
 
@@ -844,8 +918,8 @@ impl Action<OrderResource> for DeliverOrder {
         set_status(orders, OrderStatus::Delivered, ex).await
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Order marked as delivered".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-order-delivered")
     }
 }
 
@@ -880,8 +954,8 @@ impl Action<OrderResource> for ReplicateOrder {
         Ok(Outcome::done())
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Order replicated".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-order-replicated")
     }
 }
 
@@ -910,8 +984,8 @@ impl Action<OrderResource> for CancelOrder {
         set_status(orders, OrderStatus::Cancelled, ex).await
     }
 
-    fn success(_cx: &Cx, _count: usize) -> String {
-        "Order cancelled".to_string()
+    fn success(cx: &Cx, _count: usize) -> String {
+        tablo::t!(cx, "flash-order-cancelled")
     }
 }
 
@@ -941,41 +1015,47 @@ impl Resource for OrderItemResource {
     fn declare() -> ResourceDef<Self> {
         let c = OrderItemForm::controls();
         ResourceDef::new()
-            .label("Order item")
-            .plural_label("Order items")
             .icon(crate::icons::ORDER_ITEMS)
-            .navigation_group("Shop")
+            .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(10)
             .policy(Allow)
             .without_global_search()
             .table(Table::new((
                 RelationColumn::of::<ProductResource>(relation!(OrderItem.product))
-                    .label("Product"),
+                    .label(tablo::text!("label-product")),
                 TextColumn::new(lens!(OrderItem.qty))
                     .numeric(0)
-                    .label("Quantity"),
+                    .label(tablo::text!("label-quantity")),
                 TextColumn::new(lens!(OrderItem.unit_price))
                     .money(Currency::USD)
-                    .label("Unit price"),
+                    .label(tablo::text!("label-unit-price")),
             )))
             .detail(Detail::new(
-                Section::new("Order item").columns((
-                    RelationColumn::of::<OrderResource>(relation!(OrderItem.order)).label("Order"),
+                Section::new(tablo::text!("section-order-item")).columns((
+                    RelationColumn::of::<OrderResource>(relation!(OrderItem.order))
+                        .label(tablo::text!("label-order")),
                     RelationColumn::of::<ProductResource>(relation!(OrderItem.product))
-                        .label("Product"),
+                        .label(tablo::text!("label-product")),
                     TextColumn::new(lens!(OrderItem.qty))
                         .numeric(0)
-                        .label("Quantity"),
+                        .label(tablo::text!("label-quantity")),
                     TextColumn::new(lens!(OrderItem.unit_price))
                         .money(Currency::USD)
-                        .label("Unit price"),
+                        .label(tablo::text!("label-unit-price")),
                 )),
             ))
-            .form(Schema::new(Section::new("Order item").schema((
-                c.order_id.searchable().label("Order"),
-                c.product_id.searchable().label("Product"),
-                Grid::new(2).schema((c.qty.label("Quantity"), c.unit_price.label("Unit price"))),
-            ))))
+            .form(Schema::new(
+                Section::new(tablo::text!("section-order-item")).schema((
+                    c.order_id.searchable().label(tablo::text!("label-order")),
+                    c.product_id
+                        .searchable()
+                        .label(tablo::text!("label-product")),
+                    Grid::new(2).schema((
+                        c.qty.label(tablo::text!("label-quantity")),
+                        c.unit_price.label(tablo::text!("label-unit-price")),
+                    )),
+                )),
+            ))
     }
 
     crate::audit!();
@@ -1004,12 +1084,13 @@ impl Resource for PaymentResource {
         let c = PaymentForm::controls();
         ResourceDef::new()
             .icon(crate::icons::PAYMENTS)
-            .navigation_group("Shop")
+            .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(11)
             .policy(Allow)
             .without_global_search()
             .table(Table::new((
-                RelationColumn::of::<OrderResource>(relation!(Payment.order)).label("Order"),
+                RelationColumn::of::<OrderResource>(relation!(Payment.order))
+                    .label(tablo::text!("label-order")),
                 TextColumn::new(lens!(Payment.reference)).searchable(),
                 TextColumn::new(lens!(Payment.amount))
                     .money(Currency::USD)
@@ -1017,21 +1098,26 @@ impl Resource for PaymentResource {
                 TextColumn::new(lens!(Payment.provider)).sortable(),
                 TextColumn::new(lens!(Payment.method)).sortable(),
             )))
-            .detail(Detail::new(Section::new("Payment").columns((
-                RelationColumn::of::<OrderResource>(relation!(Payment.order)).label("Order"),
-                TextColumn::new(lens!(Payment.reference)),
-                TextColumn::new(lens!(Payment.amount)).money(Currency::USD),
-                TextColumn::new(lens!(Payment.currency)),
-                TextColumn::new(lens!(Payment.provider)),
-                TextColumn::new(lens!(Payment.method)),
-            ))))
-            .form(Schema::new(Section::new("Payment").schema((
-                c.order_id.searchable().label("Order"),
-                c.reference,
-                Grid::new(2).schema((c.amount, c.currency.searchable())),
-                c.provider,
-                c.method,
-            ))))
+            .detail(Detail::new(
+                Section::new(tablo::text!("section-payment")).columns((
+                    RelationColumn::of::<OrderResource>(relation!(Payment.order))
+                        .label(tablo::text!("label-order")),
+                    TextColumn::new(lens!(Payment.reference)),
+                    TextColumn::new(lens!(Payment.amount)).money(Currency::USD),
+                    TextColumn::new(lens!(Payment.currency)),
+                    TextColumn::new(lens!(Payment.provider)),
+                    TextColumn::new(lens!(Payment.method)),
+                )),
+            ))
+            .form(Schema::new(
+                Section::new(tablo::text!("section-payment")).schema((
+                    c.order_id.searchable().label(tablo::text!("label-order")),
+                    c.reference,
+                    Grid::new(2).schema((c.amount, c.currency.searchable())),
+                    c.provider,
+                    c.method,
+                )),
+            ))
             .record_title(lens!(Payment.reference))
     }
 
@@ -1058,10 +1144,10 @@ pub struct PaymentForm {
 pub struct Providers;
 
 impl tablo::Options for Providers {
-    fn options() -> Vec<(String, String)> {
+    fn options() -> Vec<(String, tablo::Text)> {
         vec![
-            ("stripe".to_string(), "Stripe".to_string()),
-            ("paypal".to_string(), "PayPal".to_string()),
+            ("stripe".to_string(), "Stripe".into()),
+            ("paypal".to_string(), "PayPal".into()),
         ]
     }
 }
@@ -1076,9 +1162,8 @@ impl Resource for AddressResource {
     fn declare() -> ResourceDef<Self> {
         let c = AddressForm::controls();
         ResourceDef::new()
-            .plural_label("Addresses")
             .icon(crate::icons::ADDRESSES)
-            .navigation_group("Shop")
+            .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(12)
             .policy(Allow)
             .without_global_search()
@@ -1091,24 +1176,30 @@ impl Resource for AddressResource {
                 ))
                 .default_sort(lens!(Address.city)),
             )
-            .detail(Detail::new(Section::new("Address").columns((
-                TextColumn::new(lens!(Address.street)),
-                TextColumn::new(lens!(Address.city)),
-                TextColumn::new(lens!(Address.state)),
-                TextColumn::new(lens!(Address.zip)),
-                TextColumn::new(lens!(Address.country)),
-            ))))
-            .form(Schema::new(Section::new("Address").schema((
-                c.customer_id.searchable().label("Customer"),
-                c.brand_id.searchable().label("Brand"),
-                c.country.searchable(),
-                c.street.label("Street address"),
-                Grid::new(3).schema((
-                    c.city.suggestions(crate::seed::CITIES.iter().copied()),
-                    c.state.label("State / Province"),
-                    c.zip.label("Zip / Postal code"),
+            .detail(Detail::new(
+                Section::new(tablo::text!("section-address")).columns((
+                    TextColumn::new(lens!(Address.street)),
+                    TextColumn::new(lens!(Address.city)),
+                    TextColumn::new(lens!(Address.state)),
+                    TextColumn::new(lens!(Address.zip)),
+                    TextColumn::new(lens!(Address.country)),
                 )),
-            ))))
+            ))
+            .form(Schema::new(
+                Section::new(tablo::text!("section-address")).schema((
+                    c.customer_id
+                        .searchable()
+                        .label(tablo::text!("label-customer")),
+                    c.brand_id.searchable().label(tablo::text!("label-brand")),
+                    c.country.searchable(),
+                    c.street.label(tablo::text!("label-street-address")),
+                    Grid::new(3).schema((
+                        c.city.suggestions(crate::seed::CITIES.iter().copied()),
+                        c.state.label(tablo::text!("label-state-province")),
+                        c.zip.label(tablo::text!("label-zip-postal-code")),
+                    )),
+                )),
+            ))
             .record_title(lens!(Address.street))
     }
 
@@ -1144,38 +1235,42 @@ impl Resource for OrderAddressResource {
     fn declare() -> ResourceDef<Self> {
         let c = OrderAddressForm::controls();
         ResourceDef::new()
-            .label("Order address")
-            .plural_label("Order addresses")
             .icon(crate::icons::ORDER_ADDRESSES)
-            .navigation_group("Shop")
+            .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(13)
             .policy(Allow)
             .without_global_search()
             .table(Table::new((
-                RelationColumn::of::<OrderResource>(relation!(OrderAddress.order)).label("Order"),
+                RelationColumn::of::<OrderResource>(relation!(OrderAddress.order))
+                    .label(tablo::text!("label-order")),
                 TextColumn::new(lens!(OrderAddress.street)),
                 TextColumn::new(lens!(OrderAddress.city)),
                 TextColumn::new(lens!(OrderAddress.zip)),
                 TextColumn::new(lens!(OrderAddress.country)).width(ColumnWidth::Auto),
             )))
-            .detail(Detail::new(Section::new("Order address").columns((
-                RelationColumn::of::<OrderResource>(relation!(OrderAddress.order)).label("Order"),
-                TextColumn::new(lens!(OrderAddress.street)),
-                TextColumn::new(lens!(OrderAddress.city)),
-                TextColumn::new(lens!(OrderAddress.state)),
-                TextColumn::new(lens!(OrderAddress.zip)),
-                TextColumn::new(lens!(OrderAddress.country)),
-            ))))
-            .form(Schema::new(Section::new("Order address").schema((
-                c.order_id.searchable().label("Order"),
-                c.country.searchable(),
-                c.street.label("Street address"),
-                Grid::new(3).schema((
-                    c.city.suggestions(crate::seed::CITIES.iter().copied()),
-                    c.state.label("State / Province"),
-                    c.zip.label("Zip / Postal code"),
+            .detail(Detail::new(
+                Section::new(tablo::text!("section-order-address")).columns((
+                    RelationColumn::of::<OrderResource>(relation!(OrderAddress.order))
+                        .label(tablo::text!("label-order")),
+                    TextColumn::new(lens!(OrderAddress.street)),
+                    TextColumn::new(lens!(OrderAddress.city)),
+                    TextColumn::new(lens!(OrderAddress.state)),
+                    TextColumn::new(lens!(OrderAddress.zip)),
+                    TextColumn::new(lens!(OrderAddress.country)),
                 )),
-            ))))
+            ))
+            .form(Schema::new(
+                Section::new(tablo::text!("section-order-address")).schema((
+                    c.order_id.searchable().label(tablo::text!("label-order")),
+                    c.country.searchable(),
+                    c.street.label(tablo::text!("label-street-address")),
+                    Grid::new(3).schema((
+                        c.city.suggestions(crate::seed::CITIES.iter().copied()),
+                        c.state.label(tablo::text!("label-state-province")),
+                        c.zip.label(tablo::text!("label-zip-postal-code")),
+                    )),
+                )),
+            ))
             .record_title(lens!(OrderAddress.street))
     }
 

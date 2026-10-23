@@ -2,59 +2,45 @@
 //!
 //! Toasty stores a variant under its `snake_case` name, which is the value the
 //! Filament demo stores in the same column.
+//!
+//! Each label is a `Text` message, `option-{enum}.{variant}`, which the
+//! catalogs under `locales/` translate and which falls back to the variant in
+//! sentence case.
 
 /// Where a customer or an address is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, toasty::Embed, tablo::Options)]
 pub enum CountryCode {
-    #[option(label = "United States")]
     Us,
-    #[option(label = "United Kingdom")]
     Gb,
-    #[option(label = "Germany")]
     De,
-    #[option(label = "France")]
     Fr,
-    #[option(label = "Canada")]
     Ca,
-    #[option(label = "Australia")]
     Au,
-    #[option(label = "Netherlands")]
     Nl,
-    #[option(label = "Brazil")]
     Br,
-    #[option(label = "Japan")]
     Jp,
-    #[option(label = "India")]
     In,
 }
 
 /// The currency a payment or a reimbursement is in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, toasty::Embed, tablo::Options)]
 pub enum CurrencyCode {
-    #[option(label = "US Dollar")]
     Usd,
-    #[option(label = "Euro")]
     Eur,
-    #[option(label = "British Pound")]
     Gbp,
-    #[option(label = "Canadian Dollar")]
     Cad,
-    #[option(label = "Australian Dollar")]
     Aud,
-    #[option(label = "Japanese Yen")]
     Jpy,
-    #[option(label = "Brazilian Real")]
     Brl,
-    #[option(label = "Indian Rupee")]
     Inr,
 }
 
 /// How an employee is engaged.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, toasty::Embed, tablo::Options)]
 pub enum EmploymentType {
-    #[option(label = "Full Time", color = "success")]
+    #[option(color = "success")]
     FullTime,
-    #[option(label = "Part Time", color = "info")]
+    #[option(color = "info")]
     PartTime,
     #[option(color = "warning")]
     Contractor,
@@ -112,15 +98,15 @@ pub enum LeaveStatus {
 /// What a leave request is for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, toasty::Embed, tablo::Options)]
 pub enum LeaveType {
-    #[option(label = "Annual Leave", color = "success")]
+    #[option(color = "success")]
     Annual,
-    #[option(label = "Sick Leave", color = "danger")]
+    #[option(color = "danger")]
     Sick,
-    #[option(label = "Personal Leave", color = "info")]
+    #[option(color = "info")]
     Personal,
-    #[option(label = "Unpaid Leave", color = "warning")]
+    #[option(color = "warning")]
     Unpaid,
-    #[option(label = "Parental Leave", color = "primary")]
+    #[option(color = "primary")]
     Parental,
 }
 
@@ -142,14 +128,10 @@ pub enum OrderStatus {
 /// How a payment was made.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, toasty::Embed, tablo::Options)]
 pub enum PaymentMethod {
-    #[option(label = "Credit Card")]
     CreditCard,
-    #[option(label = "Bank Transfer")]
     BankTransfer,
     Paypal,
-    #[option(label = "Apple Pay")]
     ApplePay,
-    #[option(label = "Google Pay")]
     GooglePay,
 }
 
@@ -160,7 +142,7 @@ pub enum ProjectStatus {
     Planning,
     #[option(color = "success")]
     Active,
-    #[option(label = "On Hold", color = "warning")]
+    #[option(color = "warning")]
     OnHold,
     #[option(color = "info")]
     Completed,
@@ -186,11 +168,11 @@ pub enum TaskPriority {
 pub enum TaskStatus {
     #[option(color = "gray")]
     Backlog,
-    #[option(label = "To Do", color = "info")]
+    #[option(color = "info")]
     Todo,
-    #[option(label = "In Progress", color = "warning")]
+    #[option(color = "warning")]
     InProgress,
-    #[option(label = "In Review", color = "primary")]
+    #[option(color = "primary")]
     InReview,
     #[option(color = "success")]
     Completed,

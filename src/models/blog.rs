@@ -87,13 +87,4 @@ impl Post {
         self.published_at
             .is_some_and(|date| date <= jiff::Zoned::now().date())
     }
-
-    /// What the list's status column reads: `Published` or `Draft`.
-    pub fn status(&self) -> &'static str {
-        if self.is_published() {
-            "Published"
-        } else {
-            "Draft"
-        }
-    }
 }

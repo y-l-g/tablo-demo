@@ -19,11 +19,11 @@ use topcoat::{
 pub type Mailbox = Arc<MemoryTransport>;
 
 /// The plain text of a mail, which is what the demo's mails carry.
-fn body(mail: &Mail) -> String {
+fn body(cx: &Cx, mail: &Mail) -> String {
     match mail.text() {
         TextBody::Text(text) => text.clone(),
         TextBody::None => String::new(),
-        TextBody::FromHtml => "The mail carries an HTML body.".to_string(),
+        TextBody::FromHtml => tablo::t!(cx, "copy-mail-html-body"),
     }
 }
 
@@ -33,7 +33,7 @@ pub struct Sent;
 impl Page for Sent {
     fn declare() -> PageDef {
         PageDef::new()
-            .label("Mailbox")
+            .label(tablo::text!("page-mailbox"))
             .icon(crate::icons::MAILBOX)
             .navigation_order(1)
     }
@@ -47,18 +47,18 @@ impl Page for Sent {
             cx =>
             tablo::ui::page(
                 tablo::ui::page_header(
-                    tablo::ui::page_title("Mailbox")
+                    tablo::ui::page_title((tablo::t!(cx, "page-mailbox")))
                     tablo::ui::page_description(
-                        "The mails the demo sent. The demo has no mail server, so they land here."
+                        (tablo::t!(cx, "copy-mailbox-description"))
                     )
                 )
                 tablo::ui::page_content(
                     tablo::ui::table(
                         tablo::ui::table_header(
                             tablo::ui::table_row(
-                                tablo::ui::table_head("To")
-                                tablo::ui::table_head("Subject")
-                                tablo::ui::table_head("Message")
+                                tablo::ui::table_head((tablo::t!(cx, "label-to")))
+                                tablo::ui::table_head((tablo::t!(cx, "label-subject")))
+                                tablo::ui::table_head((tablo::t!(cx, "label-message")))
                             )
                         )
                         tablo::ui::table_body(
@@ -68,7 +68,7 @@ impl Page for Sent {
                                         (mail.to().first().map(|to| to.address().to_string()).unwrap_or_default())
                                     )
                                     tablo::ui::table_cell((mail.subject()))
-                                    tablo::ui::table_cell((body(&mail)))
+                                    tablo::ui::table_cell((body(cx, &mail)))
                                 )
                             }
                         )

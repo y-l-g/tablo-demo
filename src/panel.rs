@@ -47,7 +47,7 @@ pub fn login_hint() -> String {
 
 /// The admin panel: every resource of the demo.
 pub fn admin_panel() -> Panel {
-    Panel::new("admin")
+    localized(Panel::new("admin"))
         .auth(Auth::custom(DemoAuth))
         .brand(Brand::new("Filament Demo"))
         .login_hint(login_hint())
@@ -85,7 +85,7 @@ pub fn admin_panel() -> Panel {
 
 /// The tenant panel: sign-up, a tenant switcher and the settings page.
 pub fn app_panel() -> Panel {
-    Panel::new("app")
+    localized(Panel::new("app"))
         .auth(app_auth())
         .brand(Brand::new("Filament Demo"))
         .login_hint(login_hint())
@@ -108,6 +108,15 @@ fn app_auth() -> Auth {
         .tenant_registration(TenantRegistration::new(DemoTenantRegistrar).required())
 }
 
+/// Offers English and French, the browser's `Accept-Language` choosing, with
+/// the demo's own words from `locales/`.
+fn localized(panel: Panel) -> Panel {
+    panel
+        .locales(["en", "fr"])
+        .translations("en", include_str!("../locales/en.ftl"))
+        .translations("fr", include_str!("../locales/fr.ftl"))
+}
+
 /// The URL the app answers on, which every mailed link starts with.
 fn base_url() -> String {
     std::env::var("TABLO_DEMO_BASE_URL").unwrap_or_else(|_| "http://127.0.0.1:3000".to_string())
@@ -127,22 +136,22 @@ impl Page for Settings {
             cx =>
             tablo::ui::page(
                 tablo::ui::page_header(
-                    tablo::ui::page_title("Settings")
+                    tablo::ui::page_title((tablo::t!(cx, "page-settings")))
                     tablo::ui::page_description(
-                        "The Filament demo renders an empty page here."
+                        (tablo::t!(cx, "copy-settings-description"))
                     )
                 )
                 tablo::ui::page_content(
                     tablo::ui::card(
                         tablo::ui::card_header(
-                            tablo::ui::card_title("Team")
+                            tablo::ui::card_title((tablo::t!(cx, "label-team")))
                             tablo::ui::card_description(
-                                "The tenant this session acts for."
+                                (tablo::t!(cx, "copy-team-description"))
                             )
                         )
                         tablo::ui::card_content(
                             <p class="text-sm">
-                                (team.unwrap_or_else(|| "No team selected.".to_string()))
+                                (team.unwrap_or_else(|| tablo::t!(cx, "copy-no-team")))
                             </p>
                         )
                     )
