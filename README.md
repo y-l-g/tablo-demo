@@ -39,6 +39,10 @@ the way a release build does; a plain `cargo run` needs `topcoat asset bundle`
 first, because the panel serves its stylesheet, font and scripts from a bundle
 beside the executable.
 
+The router's cookie key signs the links to uploaded files. Set
+`TABLO_DEMO_COOKIE_KEY` to 128 hex characters (`openssl rand -hex 64`) so those
+links stay valid across restarts and replicas; without it, each start draws a key.
+
 ## What it covers
 
 - **Resources** for twenty-one tables across four domains, each with a list, a
@@ -46,7 +50,8 @@ beside the executable.
 - **Tables** with search, sort, filters, grouping, pagination and CSV export.
 - **Forms** with choice enums, relationship choices, dependent choices,
   conditional fields, tabs, embedded values, `has_many` and `belongs_to` writes,
-  and file uploads.
+  and file uploads, checked by extension and size before they are stored and
+  served only at signed links that expire.
 - **Actions**, record and bulk, with input dialogs, confirmation and success
   notifications.
 - **Dashboards** that read the seeded data: figures as Tablo's stat tiles,

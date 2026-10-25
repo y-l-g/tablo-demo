@@ -36,7 +36,7 @@ impl Page for Dashboard {
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
-        let mut db = db(cx);
+        let mut db = db(cx)?;
         let posts = crate::models::Post::all().exec(&mut db).await?.len();
         let products = Product::all().exec(&mut db).await?.len();
         let orders = Order::filter(Order::fields().deleted_at().is_none())
@@ -105,7 +105,7 @@ impl Page for ShopDashboard {
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
-        let mut db = db(cx);
+        let mut db = db(cx)?;
         let orders: Vec<Order> = Order::filter(Order::fields().deleted_at().is_none())
             .exec(&mut db)
             .await?;
@@ -263,7 +263,7 @@ impl Page for HrDashboard {
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
-        let mut db = db(cx);
+        let mut db = db(cx)?;
         let employees: Vec<Employee> = Employee::filter(Employee::fields().deleted_at().is_none())
             .exec(&mut db)
             .await?;

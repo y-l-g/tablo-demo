@@ -11,6 +11,7 @@ use topcoat::{
     Result,
     asset::{AssetBundle, RouterBuilderAssetExt},
     context::Cx,
+    cookie::Key,
     font::{Font, fontsource::fontsource_font},
     mail::{MailConfig, Mailbox as Sender, RouterBuilderMailExt},
     router::{Router, RouterBuilderDiscoverExt},
@@ -19,7 +20,7 @@ use topcoat::{
 };
 
 use crate::{
-    auth::{DemoAuth, DemoResetter, DemoTenantRegistrar, DemoVerifier},
+    auth::{DemoAuth, DemoResetter, DemoTenantRegistrar, DemoVerifier, SignedIn},
     blog::{AuthorResource, CommentResource, PostCategoryResource, PostResource},
     dashboards::{Dashboard, HrDashboard, ShopDashboard},
     mailbox::Mailbox,
@@ -95,7 +96,7 @@ pub fn app_panel() -> Panel {
 
 /// The app panel's auth: the demo's own sign-in, with a password reset and an
 /// email verification, as the Filament demo's app panel has.
-fn app_auth() -> Auth {
+fn app_auth() -> Auth<SignedIn> {
     Auth::custom(DemoAuth)
         .registration(DemoAuth)
         .mail(AuthMail::new(
@@ -168,6 +169,26 @@ pub fn upload_dir() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("target/demo-uploads"))
 }
 
+/// The router's cookie key, which signs the links to uploaded files. `TABLO_DEMO_COOKIE_KEY` holds
+/// its 64 bytes as 128 hex characters (`openssl rand -hex 64`); without it each start draws a
+/// key, so the upload links a page showed before a restart stop working after it.
+fn cookie_key() -> Key {
+    let Ok(secret) = std::env::var("TABLO_DEMO_COOKIE_KEY") else {
+        return Key::generate();
+    };
+    let bytes: Option<Vec<u8>> = (0..secret.len())
+        .step_by(2)
+        .map(|at| {
+            secret
+                .get(at..at + 2)
+                .and_then(|pair| u8::from_str_radix(pair, 16).ok())
+        })
+        .collect();
+    bytes
+        .and_then(|bytes| Key::try_from(bytes.as_slice()).ok())
+        .expect("TABLO_DEMO_COOKIE_KEY holds 128 hex characters")
+}
+
 /// Mounts both panels on a router, with the asset bundle the build script wrote.
 pub fn router(db: Db, mailbox: Mailbox) -> Router {
     let bundle = AssetBundle::load().expect("load the asset bundle beside the executable");
@@ -175,6 +196,7 @@ pub fn router(db: Db, mailbox: Mailbox) -> Router {
         .discover()
         .app_context(db)
         .app_context(mailbox.clone())
+        .app_context(cookie_key())
         // The demo has no mail server: the mails the app panel sends land in
         // the mailbox, which the app panel's Mailbox page lists.
         .mail(MailConfig::builder().transport((*mailbox).clone()).build())
