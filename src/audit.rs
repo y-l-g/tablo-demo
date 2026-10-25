@@ -84,7 +84,7 @@ impl Page for AuditTrail {
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
-        let mut db = db(cx);
+        let mut db = db(cx)?;
         let mut entries = AuditEntry::all().exec(&mut db).await?;
         entries.reverse();
 

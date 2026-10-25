@@ -8,10 +8,10 @@ FROM rust:1.99-bookworm AS builder
 # Pinned so an image always builds against the same Tablo: the demo follows
 # Tablo's master, and a newer Tablo can break it. Bump it with the demo's own
 # dependency.
-ARG TABLO_REF=6c56d1fbc547e50f10e6da308c2d0d5ca2b87020
+ARG TABLO_REF=a6f97f8cc627aa968c6a869126426ede96b99cb6
 # The CLI bundles the assets the panel loads at runtime. It must match the
 # Topcoat the demo depends on, or the bundle it writes is unreadable.
-ARG TOPCOAT_CLI_VERSION=0.10.0
+ARG TOPCOAT_CLI_VERSION=0.11.0
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git ca-certificates \

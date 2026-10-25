@@ -53,7 +53,7 @@ async fn send(cx: &Cx, notification: Notification, url: Option<String>) -> Resul
 /// The name of the customer `id` names, read after the write committed.
 async fn customer_name(cx: &Cx, id: Option<u64>) -> Option<String> {
     let id = id?;
-    let mut db = tablo::db::db(cx);
+    let mut db = tablo::db::db(cx).ok()?;
     Customer::filter(Customer::fields().id().eq(id))
         .first()
         .exec(&mut db)

@@ -60,14 +60,14 @@ impl DemoAuth {
             .exec(&mut *ex)
             .await?
             .into_iter()
-            .map(|team| Membership::new(team.id, team.name))
+            .map(|team| Membership::new(team.id.into(), team.name))
             .collect();
         Ok(SignedIn { user, teams })
     }
 
     /// Finds the account whose email address is `email`.
     async fn by_email(cx: &Cx, email: &str) -> topcoat::Result<Option<User>> {
-        let mut db = tablo::db::db(cx);
+        let mut db = tablo::db::db(cx)?;
         Ok(User::filter(User::fields().email().eq(email.to_string()))
             .first()
             .exec(&mut db)
@@ -91,7 +91,7 @@ impl Authenticator for DemoAuth {
         }
         match user {
             Some(user) => {
-                let mut db = tablo::db::db(cx);
+                let mut db = tablo::db::db(cx)?;
                 Ok(Some(Self::signed_in(user, &mut db).await?))
             }
             None => Ok(None),
@@ -102,7 +102,7 @@ impl Authenticator for DemoAuth {
         let Ok(id) = id.parse::<u64>() else {
             return Ok(None);
         };
-        let mut db = tablo::db::db(cx);
+        let mut db = tablo::db::db(cx)?;
         let user = User::filter(User::fields().id().eq(id))
             .first()
             .exec(&mut db)
@@ -191,7 +191,7 @@ impl tablo::auth::PasswordResetter for DemoResetter {
     type User = SignedIn;
 
     async fn find_by_email(&self, cx: &Cx, email: &str) -> topcoat::Result<Option<SignedIn>> {
-        let mut handle = db(cx);
+        let mut handle = db(cx)?;
         let user = User::filter(User::fields().email().eq(email.trim()))
             .first()
             .exec(&mut handle)
@@ -300,6 +300,6 @@ impl tablo::auth::TenantRegistrar for DemoTenantRegistrar {
         })
         .exec(ex)
         .await?;
-        Ok(Membership::new(team.id, team.name))
+        Ok(Membership::new(team.id.into(), team.name))
     }
 }
