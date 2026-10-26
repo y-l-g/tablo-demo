@@ -12,8 +12,7 @@ pub struct User {
     pub name: String,
     #[unique]
     pub email: String,
-    /// When the address was confirmed. Tablo ships no verification flow, so the
-    /// demo only carries the column.
+    /// When the address was confirmed, through the link the app panel mails.
     pub email_verified_at: Option<Timestamp>,
     /// An Argon2id hash in PHC string format.
     pub password: String,

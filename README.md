@@ -10,7 +10,7 @@ Two panels are mounted, as in the Filament demo:
 | Panel   | URL      | What it is                                                                           |
 | ------- | -------- | ------------------------------------------------------------------------------------ |
 | `admin` | `/admin` | every resource: the blog, the shop, HR and projects, plus the shop and HR dashboards |
-| `app`   | `/app`   | the tenant panel: sign-up, a team switcher and the settings page                     |
+| `app`   | `/app`   | the tenant panel: every auth page, a team switcher and the settings page             |
 
 Sign in with `admin@example.com` / `password`.
 
@@ -39,9 +39,27 @@ the way a release build does; a plain `cargo run` needs `topcoat asset bundle`
 first, because the panel serves its stylesheet, font and scripts from a bundle
 beside the executable.
 
-The router's cookie key signs the links to uploaded files. Set
+The router's cookie key signs the links to uploaded files and seals each
+account's authenticator secret. Set
 `TABLO_DEMO_COOKIE_KEY` to 128 hex characters (`openssl rand -hex 64`) so those
-links stay valid across restarts and replicas; without it, each start draws a key.
+links and authenticator apps stay valid across restarts and replicas; without
+it, each start draws a key.
+
+### Mail
+
+The app panel mails sign-up verification links, password reset links,
+email-change confirmations and two-factor codes. Every mail lands in the admin
+panel's **Mailbox** page. To deliver them too, point the demo at an SMTP
+server:
+
+| Variable                   | What it is                                                    |
+| -------------------------- | ------------------------------------------------------------- |
+| `TABLO_DEMO_SMTP_HOST`     | the server, e.g. `smtp-relay.brevo.com`; unset keeps mail in memory only |
+| `TABLO_DEMO_SMTP_PORT`     | `587` (STARTTLS, the default) or `465` (implicit TLS)          |
+| `TABLO_DEMO_SMTP_USERNAME` | the SMTP login                                                 |
+| `TABLO_DEMO_SMTP_PASSWORD` | the SMTP key or password                                       |
+| `TABLO_DEMO_MAIL_FROM`     | the sender address, one your provider has verified             |
+| `TABLO_DEMO_BASE_URL`      | the URL the mailed links start with; `http://127.0.0.1:3000` by default |
 
 ## What it covers
 
@@ -58,6 +76,10 @@ links stay valid across restarts and replicas; without it, each start draws a ke
   linked to their lists, and ranked lists the demo draws itself.
 - **Navigation** that swaps the page in place, and an icon of its own for every
   sidebar entry, from a Lucide subset the build stages.
+- **Auth** on the `app` panel: sign-up, password reset, email verification, a
+  profile page that changes the name, password and email (the new address
+  confirmed by a mailed link), two-factor sign-in with an authenticator app or
+  mailed codes and recovery codes, and creating and renaming a team.
 - **Global search** in the topbar, over every resource, with results that respect
   the list's tenancy, trash and field access and open the record's page.
 - **Translations** in English and French, the browser's `Accept-Language`

@@ -1,13 +1,13 @@
 //! The mailbox: the mails the demo sent, so a demo can show its own links.
 //!
-//! The demo has no mail server, so the mails the app panel sends land in a
-//! transport that keeps them in memory, and the app panel's Mailbox page
-//! lists them. A real app would send them over SMTP.
+//! Every mail the app panel sends lands in a transport that keeps it in
+//! memory, and the admin panel's Mailbox page lists them. When
+//! `TABLO_DEMO_SMTP_HOST` names a server, the mails go out over SMTP too.
 
 use std::sync::Arc;
 
 use tablo::{Page, PageDef};
-use topcoat::mail::{Mail, TextBody};
+use topcoat::mail::{Mail, SmtpTransport, TextBody, Transport, TransportFuture};
 use topcoat::{
     Result,
     context::Cx,
@@ -18,6 +18,64 @@ use topcoat::{
 /// The transport that keeps the mails the demo sent.
 pub type Mailbox = Arc<MemoryTransport>;
 
+/// The demo's transport: each mail goes to the SMTP server when one is
+/// configured, and is kept in the mailbox once it was accepted.
+pub struct Postbox {
+    mailbox: Mailbox,
+    smtp: Option<SmtpTransport>,
+}
+
+impl Postbox {
+    /// Keeps the mails in `mailbox`, and sends them through the server the
+    /// environment names, if any.
+    pub fn new(mailbox: Mailbox) -> Self {
+        Self {
+            mailbox,
+            smtp: smtp_from_env(),
+        }
+    }
+}
+
+impl Transport for Postbox {
+    fn send<'a>(&'a self, cx: &'a Cx, mail: Mail) -> TransportFuture<'a> {
+        Box::pin(async move {
+            let Some(smtp) = &self.smtp else {
+                return self.mailbox.send(cx, mail).await;
+            };
+            let receipt = smtp.send(cx, mail.clone()).await?;
+            self.mailbox.send(cx, mail).await?;
+            Ok(receipt)
+        })
+    }
+}
+
+/// The SMTP server `TABLO_DEMO_SMTP_HOST` names, or `None` to keep mails in
+/// memory only. Port 465 connects with implicit TLS, any other port with
+/// STARTTLS (587 by default); `TABLO_DEMO_SMTP_USERNAME` and
+/// `TABLO_DEMO_SMTP_PASSWORD` sign in.
+fn smtp_from_env() -> Option<SmtpTransport> {
+    let host = std::env::var("TABLO_DEMO_SMTP_HOST").ok()?;
+    let port = std::env::var("TABLO_DEMO_SMTP_PORT")
+        .ok()
+        .map(|port| port.parse::<u16>().expect("TABLO_DEMO_SMTP_PORT is a port number"))
+        .unwrap_or(587);
+    let builder = if port == 465 {
+        SmtpTransport::relay(&host)
+    } else {
+        SmtpTransport::starttls(&host)
+    }
+    .expect("TABLO_DEMO_SMTP_HOST names an SMTP server")
+    .port(port);
+    let builder = match (
+        std::env::var("TABLO_DEMO_SMTP_USERNAME"),
+        std::env::var("TABLO_DEMO_SMTP_PASSWORD"),
+    ) {
+        (Ok(username), Ok(password)) => builder.credentials(username, password),
+        _ => builder,
+    };
+    Some(builder.build())
+}
+
 /// The plain text of a mail, which is what the demo's mails carry.
 fn body(cx: &Cx, mail: &Mail) -> String {
     match mail.text() {
@@ -27,7 +85,7 @@ fn body(cx: &Cx, mail: &Mail) -> String {
     }
 }
 
-/// The app panel's page: the mails the demo sent, newest first.
+/// The admin panel's page: the mails the demo sent, in the order it sent them.
 pub struct Sent;
 
 impl Page for Sent {

@@ -2,8 +2,12 @@
 
 use jiff::Timestamp;
 use tablo::{
-    Authenticator, FieldErrors, Membership, PanelUser, Registrar,
-    auth::{hash_password, new_password_errors, verify_password},
+    Authenticator, FieldErrors, Membership, PanelUser, Profile, ProfileEditor, ProfileUpdate,
+    Registrar,
+    auth::{
+        EmailChange, TenantEditor, hash_password, new_password_errors, request_email_change,
+        verify_password,
+    },
     db::db,
 };
 use toasty::Db;
@@ -301,5 +305,136 @@ impl tablo::auth::TenantRegistrar for DemoTenantRegistrar {
         .exec(ex)
         .await?;
         Ok(Membership::new(team.id.into(), team.name))
+    }
+}
+
+/// Edits the signed-in account from the app panel's profile page, as Filament's
+/// `EditProfile` does: the name, the email address and the password, asking for
+/// the current password before the address or the password changes.
+impl ProfileEditor for DemoAuth {
+    type Input = Profile;
+    type User = SignedIn;
+
+    fn fill(&self, _cx: &Cx, signed: &SignedIn) -> Profile {
+        Profile {
+            name: signed.user.name.clone(),
+            email: signed.user.email.clone(),
+            password: None,
+            password_confirmation: String::new(),
+            current_password: None,
+        }
+    }
+
+    async fn validate(
+        &self,
+        _cx: &Cx,
+        signed: &SignedIn,
+        profile: &Profile,
+        ex: &mut dyn toasty::Executor,
+    ) -> topcoat::Result<FieldErrors> {
+        let user = &signed.user;
+        let mut errors = profile.password_errors();
+        let new_email = profile.email.trim() != user.email;
+        if new_email || profile.password.is_some() {
+            match &profile.current_password {
+                None => errors.add(
+                    "current_password",
+                    tablo::text!("tablo-profile-current-password-needed"),
+                ),
+                Some(current) if !verify_password(current, Some(&user.password)).await => {
+                    errors.add(
+                        "current_password",
+                        tablo::text!("tablo-profile-current-password-wrong"),
+                    );
+                }
+                Some(_) => {}
+            }
+        }
+        // Only the account's owner learns whether another account holds an
+        // address: a stolen session without the password must not probe them.
+        if new_email && !errors.contains_key("current_password") {
+            let taken = User::filter(User::fields().email().eq(profile.email.trim()))
+                .first()
+                .exec(ex)
+                .await?;
+            if taken.is_some_and(|other| other.id != user.id) {
+                errors.add("email", tablo::text!("error-email-taken"));
+            }
+        }
+        Ok(errors)
+    }
+
+    async fn save(
+        &self,
+        cx: &Cx,
+        signed: &SignedIn,
+        profile: Profile,
+        ex: &mut dyn toasty::Executor,
+    ) -> topcoat::Result<ProfileUpdate> {
+        let email = profile.email.trim().to_string();
+        // The app panel verifies addresses, so a new one waits for the link
+        // mailed to it, and the old one gets a link that keeps it.
+        let stored = email != signed.user.email
+            && request_email_change(cx, &mut *ex, signed, &email).await? == EmailChange::Immediate;
+        let mut update = User::filter(User::fields().id().eq(signed.user.id))
+            .update()
+            .name(profile.name);
+        if stored {
+            update.set_email(email);
+            update.set_email_verified_at(None);
+        }
+        if let Some(password) = &profile.password {
+            update.set_password(hash_password(password).await?);
+        }
+        update.exec(ex).await?;
+        Ok(if stored || profile.password.is_some() {
+            ProfileUpdate::Credentials
+        } else {
+            ProfileUpdate::Details
+        })
+    }
+}
+
+/// Renames the team the session acts for, as the Filament demo's
+/// `EditTeamProfile` does.
+impl TenantEditor for DemoTenantRegistrar {
+    type Input = NewTeam;
+    type User = SignedIn;
+
+    async fn fill(&self, _cx: &Cx, _user: &SignedIn, team: &Membership) -> topcoat::Result<NewTeam> {
+        Ok(NewTeam {
+            name: team.name.clone(),
+        })
+    }
+
+    async fn validate(
+        &self,
+        _cx: &Cx,
+        _user: &SignedIn,
+        _team: &Membership,
+        input: &NewTeam,
+        _ex: &mut dyn toasty::Executor,
+    ) -> topcoat::Result<FieldErrors> {
+        let mut errors = FieldErrors::new();
+        if input.name.trim().is_empty() {
+            errors.add("name", tablo::text!("error-team-name-required"));
+        }
+        Ok(errors)
+    }
+
+    async fn save(
+        &self,
+        _cx: &Cx,
+        _user: &SignedIn,
+        team: &Membership,
+        input: NewTeam,
+        ex: &mut dyn toasty::Executor,
+    ) -> topcoat::Result<()> {
+        Team::filter(Team::fields().id().eq(team.tenant.get()))
+            .update()
+            .name(input.name.trim().to_string())
+            .exec(ex)
+            .await?;
+        Ok(())
     }
 }

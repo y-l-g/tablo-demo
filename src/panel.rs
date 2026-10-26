@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use tablo::{
     Auth, AuthMail, Brand, EmailVerification, Page, PageDef, Panel, PasswordReset,
-    RouterBuilderPanelExt, TenantRegistration, auth::membership,
+    RouterBuilderPanelExt, TenantRegistration, TwoFactor, auth::membership,
 };
 use toasty::Db;
 use topcoat::{
@@ -23,7 +23,7 @@ use crate::{
     auth::{DemoAuth, DemoResetter, DemoTenantRegistrar, DemoVerifier, SignedIn},
     blog::{AuthorResource, CommentResource, PostCategoryResource, PostResource},
     dashboards::{Dashboard, HrDashboard, ShopDashboard},
-    mailbox::Mailbox,
+    mailbox::{Mailbox, Postbox},
     seed,
 };
 
@@ -94,19 +94,28 @@ pub fn app_panel() -> Panel {
         .page::<Settings>()
 }
 
-/// The app panel's auth: the demo's own sign-in, with a password reset and an
-/// email verification, as the Filament demo's app panel has.
+/// The app panel's auth: the demo's own sign-in, with every page the Filament
+/// demo's app panel has: sign-up, password reset, email verification, the
+/// profile, two-factor sign-in, and creating and editing a team.
 fn app_auth() -> Auth<SignedIn> {
     Auth::custom(DemoAuth)
         .registration(DemoAuth)
-        .mail(AuthMail::new(
-            Sender::named("Filament Demo", "no-reply@demo.example.com")
-                .expect("the demo's sender address"),
-            base_url(),
-        ))
+        .mail(AuthMail::new(sender(), base_url()))
         .password_reset(PasswordReset::new(DemoResetter))
         .email_verification(EmailVerification::new(DemoVerifier))
+        .profile(DemoAuth)
+        // An authenticator app, or codes mailed to the account's address.
+        .two_factor(TwoFactor::new().email_codes())
         .tenant_registration(TenantRegistration::new(DemoTenantRegistrar).required())
+        .tenant_profile(DemoTenantRegistrar)
+}
+
+/// The address the app panel's mail comes from: `TABLO_DEMO_MAIL_FROM`, which
+/// a mail provider has verified, or a placeholder the mailbox keeps.
+fn sender() -> Sender {
+    let address = std::env::var("TABLO_DEMO_MAIL_FROM")
+        .unwrap_or_else(|_| "no-reply@demo.example.com".to_string());
+    Sender::named("Filament Demo", &address).expect("TABLO_DEMO_MAIL_FROM is an email address")
 }
 
 /// Offers English and French, the browser's `Accept-Language` choosing, with
@@ -197,9 +206,9 @@ pub fn router(db: Db, mailbox: Mailbox) -> Router {
         .app_context(db)
         .app_context(mailbox.clone())
         .app_context(cookie_key())
-        // The demo has no mail server: the mails the app panel sends land in
-        // the mailbox, which the app panel's Mailbox page lists.
-        .mail(MailConfig::builder().transport((*mailbox).clone()).build())
+        // The mails the app panel sends land in the mailbox, which the admin
+        // panel's Mailbox page lists, and go out over SMTP when it is set up.
+        .mail(MailConfig::builder().transport(Postbox::new(mailbox.clone())).build())
         .assets(bundle)
         .panel(admin_panel().shell_assets(tailwind::stylesheet!(), ALBERT_SANS))
         .expect("the admin panel mounts")

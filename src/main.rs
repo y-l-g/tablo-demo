@@ -41,7 +41,7 @@ async fn main() {
     tablo_demo::seed::seed(&mut db)
         .await
         .expect("seed the demo data");
-    // The demo has no mail server: the mails the app panel sends land here.
+    // The mails the app panel sends land here, whether or not SMTP sends them.
     let mailbox = Arc::new(MemoryTransport::new());
     let router = tablo_demo::panel::router(db, mailbox);
     topcoat::start(router).await.expect("serve");
