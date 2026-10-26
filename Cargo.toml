@@ -6,7 +6,7 @@ publish = false
 description = "The Filament demo, rebuilt on Tablo."
 
 [dependencies]
-tablo = { path = "../filament-topcoat/tablo/crates/tablo", features = ["sqlite"] }
+tablo = { version = "0.8.0", features = ["sqlite"] }
 jiff = "0.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -16,7 +16,7 @@ topcoat = { version = "0.11", features = ["serve", "tailwind", "font", "font-fon
 uuid = "1.23"
 
 [build-dependencies]
-tablo-build = { path = "../filament-topcoat/tablo/crates/tablo-build" }
+tablo-build = "0.8.0"
 topcoat = { version = "0.11", features = ["icon-iconify"] }
 
 [lints.rust]

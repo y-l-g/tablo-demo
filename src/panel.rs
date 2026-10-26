@@ -13,6 +13,7 @@ use topcoat::{
     context::Cx,
     cookie::Key,
     font::{Font, fontsource::fontsource_font},
+    l10n::locale,
     mail::{MailConfig, Mailbox as Sender, RouterBuilderMailExt},
     router::{Router, RouterBuilderDiscoverExt},
     tailwind,
@@ -122,9 +123,9 @@ fn sender() -> Sender {
 /// the demo's own words from `locales/`.
 fn localized(panel: Panel) -> Panel {
     panel
-        .locales(["en", "fr"])
-        .translations("en", include_str!("../locales/en.ftl"))
-        .translations("fr", include_str!("../locales/fr.ftl"))
+        .locales([locale!("en"), locale!("fr")])
+        .translations(locale!("en"), include_str!("../locales/en.ftl"))
+        .translations(locale!("fr"), include_str!("../locales/fr.ftl"))
 }
 
 /// The URL the app answers on, which every mailed link starts with.
