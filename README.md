@@ -16,17 +16,7 @@ Sign in with `admin@example.com` / `password`.
 
 ## Running it
 
-The demo builds Tablo from the checkout beside it, so keep the two repositories
-side by side:
-
-```
-Github/
-  filament-topcoat/tablo
-  tablo-demo
-```
-
-Tablo's own dependencies, Topcoat and Toasty, come from crates.io at the versions
-Tablo pins, so no other checkout is needed.
+Tablo, Topcoat and Toasty all come from crates.io, so no other checkout is needed.
 
 ```sh
 cargo run
