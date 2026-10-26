@@ -23,7 +23,7 @@ dashboard-shop-description = How the shop is doing, over every customer and orde
 dashboard-hr-description = The workforce, its leave, its projects and what they cost.
 
 copy-audit-description = Every write the panel made, recorded in the write's own transaction.
-copy-mailbox-description = The mails the demo sent. The demo has no mail server, so they land here.
+copy-mailbox-description = The mails the demo sent, kept here whether or not a mail server delivered them.
 copy-mail-html-body = The mail carries an HTML body.
 copy-no-team = No team selected.
 copy-settings-description = The Filament demo renders an empty page here.
