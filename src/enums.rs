@@ -1,7 +1,6 @@
 //! The closed value sets the demo's columns store, one `Options` enum each.
 //!
-//! Toasty stores a variant under its `snake_case` name, which is the value the
-//! Filament demo stores in the same column.
+//! Toasty stores a variant under its `snake_case` name.
 //!
 //! Each label is a `Text` message, `option-{enum}.{variant}`, which the
 //! catalogs under `locales/` translate and which falls back to the variant in

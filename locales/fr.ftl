@@ -11,8 +11,8 @@ navigation-projects = Projets
 ## Pages
 
 page-welcome = Bienvenue
-page-welcome-title = Bienvenue dans la démo Filament !
-page-welcome-description = La même application de démonstration, reconstruite sur Tablo.
+page-welcome-title = Bienvenue dans la démo Tablo !
+page-welcome-description = Une application de démonstration construite sur Tablo.
 page-shop-dashboard = Tableau de bord boutique
 page-hr-dashboard = Tableau de bord RH
 page-settings = Paramètres
@@ -23,7 +23,7 @@ dashboard-hr-description = Les effectifs, leurs congés, leurs projets et leur c
 
 copy-audit-description = Chaque écriture du panneau, enregistrée dans la transaction de l'écriture elle-même.
 copy-no-team = Aucune équipe sélectionnée.
-copy-settings-description = La démo Filament affiche ici une page vide.
+copy-settings-description = Hormis l'équipe, cette page est vide.
 copy-team-description = Le locataire au nom duquel agit cette session.
 
 ## Ressources
@@ -226,7 +226,7 @@ label-zip-postal-code = Code postal
 ## Indications, unités et valeurs
 
 hint-post-title = Un titre qui donne envie de cliquer
-hint-tags = Séparés par des virgules, comme les stocke le champ de tags de Spatie
+hint-tags = Séparés par des virgules
 unit-hours = heures
 unit-minutes = minutes
 unit-per-hour = par heure

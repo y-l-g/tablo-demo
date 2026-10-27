@@ -125,7 +125,7 @@ pub struct Product {
     pub volume_value: Option<f64>,
     #[default("l".to_string())]
     pub volume_unit: String,
-    /// The product's image, where Spatie's media library holds a collection.
+    /// The product's image, the path of the uploaded file.
     #[default(String::new())]
     pub image: String,
     #[default(Timestamp::now())]

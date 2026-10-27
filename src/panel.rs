@@ -28,7 +28,7 @@ use crate::{
     seed,
 };
 
-/// The theme's sans font, which the Filament demo names `Albert Sans`.
+/// The theme's sans font, `Albert Sans`.
 const ALBERT_SANS: Font = fontsource_font!(ALBERT_SANS, host: Asset);
 
 /// The URL prefix uploaded images are served under.
@@ -51,7 +51,7 @@ pub fn login_hint() -> String {
 pub fn admin_panel() -> Panel {
     localized(Panel::new("admin"))
         .auth(Auth::custom(DemoAuth))
-        .brand(Brand::new("Filament Demo"))
+        .brand(Brand::new("Tablo Demo"))
         .login_hint(login_hint())
         .notifications()
         .home::<Dashboard>()
@@ -88,15 +88,15 @@ pub fn admin_panel() -> Panel {
 pub fn app_panel() -> Panel {
     localized(Panel::new("app"))
         .auth(app_auth())
-        .brand(Brand::new("Filament Demo"))
+        .brand(Brand::new("Tablo Demo"))
         .login_hint(login_hint())
         .home::<Dashboard>()
         .page::<Settings>()
 }
 
-/// The app panel's auth: the demo's own sign-in, with every page the Filament
-/// demo's app panel has: sign-up, password reset, email verification, the
-/// profile, two-factor sign-in, and creating and editing a team.
+/// The app panel's auth: the demo's own sign-in, with sign-up, password reset,
+/// email verification, the profile, two-factor sign-in, and creating and editing
+/// a team.
 fn app_auth() -> Auth<SignedIn> {
     Auth::custom(DemoAuth)
         .registration(DemoAuth)
@@ -115,7 +115,7 @@ fn app_auth() -> Auth<SignedIn> {
 fn sender() -> Sender {
     let address = std::env::var("TABLO_DEMO_MAIL_FROM")
         .unwrap_or_else(|_| "no-reply@demo.example.com".to_string());
-    Sender::named("Filament Demo", &address).expect("TABLO_DEMO_MAIL_FROM is an email address")
+    Sender::named("Tablo Demo", &address).expect("TABLO_DEMO_MAIL_FROM is an email address")
 }
 
 /// Offers English and French, the browser's `Accept-Language` choosing, with
@@ -132,7 +132,7 @@ fn base_url() -> String {
     std::env::var("TABLO_DEMO_BASE_URL").unwrap_or_else(|_| "http://127.0.0.1:3000".to_string())
 }
 
-/// The tenant panel's settings page, which the Filament demo leaves empty.
+/// The tenant panel's settings page, which shows only the team.
 pub struct Settings;
 
 impl Page for Settings {

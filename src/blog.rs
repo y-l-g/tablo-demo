@@ -353,7 +353,7 @@ pub struct AuthorForm {
 
 /// The comments of a post, or of a product, as a resource of their own.
 ///
-/// Filament manages comments from the post and product pages; Tablo renders a
+/// Comments are managed from the post and product pages; Tablo renders a
 /// relation as the related resource's table, which the panel must register.
 pub struct CommentResource;
 

@@ -68,7 +68,7 @@ pub struct Employee {
     pub salary: Option<f64>,
     pub hourly_rate: Option<f64>,
     pub team_color: Option<String>,
-    /// The skills the employee claims, which the Filament form picks from a list.
+    /// The skills the employee claims.
     #[default(Vec::<String>::new())]
     pub skills: Vec<String>,
     #[column(type = text)]
@@ -153,7 +153,7 @@ pub struct Project {
     pub actual_hours: f64,
     pub start_date: Date,
     pub end_date: Option<Date>,
-    /// The project's plan, which the Filament form edits as builder blocks.
+    /// The project's plan, stored as a JSON document.
     #[column(type = text)]
     pub plan: Option<Json<Value>>,
     /// Set by a delete, which hides the row instead of removing it.
@@ -195,7 +195,7 @@ pub struct Task {
     pub actual_hours: f64,
     pub due_date: Option<Date>,
     pub completed_at: Option<Timestamp>,
-    /// The labels the task carries, which the Filament form picks from a list.
+    /// The labels the task carries.
     #[default(Vec::<String>::new())]
     pub labels: Vec<String>,
     #[default(0)]

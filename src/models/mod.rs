@@ -22,8 +22,8 @@ pub use staff::{Team, TeamUser, User};
 
 /// A postal address, owned by the customer or the brand whose column names it.
 ///
-/// The Filament demo links addresses through a polymorphic `addressables` pivot;
-/// `customer_id` and `brand_id` are the two nullable keys that replace it.
+/// Toasty has no polymorphic relation, so `customer_id` and `brand_id` are two
+/// nullable keys, one per owner.
 #[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
 pub struct Address {
     #[key]
@@ -50,8 +50,8 @@ pub struct Address {
 
 /// A customer's review of a post or a product.
 ///
-/// The Filament demo links comments through a polymorphic `commentable`; the
-/// two nullable keys below replace it, so each side keeps its own relation.
+/// Toasty has no polymorphic relation, so each of the two nullable keys below
+/// links a comment to one owner, and each side keeps its own relation.
 #[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
 pub struct Comment {
     #[key]

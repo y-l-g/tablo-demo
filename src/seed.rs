@@ -1,4 +1,4 @@
-//! The demo data, mirroring the Filament demo's seeder.
+//! The demo data.
 
 use jiff::{Span, Timestamp, Zoned, civil::Date};
 use serde_json::json;

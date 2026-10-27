@@ -41,10 +41,9 @@ impl PanelUser for SignedIn {
         Some(&self.user.email)
     }
 
-    /// Who may open which panel. The Filament demo answers `canAccessPanel`
-    /// with `true` everywhere, which leaves `/admin`, holding every resource of
-    /// the demo, open to anyone who signs up on `/app`. Here `/app` is the
-    /// panel accounts sign up on and `/admin` admits administrators alone.
+    /// Who may open which panel. `/app` is the panel accounts sign up on, and
+    /// `/admin`, holding every resource of the demo, admits administrators
+    /// alone, so a sign-up never reaches it.
     ///
     /// Each panel is named and the rest refused, so a panel added or renamed
     /// later admits nobody until it has a rule here.
@@ -66,10 +65,8 @@ pub struct DemoAuth;
 
 impl DemoAuth {
     /// Loads `user` with the teams they belong to, read through the
-    /// `team_user` pivot.
+    /// `team_user` pivot, so a fresh account acts for no team it never joined.
     ///
-    /// The Filament demo answers `User::getTenants` with every team and ignores
-    /// the pivot it defines, so a fresh account acts for teams it never joined.
     /// Reading the pivot is what gives the app panel's required tenant
     /// registration something to do: a new account holds no team until it
     /// creates one.
@@ -208,7 +205,7 @@ pub async fn create_user(
         name: name.to_string(),
         email: email.to_string(),
         is_admin: is_admin,
-        // The seeded account is trusted, as the Filament demo's factory trusts it.
+        // The seeded account is trusted, so its address counts as verified.
         email_verified_at: Some(Timestamp::now()),
         password: hash_password(password)
             .await
@@ -291,8 +288,7 @@ pub struct NewTeam {
     pub name: String,
 }
 
-/// Creates a team for a signed-in user, as the Filament demo's tenant
-/// registration does.
+/// Creates a team for a signed-in user.
 pub struct DemoTenantRegistrar;
 
 impl tablo::auth::TenantRegistrar for DemoTenantRegistrar {
@@ -338,9 +334,9 @@ impl tablo::auth::TenantRegistrar for DemoTenantRegistrar {
     }
 }
 
-/// Edits the signed-in account from the app panel's profile page, as Filament's
-/// `EditProfile` does: the name, the email address and the password, asking for
-/// the current password before the address or the password changes.
+/// Edits the signed-in account from the app panel's profile page: the name, the
+/// email address and the password, asking for the current password before the
+/// address or the password changes.
 impl ProfileEditor for DemoAuth {
     type Input = Profile;
     type User = SignedIn;
@@ -425,8 +421,7 @@ impl ProfileEditor for DemoAuth {
     }
 }
 
-/// Renames the team the session acts for, as the Filament demo's
-/// `EditTeamProfile` does.
+/// Renames the team the session acts for.
 impl TenantEditor for DemoTenantRegistrar {
     type Input = NewTeam;
     type User = SignedIn;

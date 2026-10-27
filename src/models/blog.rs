@@ -66,10 +66,10 @@ pub struct Post {
     pub slug: String,
     pub content: String,
     pub published_at: Option<Date>,
-    /// The post's image, where Spatie's media library holds a collection.
+    /// The post's image, the path of the uploaded file.
     #[default(String::new())]
     pub image: String,
-    /// The post's tags, which Spatie stores in its own polymorphic table.
+    /// The post's tags, comma separated.
     pub tags: String,
     pub seo_title: Option<String>,
     pub seo_description: Option<String>,
