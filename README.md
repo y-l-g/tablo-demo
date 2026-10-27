@@ -11,8 +11,8 @@ Two panels are mounted:
 | `admin` | `/admin` | every resource: the blog, the shop, HR and projects, plus the shop and HR dashboards. Staff only |
 | `app`   | `/app`   | the tenant panel: every auth page, a team switcher and the settings page             |
 
-The page at `/` introduces both, with a tour of the features worth trying: each
-stop links to the page that shows it and to the file that declares it. It is
+The page at `/` introduces both, with a button per demo account that signs in to
+it, and switches for the language and the theme that the panels share. It is
 public, rendered in the admin panel's document and catalog through its
 `PanelHandle`, in [`src/welcome.rs`](src/welcome.rs).
 
