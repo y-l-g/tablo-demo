@@ -3781,8 +3781,7 @@ dependencies = [
 [[package]]
 name = "tablo"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c26ab5ecdbdd18bbc9e221f5c02ed0ef5de9014acdd866126cf4eb763d869360"
+source = "git+https://github.com/y-l-g/tablo.git#1980b219b10c88acaf662a4353edcd6e57754a02"
 dependencies = [
  "tablo-core",
  "tablo-ui",
@@ -3793,8 +3792,7 @@ dependencies = [
 [[package]]
 name = "tablo-build"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36cf6869688a471fc958f2efb9f34df596715a690aef00bcba49d904150f060f"
+source = "git+https://github.com/y-l-g/tablo.git#1980b219b10c88acaf662a4353edcd6e57754a02"
 dependencies = [
  "topcoat",
 ]
@@ -3802,8 +3800,7 @@ dependencies = [
 [[package]]
 name = "tablo-core"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f7be353f55b2baa259f02c343fa59c5a14fa66967ac8dbbad9b01f186d1d729"
+source = "git+https://github.com/y-l-g/tablo.git#1980b219b10c88acaf662a4353edcd6e57754a02"
 dependencies = [
  "aes-gcm 0.11.1",
  "ammonia",
@@ -3862,8 +3859,7 @@ dependencies = [
 [[package]]
 name = "tablo-macros"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c46c65b38d684fcaa335ca2306c9e614f7a5c031dd1f96046d2b4f0ad2dd715"
+source = "git+https://github.com/y-l-g/tablo.git#1980b219b10c88acaf662a4353edcd6e57754a02"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -3874,8 +3870,7 @@ dependencies = [
 [[package]]
 name = "tablo-ui"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "922a828a8ff4dc0c3b236f8d10b173c9fb8673a796d7e68703972c5d0597118b"
+source = "git+https://github.com/y-l-g/tablo.git#1980b219b10c88acaf662a4353edcd6e57754a02"
 dependencies = [
  "topcoat",
 ]

@@ -16,7 +16,10 @@ Sign in with `admin@example.com` / `password`.
 
 ## Running it
 
-Tablo, Topcoat and Toasty all come from crates.io, so no other checkout is needed.
+Tablo comes from its [Git repository](https://github.com/y-l-g/tablo) at the
+last commit of its `master` branch, and Topcoat and Toasty come from crates.io,
+so no other checkout is needed. `Cargo.lock` records the commit a build uses;
+`cargo update -p tablo` moves it to the newest one.
 
 ```sh
 cargo run
