@@ -29,7 +29,7 @@ pub async fn seed(db: &mut Db) -> toasty::Result<()> {
     let now = Zoned::now();
     let today = now.date();
 
-    let admin = create_user(db, "Demo User", ADMIN_EMAIL, ADMIN_PASSWORD).await?;
+    let admin = create_user(db, "Demo User", ADMIN_EMAIL, ADMIN_PASSWORD, true).await?;
     let teams = seed_teams(db).await?;
     let (brands, customers) = seed_shop(db, &mut rng, &now).await?;
     let products = seed_products(db, &mut rng, &brands, &customers, today).await?;
@@ -37,7 +37,9 @@ pub async fn seed(db: &mut Db) -> toasty::Result<()> {
     seed_blog(db, &mut rng, &now, &customers, today).await?;
     seed_hr(db, &mut rng, &now, today).await?;
 
-    // The demo's `team_user` pivot: every user belongs to every team.
+    // The demo's `team_user` pivot. The seeded administrator joins both teams, so
+    // the app panel's switcher has something to switch; an account that signs up
+    // joins none until it registers one.
     for team in &teams {
         toasty::create!(TeamUser {
             team_id: team.id,
