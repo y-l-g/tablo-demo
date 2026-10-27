@@ -17,9 +17,19 @@ Sign in with `admin@example.com` / `password`.
 ## Running it
 
 Tablo comes from its [Git repository](https://github.com/y-l-g/tablo) at the
-last commit of its `master` branch, and Topcoat and Toasty come from crates.io,
-so no other checkout is needed. `Cargo.lock` records the commit a build uses;
-`cargo update -p tablo` moves it to the newest one.
+last commit of its `master` branch. Topcoat comes from its
+[Git repository](https://github.com/tokio-rs/topcoat) at `01bd5853`, the commit
+Tablo's `master` builds against, through the `[patch.crates-io]` section of
+`Cargo.toml`. Toasty comes from crates.io, so no other checkout is needed.
+`Cargo.lock` records the commit a build uses; `cargo update -p tablo` moves
+Tablo to the newest one.
+
+The asset bundle has to come from that same Topcoat commit, so install its CLI
+from there:
+
+```sh
+cargo install --git https://github.com/tokio-rs/topcoat --rev 01bd585394891052a4bd68213a36ac8f8e8687c9 topcoat-cli --locked
+```
 
 ```sh
 cargo run
