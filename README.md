@@ -1,11 +1,10 @@
 # Tablo demo
 
-The [Filament demo](https://github.com/filamentphp/demo) rebuilt on
-[Tablo](https://github.com/y-l-g/tablo): the same models, relations, resources,
+A demo of [Tablo](https://github.com/y-l-g/tablo): models, relations, resources,
 tables, forms, actions and dashboards, served by Topcoat and persisted with
 Toasty.
 
-Two panels are mounted, as in the Filament demo:
+Two panels are mounted:
 
 | Panel   | URL      | What it is                                                                           |
 | ------- | -------- | ------------------------------------------------------------------------------------ |
@@ -14,9 +13,7 @@ Two panels are mounted, as in the Filament demo:
 
 Sign in with `admin@example.com` / `password`, the one account the seed marks as
 an administrator. An account that signs up on `/app` is not one: it verifies its
-address, registers a team of its own, and `/admin` refuses it. See
-[GAPS.md](GAPS.md#access-and-tenancy) for where that leaves the Filament demo,
-which admits every account to both panels.
+address, registers a team of its own, and `/admin` refuses it.
 
 ## Running it
 
@@ -97,5 +94,4 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   sidebar footer. The demo's own words are in [`locales/`](locales/), beside Tablo's
   catalog.
 
-[GAPS.md](GAPS.md) lists what the Filament demo does that this demo cannot,
-and what blocks it.
+[GAPS.md](GAPS.md) lists the features this demo still lacks, and what blocks each.

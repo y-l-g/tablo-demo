@@ -1224,8 +1224,8 @@ pub struct AddressForm {
 
 /// Where an order ships, which the order page lists.
 ///
-/// The Filament demo edits these fields inside the order form; Tablo has no
-/// nested relationship form, so they are a resource of their own.
+/// Tablo has no nested relationship form, so these fields are a resource of
+/// their own rather than part of the order form.
 pub struct OrderAddressResource;
 
 impl Resource for OrderAddressResource {

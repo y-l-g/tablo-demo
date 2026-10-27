@@ -11,8 +11,8 @@ navigation-projects = Projects
 ## Pages
 
 page-welcome = Welcome
-page-welcome-title = Welcome to the Filament demo!
-page-welcome-description = The same demo application, rebuilt on Tablo.
+page-welcome-title = Welcome to the Tablo demo!
+page-welcome-description = A demo application built on Tablo.
 page-shop-dashboard = Shop dashboard
 page-hr-dashboard = HR dashboard
 page-settings = Settings
@@ -23,7 +23,7 @@ dashboard-hr-description = The workforce, its leave, its projects and what they 
 
 copy-audit-description = Every write the panel made, recorded in the write's own transaction.
 copy-no-team = No team selected.
-copy-settings-description = The Filament demo renders an empty page here.
+copy-settings-description = Apart from the team, this page is empty.
 copy-team-description = The tenant this session acts for.
 
 ## Resources
@@ -188,7 +188,7 @@ label-zip-postal-code = Zip / Postal code
 ## Hints, units and values
 
 hint-post-title = A title readers click
-hint-tags = Comma separated, as Spatie's tag input stores them
+hint-tags = Comma separated
 unit-hours = hours
 unit-minutes = minutes
 unit-per-hour = per hour

@@ -3,7 +3,7 @@ name = "tablo-demo"
 version = "0.1.0"
 edition = "2024"
 publish = false
-description = "The Filament demo, rebuilt on Tablo."
+description = "The Tablo demo."
 
 [dependencies]
 tablo = { git = "https://github.com/y-l-g/tablo.git", features = ["sqlite"] }

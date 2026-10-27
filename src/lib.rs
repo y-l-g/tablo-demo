@@ -1,4 +1,4 @@
-//! The Filament demo, rebuilt on Tablo.
+//! The Tablo demo.
 
 pub mod audit;
 pub mod auth;
