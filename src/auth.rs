@@ -41,9 +41,19 @@ impl PanelUser for SignedIn {
         Some(&self.user.email)
     }
 
-    /// Every account may open the panel, as `User::canAccessPanel` answers.
-    fn can_access_panel(&self) -> bool {
-        true
+    /// Who may open which panel. The Filament demo answers `canAccessPanel`
+    /// with `true` everywhere, which leaves `/admin`, holding every resource of
+    /// the demo, open to anyone who signs up on `/app`. Here `/app` is the
+    /// panel accounts sign up on and `/admin` admits administrators alone.
+    ///
+    /// Each panel is named and the rest refused, so a panel added or renamed
+    /// later admits nobody until it has a rule here.
+    fn can_access_panel(&self, panel: &str) -> bool {
+        match panel {
+            "/admin" => self.user.is_admin,
+            "/app" => true,
+            _ => false,
+        }
     }
 
     fn tenants(&self) -> &[Membership] {
@@ -55,17 +65,33 @@ impl PanelUser for SignedIn {
 pub struct DemoAuth;
 
 impl DemoAuth {
-    /// Loads `user` with every team, as `User::getTenants` answers.
+    /// Loads `user` with the teams they belong to, read through the
+    /// `team_user` pivot.
+    ///
+    /// The Filament demo answers `User::getTenants` with every team and ignores
+    /// the pivot it defines, so a fresh account acts for teams it never joined.
+    /// Reading the pivot is what gives the app panel's required tenant
+    /// registration something to do: a new account holds no team until it
+    /// creates one.
     ///
     /// Runs on `ex` rather than on a fresh handle: sign-up calls this while its
     /// transaction holds the connection, and a second one would wait forever.
     async fn signed_in(user: User, ex: &mut dyn toasty::Executor) -> topcoat::Result<SignedIn> {
-        let teams = Team::all()
+        let memberships = TeamUser::filter(TeamUser::fields().user_id().eq(user.id))
             .exec(&mut *ex)
-            .await?
-            .into_iter()
-            .map(|team| Membership::new(team.id.into(), team.name))
-            .collect();
+            .await?;
+        let mut teams = Vec::new();
+        // One query a team: Toasty filters on no list of keys, and an account
+        // holds few teams.
+        for membership in memberships {
+            let team = Team::filter(Team::fields().id().eq(membership.team_id))
+                .first()
+                .exec(&mut *ex)
+                .await?;
+            if let Some(team) = team {
+                teams.push(Membership::new(team.id.into(), team.name));
+            }
+        }
         Ok(SignedIn { user, teams })
     }
 
@@ -168,16 +194,20 @@ impl Registrar for DemoAuth {
     }
 }
 
-/// Creates the demo's administrator, hashed the way the login checks it.
+/// Creates a seeded account, hashed the way the login checks it. `is_admin`
+/// is what opens the `admin` panel, and the seed grants it to the demo's own
+/// account alone.
 pub async fn create_user(
     db: &mut Db,
     name: &str,
     email: &str,
     password: &str,
+    is_admin: bool,
 ) -> toasty::Result<User> {
     toasty::create!(User {
         name: name.to_string(),
         email: email.to_string(),
+        is_admin: is_admin,
         // The seeded account is trusted, as the Filament demo's factory trusts it.
         email_verified_at: Some(Timestamp::now()),
         password: hash_password(password)

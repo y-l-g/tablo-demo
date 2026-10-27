@@ -16,6 +16,10 @@ pub struct User {
     pub email_verified_at: Option<Timestamp>,
     /// An Argon2id hash in PHC string format.
     pub password: String,
+    /// Whether the account may open the `admin` panel. A sign-up writes `false`:
+    /// the seed hands this out, as the Filament demo has no page that does.
+    #[default(false)]
+    pub is_admin: bool,
     pub remember_token: Option<String>,
     #[default(Timestamp::now())]
     pub created_at: Timestamp,

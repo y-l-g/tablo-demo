@@ -67,3 +67,23 @@ cannot, and what blocks it. Everything not listed here is translated.
 | `topbar(false)`, Vite theme | the shell is Tablo's |
 | `command+k` for global search | no shortcut |
 | Importer column mapping | an import reads the create form's columns |
+
+## Access and tenancy
+
+Three places where this demo leaves the Filament demo on purpose, because
+copying it would hand a self-registered account the whole admin panel.
+
+| What the Filament demo does | What this demo does instead |
+| --- | --- |
+| `User::canAccessPanel` answers `true`, so an account that signs up on `/app` opens `/admin` too | `User::is_admin` gates `/admin`; `/app` stays open to every account, and the seed hands the role out |
+| `User::getTenants` answers with every `Team`, ignoring the `team_user` pivot it defines | memberships are read through the pivot, so a new account holds no team until it registers one |
+| the panels' onboarding differs (`/app` verifies an address and requires a team; `/admin` requires neither) and a shared password reaches the laxer one | `/admin` admits administrators alone, so its lack of onboarding is no longer a way around `/app`'s |
+
+What is still not multi-tenancy: no model carries a tenant column and no
+resource declares a [`Tenancy`][tenancy], so every row the demo shows belongs to
+every team, and switching from Acme Inc. to Globex changes the name above the
+sidebar and nothing else. The Filament demo is the same, and mounts no resource
+on its app panel at all. Demonstrating real scoping would mean giving `Project`
+and `Task` a `tenant_id` and seeding each team its own rows.
+
+[tenancy]: https://y-l.fr/tablo/nightly/api/tablo/struct.Tenancy.html

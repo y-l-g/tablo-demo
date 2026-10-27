@@ -9,10 +9,14 @@ Two panels are mounted, as in the Filament demo:
 
 | Panel   | URL      | What it is                                                                           |
 | ------- | -------- | ------------------------------------------------------------------------------------ |
-| `admin` | `/admin` | every resource: the blog, the shop, HR and projects, plus the shop and HR dashboards |
+| `admin` | `/admin` | every resource: the blog, the shop, HR and projects, plus the shop and HR dashboards. Administrators only |
 | `app`   | `/app`   | the tenant panel: every auth page, a team switcher and the settings page             |
 
-Sign in with `admin@example.com` / `password`.
+Sign in with `admin@example.com` / `password`, the one account the seed marks as
+an administrator. An account that signs up on `/app` is not one: it verifies its
+address, registers a team of its own, and `/admin` refuses it. See
+[GAPS.md](GAPS.md#access-and-tenancy) for where that leaves the Filament demo,
+which admits every account to both panels.
 
 ## Running it
 
@@ -22,7 +26,8 @@ last commit of its `master` branch. Topcoat comes from its
 Tablo's `master` builds against, through the `[patch.crates-io]` section of
 `Cargo.toml`. Toasty comes from crates.io, so no other checkout is needed.
 `Cargo.lock` records the commit a build uses; `cargo update -p tablo` moves
-Tablo to the newest one.
+Tablo to the newest one. The demo needs `can_access_panel` to receive the
+asking panel's prefix, so the commit cannot be older than Tablo's `424077a9`.
 
 The asset bundle has to come from that same Topcoat commit, so install its CLI
 from there:
