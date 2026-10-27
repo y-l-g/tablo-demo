@@ -102,6 +102,9 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   revenue and of hours booked, billable and not; and tables of the newest posts
   and orders, and of the leave and expenses waiting for a decision, each row
   linking to its record.
+- **List widgets** above three lists, the orders, leave requests and posts: the
+  order pipeline, the leave requests by status, and the articles by publishing
+  state. The order and leave figures link to their filtered lists.
 - **Navigation** that swaps the page in place, and an icon of its own for every
   sidebar entry, from a Lucide subset the build stages.
 - **Auth** on the `app` panel: sign-up, password reset, email verification, a

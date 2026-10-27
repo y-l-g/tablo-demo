@@ -54,6 +54,8 @@ stat-cancellation-rate = Cancellation rate, last 30 days
 stat-detail-change = { $change } on the 30 days before
 stat-detail-points = { $change } points on the 30 days before
 stat-detail-share = { $share } of orders
+stat-detail-share-requests = { $share } of requests
+stat-detail-share-articles = { $share } of articles
 stat-flagged-orders = Waiting too long
 stat-detail-flagged = New for { $new } days or more, processing for { $processing } or more
 

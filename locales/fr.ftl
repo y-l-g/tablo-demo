@@ -80,6 +80,8 @@ stat-cancellation-rate = Taux d'annulation, 30 derniers jours
 stat-detail-change = { $change } par rapport aux 30 jours précédents
 stat-detail-points = { $change } points par rapport aux 30 jours précédents
 stat-detail-share = { $share } des commandes
+stat-detail-share-requests = { $share } des demandes
+stat-detail-share-articles = { $share } des articles
 stat-flagged-orders = En attente depuis trop longtemps
 stat-detail-flagged = Nouvelles depuis { $new } jours ou plus, en cours depuis { $processing } jours ou plus
 
