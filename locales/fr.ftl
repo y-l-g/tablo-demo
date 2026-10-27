@@ -73,34 +73,46 @@ resource-expense-line = Ligne de frais
 
 ## Indicateurs du tableau de bord
 
-caption-top-products = Produits les plus rentables
-caption-flagged-orders = Commandes signalées (les plus anciennes d'abord)
+stat-revenue = Chiffre d'affaires, 30 derniers jours
+stat-orders-placed = Commandes, 30 derniers jours
+stat-average-order = Panier moyen, 30 derniers jours
+stat-cancellation-rate = Taux d'annulation, 30 derniers jours
+stat-detail-change = { $change } par rapport aux 30 jours précédents
+stat-detail-points = { $change } points par rapport aux 30 jours précédents
+stat-detail-share = { $share } des commandes
+stat-flagged-orders = En attente depuis trop longtemps
+stat-detail-flagged = Nouvelles depuis { $new } jours ou plus, en cours depuis { $processing } jours ou plus
 
 stat-repeat-customer-rate = Taux de clients fidèles
 stat-detail-repeat = { $repeat } clients sur { $total }
 stat-avg-items-per-order = Articles par commande
 stat-detail-items = { $items } articles, { $orders } commandes
-stat-cancellation-rate = Taux d'annulation
-stat-detail-cancelled = { $count } commandes annulées
 stat-revenue-per-customer = Chiffre d'affaires par client
 stat-detail-revenue = { $total } de chiffre d'affaires au total
 stat-avg-tenure = Ancienneté moyenne
 stat-years = { $years } ans
+stat-detail-tenure = sur l'effectif actif
 stat-detail-active = { $count } employés actifs
-stat-turnover-rate = Taux de rotation
-stat-detail-inactive = { $inactive } sur { $total } inactifs
-stat-open-capacity = Capacité disponible
-stat-detail-seats = { $seats } postes dans les services actifs
 stat-contractor-ratio = Part de prestataires
 stat-detail-contractors = { $count } prestataires
+stat-open-capacity = Capacité disponible
+stat-detail-seats = { $seats } postes dans les services actifs
+stat-hours-booked = Heures saisies, 30 derniers jours
+stat-billable-share = Part facturable, 30 derniers jours
+stat-detail-billable = { $hours } h facturables
+stat-project-budget = Budget des projets consommé
+stat-detail-budget = { $spent } sur { $budget } dépensés
+stat-leave-to-review = Congés à valider
+stat-detail-pending-leave = en attente de décision
+stat-expenses-to-review = Notes de frais à valider
+stat-detail-submitted = déposées, pas encore tranchées
+stat-reimbursed = Notes de frais remboursées
+stat-detail-reimbursed = { $count } notes remboursées
 stat-detail-posts = les articles du blog
 stat-detail-products = ce que vend la boutique
 stat-detail-orders = passées par les clients
 stat-detail-employees = dans tous les services
-stat-detail-tasks = sur tous les projets
 stat-detail-timesheets = saisies
-stat-detail-leave = tous statuts
-stat-detail-expenses = notes déposées
 
 ## Onglets des formulaires
 
