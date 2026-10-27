@@ -203,8 +203,8 @@ pub fn router(db: Db) -> Router {
     let bundle = AssetBundle::load().expect("load the asset bundle beside the executable");
     Router::builder()
         .discover()
-        .app_context(db)
-        .app_context(cookie_key())
+        .with(db)
+        .with(cookie_key())
         // The app panel's mail goes out through the SMTP server the environment names.
         .mail(MailConfig::builder().transport(Postbox::from_env()).build())
         .assets(bundle)
