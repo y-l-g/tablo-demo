@@ -25,6 +25,7 @@ use crate::{
         ProjectResource, TimesheetResource,
     },
     models::{Customer, Employee, Order, Post, Product, Timesheet, dollars, money},
+    roles::{self, Domain},
     shop::{CustomerResource, OrderItemResource, OrderResource, ProductResource},
 };
 
@@ -100,6 +101,8 @@ impl Page for ShopDashboard {
             .label(tablo::text!("page-shop-dashboard"))
             .icon(crate::icons::SHOP_DASHBOARD)
             .navigation_order(2)
+            // The widgets read the shop's rows directly, so the page asks the role first.
+            .access(|cx| roles::reaches(cx, Domain::Shop))
             .widget::<SalesWidget>()
             .widget::<PipelineWidget>()
             .widget::<CustomersWidget>()
@@ -340,6 +343,7 @@ impl Page for HrDashboard {
             .label(tablo::text!("page-hr-dashboard"))
             .icon(crate::icons::HR_DASHBOARD)
             .navigation_order(3)
+            .access(|cx| roles::reaches(cx, Domain::Hr))
             .widget::<WorkforceWidget>()
             .widget::<TimeWidget>()
             .widget::<ApprovalsWidget>()

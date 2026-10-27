@@ -13,7 +13,7 @@ use topcoat::{
 use crate::{
     audit::AuditTrail,
     dashboards::ShopDashboard,
-    enums::{LeaveStatus, OrderStatus},
+    enums::{LeaveStatus, OrderStatus, StaffRole},
     hr::{EmployeeResource, LeaveRequestResource, TaskResource},
     models::{Customer, Employee, Order, Product},
     seed,
@@ -132,11 +132,11 @@ async fn welcome(cx: &Cx) -> Result<impl View> {
             source: "src/audit.rs",
         },
         Stop {
-            icon: iconify_icon!("lucide:search"),
-            title: t("home-try-search"),
-            body: t("home-try-search-body"),
-            href: Some(admin_url.clone()),
-            source: "src/panel.rs",
+            icon: iconify_icon!("lucide:shield-check"),
+            title: t("home-try-roles"),
+            body: t("home-try-roles-body"),
+            href: tablo::url::resource::<EmployeeResource>(cx),
+            source: "src/roles.rs",
         },
     ];
     let app_stops = vec![
@@ -169,6 +169,40 @@ async fn welcome(cx: &Cx) -> Result<impl View> {
             source: "locales/fr.ftl",
         },
     ];
+
+    // The buttons post the panels' login forms, which check this token against its cookie.
+    let csrf = tablo::csrf::ensure_token(outer);
+    let staff_role = |role: StaffRole| match role {
+        StaffRole::Administrator => ("home-role-administrator", "home-role-administrator-about"),
+        StaffRole::ShopManager => ("home-role-shop-manager", "home-role-shop-manager-about"),
+        StaffRole::HrManager => ("home-role-hr-manager", "home-role-hr-manager-about"),
+        StaffRole::Viewer => ("home-role-viewer", "home-role-viewer-about"),
+    };
+    let persona = |name, email, role| {
+        let (role, about) = staff_role(role);
+        Persona {
+            name,
+            email,
+            role: t(role),
+            about: t(about),
+        }
+    };
+    let mut admin_personas = vec![persona(
+        seed::ADMIN_NAME,
+        seed::ADMIN_EMAIL,
+        StaffRole::Administrator,
+    )];
+    admin_personas.extend(
+        seed::STAFF
+            .iter()
+            .map(|account| persona(account.name, account.email, account.role)),
+    );
+    let app_personas = vec![Persona {
+        name: seed::ADMIN_NAME,
+        email: seed::ADMIN_EMAIL,
+        role: t("home-role-member"),
+        about: t("home-role-member-about"),
+    }];
 
     let title = t("home-document-title");
     // The document is the outer request's, which knows no locale, so the page states its own.
@@ -242,8 +276,12 @@ async fn welcome(cx: &Cx) -> Result<impl View> {
                             t("home-admin-point-actions"),
                             t("home-admin-point-forms"),
                             t("home-admin-point-dashboards"),
+                            t("home-admin-point-roles"),
                         ],
-                        note: t("home-admin-note"),
+                        personas: admin_personas,
+                        csrf: csrf.clone(),
+                        sign_in: t("home-sign-in-as"),
+                        note: t("home-password-note"),
                         cta: t("home-admin-open"),
                     )
                     panel_card(
@@ -257,6 +295,9 @@ async fn welcome(cx: &Cx) -> Result<impl View> {
                             t("home-app-point-teams"),
                             t("home-app-point-profile"),
                         ],
+                        personas: app_personas,
+                        csrf: csrf,
+                        sign_in: t("home-sign-in-as"),
                         note: t("home-app-note"),
                         cta: t("home-app-open"),
                     )
@@ -297,7 +338,18 @@ fn filtered<R: Resource>(cx: &Cx, status: &str) -> Option<String> {
     tablo::url::resource::<R>(cx).map(|url| format!("{url}?f.status={status}"))
 }
 
-/// One panel: what it is, what it shows, how to sign in, and the way in.
+/// One account a visitor may continue as: who it is, and what its role lets it do.
+struct Persona {
+    name: &'static str,
+    email: &'static str,
+    role: String,
+    about: String,
+}
+
+/// One panel: what it is, what it shows, and a button per account that signs in to it.
+///
+/// Each button posts the panel's own login form, with the CSRF token the page set, so a visitor
+/// signs in the way the login page signs them in: throttle, two-factor and all.
 #[component]
 async fn panel_card(
     icon_data: IconData,
@@ -305,9 +357,13 @@ async fn panel_card(
     path: String,
     body: String,
     points: Vec<String>,
+    personas: Vec<Persona>,
+    csrf: String,
+    sign_in: String,
     note: String,
     cta: String,
 ) -> Result<impl View> {
+    let login = format!("{path}/login");
     Ok(view! {
         <article class="flex flex-col rounded-xl border border-border bg-card p-6 text-card-foreground shadow-xs">
             <div class="flex items-center gap-3">
@@ -328,29 +384,57 @@ async fn panel_card(
                     </li>
                 }
             </ul>
-            <div class="mt-6 rounded-lg bg-muted px-4 py-3 text-sm">
-                <p class="text-muted-foreground">(note)</p>
-                <p class="mt-1 font-mono">
-                    (seed::ADMIN_EMAIL)
-                    <span class="text-muted-foreground">" / "</span>
-                    (seed::ADMIN_PASSWORD)
-                </p>
-            </div>
-            <a
-                href=(path)
-                class=(class!(
-                    "mt-6 self-start",
-                    tablo::ui::button_variants(
-                        tablo::ui::ButtonVariant::Primary,
-                        tablo::ui::ButtonSize::Md,
-                    ),
-                ))
-            >
-                (cta)
-                icon(data: ARROW)
-            </a>
+            <h3 class="mt-6 text-sm font-medium">(sign_in)</h3>
+            <ul class="mt-3 grid gap-2">
+                for persona in personas {
+                    <li>
+                        <form method="post" action=(login.clone())>
+                            <input type="hidden" name=(tablo::csrf::FIELD_NAME) value=(csrf.clone())>
+                            <input type="hidden" name=(tablo::auth::LOGIN_FIELD) value=(persona.email)>
+                            <input type="hidden" name=(tablo::auth::PASSWORD_FIELD) value=(seed::ADMIN_PASSWORD)>
+                            <button
+                                type="submit"
+                                class="group flex w-full items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition-colors hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-ring"
+                            >
+                                <span class="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-xs font-medium">
+                                    (initials(persona.name))
+                                </span>
+                                <span class="min-w-0 flex-1">
+                                    <span class="flex flex-wrap items-baseline gap-x-2 text-sm">
+                                        <span class="font-medium">(persona.name)</span>
+                                        <span class="text-xs text-muted-foreground">(persona.role)</span>
+                                    </span>
+                                    <span class="block text-xs text-muted-foreground">(persona.about)</span>
+                                </span>
+                                <span class="text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground">
+                                    icon(data: ARROW)
+                                </span>
+                            </button>
+                        </form>
+                    </li>
+                }
+            </ul>
+            <p class="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <span>
+                    (note)
+                    " "
+                    <code class="font-mono text-foreground">(seed::ADMIN_PASSWORD)</code>
+                </span>
+                <a href=(path) class="ml-auto inline-flex items-center gap-1 font-medium text-foreground hover:underline">
+                    (cta)
+                    icon(data: ARROW)
+                </a>
+            </p>
         </article>
     })
+}
+
+/// The first letter of each of a name's first two words, for an avatar.
+fn initials(name: &str) -> String {
+    name.split_whitespace()
+        .take(2)
+        .filter_map(|word| word.chars().next())
+        .collect()
 }
 
 /// A group of tour stops, each a link to its page beside a link to its source.

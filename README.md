@@ -8,7 +8,7 @@ Two panels are mounted:
 
 | Panel   | URL      | What it is                                                                           |
 | ------- | -------- | ------------------------------------------------------------------------------------ |
-| `admin` | `/admin` | every resource: the blog, the shop, HR and projects, plus the shop and HR dashboards. Administrators only |
+| `admin` | `/admin` | every resource: the blog, the shop, HR and projects, plus the shop and HR dashboards. Staff only |
 | `app`   | `/app`   | the tenant panel: every auth page, a team switcher and the settings page             |
 
 The page at `/` introduces both, with a tour of the features worth trying: each
@@ -16,9 +16,21 @@ stop links to the page that shows it and to the file that declares it. It is
 public, rendered in the admin panel's document and catalog through its
 `PanelHandle`, in [`src/welcome.rs`](src/welcome.rs).
 
-Sign in with `admin@example.com` / `password`, the one account the seed marks as
-an administrator. An account that signs up on `/app` is not one: it verifies its
-address, registers a team of its own, and `/admin` refuses it.
+The seed creates one account per staff role, each signing in with `password`;
+the welcome page signs in as any of them in one click, through the panel's own
+login form. What each role may do is [`src/roles.rs`](src/roles.rs): a policy per
+domain, field access on what employees are paid, and the dashboards and the
+audit trail gated to the roles that read them.
+
+| Account              | Role          | In `/admin`                                                  |
+| -------------------- | ------------- | ------------------------------------------------------------ |
+| `admin@example.com`  | Administrator | everything, the audit trail included                         |
+| `shop@example.com`   | Shop manager  | the shop and the blog; the projects read-only; no HR         |
+| `hr@example.com`     | HR manager    | HR and the projects, pay included; the blog read-only; no shop |
+| `viewer@example.com` | Viewer        | every domain read-only, without pay                          |
+
+An account that signs up on `/app` holds no role: it verifies its address,
+registers a team of its own, and `/admin` refuses it.
 
 ## Running it
 

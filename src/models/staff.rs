@@ -3,6 +3,8 @@
 use jiff::Timestamp;
 use toasty::Deferred;
 
+use crate::enums::StaffRole;
+
 /// A user of either panel.
 #[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
 pub struct User {
@@ -16,10 +18,9 @@ pub struct User {
     pub email_verified_at: Option<Timestamp>,
     /// An Argon2id hash in PHC string format.
     pub password: String,
-    /// Whether the account may open the `admin` panel. A sign-up writes `false`:
-    /// only the seed hands this out, since no page does.
-    #[default(false)]
-    pub is_admin: bool,
+    /// What the account does as staff, which opens the `admin` panel and decides what it may do
+    /// there. A sign-up writes none: only the seed hands roles out, since no page does.
+    pub role: Option<StaffRole>,
     pub remember_token: Option<String>,
     #[default(Timestamp::now())]
     pub created_at: Timestamp,

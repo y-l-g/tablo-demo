@@ -81,6 +81,8 @@ impl Page for AuditTrail {
         PageDef::new()
             .icon(crate::icons::AUDIT_TRAIL)
             .navigation_order(-1)
+            // The trail records every domain's writes, so it is the administrators'.
+            .access(crate::roles::is_administrator)
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {

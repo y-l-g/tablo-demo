@@ -1,10 +1,10 @@
 //! The shop resources: products, brands, categories, customers and orders.
 
 use tablo::{
-    Action, ActionLayout, Allow, BooleanColumn, Change, ColumnToggle, ColumnWidth, Currency,
-    DateColumn, DateFilter, Detail, FieldErrors, FormInput, GlobalSearch, Grid, ImageColumn,
-    Outcome, Places, Relation, RelationColumn, Resource, ResourceDef, RichTextColumn, Schema,
-    Section, SelectFilter, Table, TernaryFilter, Text, TextColumn, WriteError,
+    Action, ActionLayout, BooleanColumn, Change, ColumnToggle, ColumnWidth, Currency, DateColumn,
+    DateFilter, Detail, FieldErrors, FormInput, GlobalSearch, Grid, ImageColumn, Outcome, Places,
+    Relation, RelationColumn, Resource, ResourceDef, RichTextColumn, Schema, Section, SelectFilter,
+    Table, TernaryFilter, Text, TextColumn, WriteError,
     extend::{Column, Includes},
     lens, relation,
 };
@@ -18,6 +18,7 @@ use crate::models::{
     ProductCategory,
 };
 use crate::panel::{IMAGE_EXTENSIONS, IMAGE_MAX_BYTES};
+use crate::roles::{self, Domain};
 
 /// Products.
 pub struct ProductResource;
@@ -37,7 +38,7 @@ impl Resource for ProductResource {
                     .qty()
                     .lt(Product::fields().security_stock()),
             )
-            .policy(Allow)
+            .policy(roles::policy(Domain::Shop))
             .table(product_table())
             .form(Schema::new((
                 Section::new(tablo::text!("section-product")).schema((
@@ -354,7 +355,7 @@ impl Resource for BrandResource {
             .icon(crate::icons::BRANDS)
             .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(3)
-            .policy(Allow)
+            .policy(roles::policy(Domain::Shop))
             .table(
                 Table::new((
                     TextColumn::new(lens!(Brand.name)).searchable().sortable(),
@@ -457,7 +458,7 @@ impl Resource for ProductCategoryResource {
             .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(4)
             .importable()
-            .policy(Allow)
+            .policy(roles::policy(Domain::Shop))
             .table(
                 Table::new((
                     TextColumn::new(lens!(ProductCategory.name))
@@ -564,7 +565,7 @@ impl Resource for CustomerResource {
             .icon(crate::icons::CUSTOMERS)
             .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(2)
-            .policy(Allow)
+            .policy(roles::policy(Domain::Shop))
             .table(
                 Table::new((
                     TextColumn::new(lens!(Customer.name))
@@ -724,7 +725,7 @@ impl Resource for OrderResource {
             .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(1)
             .navigation_badge(Order::fields().status().eq(OrderStatus::New))
-            .policy(Allow)
+            .policy(roles::policy(Domain::Shop))
             .table(order_table())
             .detail(Detail::new(
                 Section::new(tablo::text!("section-order")).columns((
@@ -1018,7 +1019,7 @@ impl Resource for OrderItemResource {
             .icon(crate::icons::ORDER_ITEMS)
             .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(10)
-            .policy(Allow)
+            .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(Table::new((
                 RelationColumn::of::<ProductResource>(relation!(OrderItem.product))
@@ -1086,7 +1087,7 @@ impl Resource for PaymentResource {
             .icon(crate::icons::PAYMENTS)
             .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(11)
-            .policy(Allow)
+            .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(Table::new((
                 RelationColumn::of::<OrderResource>(relation!(Payment.order))
@@ -1165,7 +1166,7 @@ impl Resource for AddressResource {
             .icon(crate::icons::ADDRESSES)
             .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(12)
-            .policy(Allow)
+            .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(
                 Table::new((
@@ -1238,7 +1239,7 @@ impl Resource for OrderAddressResource {
             .icon(crate::icons::ORDER_ADDRESSES)
             .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(13)
-            .policy(Allow)
+            .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(Table::new((
                 RelationColumn::of::<OrderResource>(relation!(OrderAddress.order))
