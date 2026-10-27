@@ -185,3 +185,17 @@ pub enum ProductType {
     Deliverable,
     Downloadable,
 }
+
+/// What a member of staff does, and so what the `admin` panel lets them do. An account without
+/// one, such as a sign-up, is a customer of the `app` panel alone.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, toasty::Embed, tablo::Options)]
+pub enum StaffRole {
+    #[option(color = "danger")]
+    Administrator,
+    #[option(color = "info")]
+    ShopManager,
+    #[option(color = "success")]
+    HrManager,
+    #[option(color = "gray")]
+    Viewer,
+}

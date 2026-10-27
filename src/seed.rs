@@ -8,7 +8,8 @@ use toasty::Db;
 use crate::auth::create_user;
 use crate::enums::{
     CountryCode, CurrencyCode, EmploymentType, ExpenseCategory, ExpenseStatus, LeaveStatus,
-    LeaveType, OrderStatus, PaymentMethod, ProductType, ProjectStatus, TaskPriority, TaskStatus,
+    LeaveType, OrderStatus, PaymentMethod, ProductType, ProjectStatus, StaffRole, TaskPriority,
+    TaskStatus,
 };
 use crate::models::round;
 use crate::models::{
@@ -17,11 +18,41 @@ use crate::models::{
     ProductCategory, ProductCategoryLink, Project, Task, Team, TeamUser, Timesheet,
 };
 
+/// The demo administrator's name.
+pub const ADMIN_NAME: &str = "Demo User";
+
 /// The demo administrator's email address.
 pub const ADMIN_EMAIL: &str = "admin@example.com";
 
 /// The demo administrator's password.
 pub const ADMIN_PASSWORD: &str = "password";
+
+/// A seeded member of staff besides the administrator, who signs in with the same password.
+pub struct StaffAccount {
+    pub name: &'static str,
+    pub email: &'static str,
+    pub role: StaffRole,
+}
+
+/// The staff the welcome page signs in as, one per role but the administrator's, whose account
+/// is [`ADMIN_EMAIL`]'s.
+pub const STAFF: [StaffAccount; 3] = [
+    StaffAccount {
+        name: "Sam Rivera",
+        email: "shop@example.com",
+        role: StaffRole::ShopManager,
+    },
+    StaffAccount {
+        name: "Jordan Blake",
+        email: "hr@example.com",
+        role: StaffRole::HrManager,
+    },
+    StaffAccount {
+        name: "Robin Ellis",
+        email: "viewer@example.com",
+        role: StaffRole::Viewer,
+    },
+];
 
 /// Fills an empty database with the demo's rows.
 pub async fn seed(db: &mut Db) -> toasty::Result<()> {
@@ -29,7 +60,27 @@ pub async fn seed(db: &mut Db) -> toasty::Result<()> {
     let now = Zoned::now();
     let today = now.date();
 
-    let admin = create_user(db, "Demo User", ADMIN_EMAIL, ADMIN_PASSWORD, true).await?;
+    let admin = create_user(
+        db,
+        ADMIN_NAME,
+        ADMIN_EMAIL,
+        ADMIN_PASSWORD,
+        Some(StaffRole::Administrator),
+    )
+    .await?;
+    let mut staff = Vec::new();
+    for account in &STAFF {
+        staff.push(
+            create_user(
+                db,
+                account.name,
+                account.email,
+                ADMIN_PASSWORD,
+                Some(account.role),
+            )
+            .await?,
+        );
+    }
     let teams = seed_teams(db).await?;
     let (brands, customers) = seed_shop(db, &mut rng, &now).await?;
     let products = seed_products(db, &mut rng, &brands, &customers, today).await?;
@@ -38,12 +89,20 @@ pub async fn seed(db: &mut Db) -> toasty::Result<()> {
     seed_hr(db, &mut rng, &now, today).await?;
 
     // The demo's `team_user` pivot. The seeded administrator joins both teams, so
-    // the app panel's switcher has something to switch; an account that signs up
-    // joins none until it registers one.
+    // the app panel's switcher has something to switch, and the rest of the staff
+    // the first; an account that signs up joins none until it registers one.
     for team in &teams {
         toasty::create!(TeamUser {
             team_id: team.id,
             user_id: admin.id,
+        })
+        .exec(db)
+        .await?;
+    }
+    for user in &staff {
+        toasty::create!(TeamUser {
+            team_id: teams[0].id,
+            user_id: user.id,
         })
         .exec(db)
         .await?;

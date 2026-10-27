@@ -13,7 +13,10 @@ use tablo::{
 use toasty::Db;
 use topcoat::context::Cx;
 
-use crate::models::{Team, TeamUser, User};
+use crate::{
+    enums::StaffRole,
+    models::{Team, TeamUser, User},
+};
 
 /// The signed-in user and the teams they may act for.
 #[derive(Debug)]
@@ -42,14 +45,15 @@ impl PanelUser for SignedIn {
     }
 
     /// Who may open which panel. `/app` is the panel accounts sign up on, and
-    /// `/admin`, holding every resource of the demo, admits administrators
-    /// alone, so a sign-up never reaches it.
+    /// `/admin`, holding every resource of the demo, admits staff alone, so a
+    /// sign-up never reaches it. What each role may do there is
+    /// [`roles`](crate::roles)'.
     ///
     /// Each panel is named and the rest refused, so a panel added or renamed
     /// later admits nobody until it has a rule here.
     fn can_access_panel(&self, panel: &str) -> bool {
         match panel {
-            "/admin" => self.user.is_admin,
+            "/admin" => self.user.role.is_some(),
             "/app" => true,
             _ => false,
         }
@@ -191,20 +195,19 @@ impl Registrar for DemoAuth {
     }
 }
 
-/// Creates a seeded account, hashed the way the login checks it. `is_admin`
-/// is what opens the `admin` panel, and the seed grants it to the demo's own
-/// account alone.
+/// Creates a seeded account, hashed the way the login checks it. `role` is
+/// what opens the `admin` panel, and only the seed grants one.
 pub async fn create_user(
     db: &mut Db,
     name: &str,
     email: &str,
     password: &str,
-    is_admin: bool,
+    role: Option<StaffRole>,
 ) -> toasty::Result<User> {
     toasty::create!(User {
         name: name.to_string(),
         email: email.to_string(),
-        is_admin: is_admin,
+        role: role,
         // The seeded account is trusted, so its address counts as verified.
         email_verified_at: Some(Timestamp::now()),
         password: hash_password(password)

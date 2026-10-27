@@ -11,5 +11,7 @@ pub mod mailbox;
 pub mod models;
 pub mod notifications;
 pub mod panel;
+pub mod roles;
 pub mod seed;
 pub mod shop;
+pub mod welcome;

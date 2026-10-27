@@ -1,9 +1,9 @@
 //! The blog resources: posts, categories and authors.
 
 use tablo::{
-    Action, ActionLayout, Allow, BooleanColumn, Change, DateColumn, DateFilter, Detail, Grid,
-    ImageColumn, Outcome, Places, Relation, RelationColumn, Resource, ResourceDef, RichTextColumn,
-    Schema, Section, Table, Text, TextColumn, WriteError,
+    Action, ActionLayout, BooleanColumn, Change, DateColumn, DateFilter, Detail, Grid, ImageColumn,
+    Outcome, Places, Relation, RelationColumn, Resource, ResourceDef, RichTextColumn, Schema,
+    Section, Table, Text, TextColumn, WriteError,
     extend::{Column, Includes},
     lens, relation,
 };
@@ -11,6 +11,7 @@ use topcoat::{Result, context::Cx};
 
 use crate::models::{Author, Comment, Post, PostCategory};
 use crate::panel::{IMAGE_EXTENSIONS, IMAGE_MAX_BYTES};
+use crate::roles::{self, Domain};
 
 /// Posts, their comments, and the categories and authors they are filed under.
 pub struct PostResource;
@@ -25,7 +26,7 @@ impl Resource for PostResource {
             .icon(crate::icons::POSTS)
             .navigation_group(tablo::text!("navigation-blog"))
             .navigation_order(0)
-            .policy(Allow)
+            .policy(roles::policy(Domain::Blog))
             .table(post_table())
             .detail(post_detail())
             .form(Schema::new((
@@ -199,7 +200,7 @@ impl Resource for PostCategoryResource {
             .navigation_group(tablo::text!("navigation-blog"))
             .navigation_order(1)
             .importable()
-            .policy(Allow)
+            .policy(roles::policy(Domain::Blog))
             .table(
                 Table::new((
                     TextColumn::new(lens!(PostCategory.name))
@@ -296,7 +297,7 @@ impl Resource for AuthorResource {
             .icon(crate::icons::AUTHORS)
             .navigation_group(tablo::text!("navigation-blog"))
             .navigation_order(2)
-            .policy(Allow)
+            .policy(roles::policy(Domain::Blog))
             .table(
                 Table::new((
                     TextColumn::new(lens!(Author.name)).searchable().sortable(),
@@ -367,7 +368,7 @@ impl Resource for CommentResource {
             .icon(crate::icons::COMMENTS)
             .navigation_group(tablo::text!("navigation-shop"))
             .navigation_order(9)
-            .policy(Allow)
+            .policy(roles::policy(Domain::Shop))
             .table(Table::new((
                 TextColumn::new(lens!(Comment.title))
                     .searchable()

@@ -2,10 +2,10 @@
 
 use jiff::{Span, Timestamp, Zoned};
 use tablo::{
-    Action, ActionLayout, Allow, BooleanColumn, ColorColumn, ComputedColumn, CountColumn, Currency,
-    DateColumn, DateFilter, Detail, FileColumn, FormInput, GlobalSearch, Grid, Outcome, Places,
-    RecordForm, Relation, RelationColumn, Resource, ResourceDef, Schema, Section, SelectFilter,
-    Tab, Table, Tabs, TernaryFilter, TextColumn, WriteError, lens, relation,
+    Action, ActionLayout, BooleanColumn, ColorColumn, ComputedColumn, CountColumn, Currency,
+    DateColumn, DateFilter, Detail, FieldAccess, FileColumn, FormInput, GlobalSearch, Grid,
+    Outcome, Places, RecordForm, Relation, RelationColumn, Resource, ResourceDef, Schema, Section,
+    SelectFilter, Tab, Table, Tabs, TernaryFilter, TextColumn, WriteError, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -18,6 +18,7 @@ use crate::models::{
     replica_suffix, round,
 };
 use crate::panel::{RECEIPT_EXTENSIONS, RECEIPT_MAX_BYTES};
+use crate::roles::{self, Domain};
 
 /// Departments.
 pub struct DepartmentResource;
@@ -32,7 +33,7 @@ impl Resource for DepartmentResource {
             .icon(crate::icons::DEPARTMENTS)
             .navigation_group(tablo::text!("navigation-hr"))
             .navigation_order(1)
-            .policy(Allow)
+            .policy(roles::policy(Domain::Hr))
             .table(
                 Table::new((
                     TextColumn::new(lens!(Department.name))
@@ -229,7 +230,17 @@ impl Resource for EmployeeResource {
             .icon(crate::icons::EMPLOYEES)
             .navigation_group(tablo::text!("navigation-hr"))
             .navigation_order(0)
-            .policy(Allow)
+            .policy(roles::policy(Domain::Hr))
+            // What an employee is paid shows to administrators and HR managers alone, wherever
+            // the panel shows employees: the list, the detail, the form, the search, the export.
+            .field_access(
+                lens!(Employee.salary),
+                FieldAccess::new().view(roles::sees_pay),
+            )
+            .field_access(
+                lens!(Employee.hourly_rate),
+                FieldAccess::new().view(roles::sees_pay),
+            )
             .table(employee_table())
             .detail(Detail::new(Tabs::new([
                 Tab::new(tablo::text!("tab-personal")).columns(Grid::new(2).columns((
@@ -519,7 +530,7 @@ impl Resource for LeaveRequestResource {
             .navigation_group(tablo::text!("navigation-hr"))
             .navigation_order(2)
             .navigation_badge(LeaveRequest::fields().status().eq(LeaveStatus::Pending))
-            .policy(Allow)
+            .policy(roles::policy(Domain::Hr))
             .table(
                 Table::new((
                     RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.employee))
@@ -880,7 +891,7 @@ impl Resource for ProjectResource {
             .navigation_group(tablo::text!("navigation-projects"))
             .navigation_order(0)
             .navigation_badge(Project::fields().status().eq(ProjectStatus::Active))
-            .policy(Allow)
+            .policy(roles::policy(Domain::Projects))
             .table(
                 Table::new((
                     TextColumn::new(lens!(Project.name)).searchable().sortable(),
@@ -1167,7 +1178,7 @@ impl Resource for TaskResource {
             .navigation_group(tablo::text!("navigation-projects"))
             .navigation_order(1)
             .navigation_badge(Task::fields().status().eq(TaskStatus::InProgress))
-            .policy(Allow)
+            .policy(roles::policy(Domain::Projects))
             .table(
                 Table::new((
                     TextColumn::new(lens!(Task.title)).searchable().sortable(),
@@ -1563,7 +1574,7 @@ impl Resource for TimesheetResource {
             .icon(crate::icons::TIMESHEETS)
             .navigation_group(tablo::text!("navigation-projects"))
             .navigation_order(2)
-            .policy(Allow)
+            .policy(roles::policy(Domain::Projects))
             .table(
                 Table::new((
                     RelationColumn::of::<EmployeeResource>(relation!(Timesheet.employee))
@@ -1803,7 +1814,7 @@ impl Resource for ExpenseResource {
             .navigation_group(tablo::text!("navigation-hr"))
             .navigation_order(3)
             .navigation_badge(Expense::fields().status().eq(ExpenseStatus::Submitted))
-            .policy(Allow)
+            .policy(roles::policy(Domain::Hr))
             .table(
                 Table::new((
                     TextColumn::new(lens!(Expense.expense_number))
@@ -2106,7 +2117,7 @@ impl Resource for ExpenseLineResource {
             .icon(crate::icons::EXPENSE_LINES)
             .navigation_group(tablo::text!("navigation-hr"))
             .navigation_order(4)
-            .policy(Allow)
+            .policy(roles::policy(Domain::Hr))
             .without_global_search()
             .table(Table::new((
                 RelationColumn::of::<ExpenseResource>(relation!(ExpenseLine.expense))
