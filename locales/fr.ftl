@@ -114,6 +114,21 @@ stat-detail-orders = passées par les clients
 stat-detail-employees = dans tous les services
 stat-detail-timesheets = saisies
 
+## Graphiques et tableaux du tableau de bord
+
+chart-revenue = Chiffre d'affaires par semaine
+chart-hours = Heures saisies par semaine
+chart-weeks = Les douze dernières semaines, chacune nommée par son premier jour
+chart-week-start = { $day }/{ $month }
+series-revenue = Chiffre d'affaires
+series-billable = Facturables
+series-not-billable = Non facturables
+widget-latest-posts = Derniers articles
+widget-latest-orders = Dernières commandes
+widget-leave-queue = Congés à valider
+widget-expense-queue = Notes de frais à valider
+widget-queue-description = Les plus anciennes d'abord
+
 ## Onglets des formulaires
 
 tab-personal = Personnel

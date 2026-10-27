@@ -1,5 +1,6 @@
-//! The panel's dashboards. Each page is a grid of Tablo widgets, and each widget a row of stat
-//! tiles that read the seeded data: trends, sparklines and links included.
+//! The panel's dashboards. Each page is a grid of Tablo widgets: rows of stat tiles that read the
+//! seeded data, with trends, sparklines and links included; line and bar charts over the last
+//! twelve weeks; and tables of the newest records and of the queues awaiting a decision.
 
 use std::{
     cmp::Ordering,
@@ -8,13 +9,13 @@ use std::{
 
 use jiff::{Timestamp, Zoned, civil::Date};
 use tablo::{
-    Color, Page, PageDef, Resource, Stat, Text, Trend, Widget, WidgetDef, can_list, db::db,
-    scoped_query,
+    Chart, Color, Page, PageDef, RecordTable, Resource, Series, Stat, Text, Trend, Widget,
+    WidgetDef, can_list, db::db, scoped_query,
 };
 use topcoat::{
     Result,
     context::Cx,
-    view::{View, view},
+    view::{BoxView, View, ViewExt, view},
 };
 
 use crate::{
@@ -24,7 +25,9 @@ use crate::{
         DepartmentResource, EmployeeResource, ExpenseResource, LeaveRequestResource,
         ProjectResource, TimesheetResource,
     },
-    models::{Customer, Employee, Order, Post, Product, Timesheet, dollars, money},
+    models::{
+        Customer, Employee, Expense, LeaveRequest, Order, Post, Product, Timesheet, dollars, money,
+    },
     roles::{self, Domain},
     shop::{CustomerResource, OrderItemResource, OrderResource, ProductResource},
 };
@@ -48,6 +51,7 @@ impl Page for Dashboard {
             .icon(crate::icons::WELCOME)
             .navigation_order(-2)
             .widget::<RecordsWidget>()
+            .widget::<LatestPostsWidget>()
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
@@ -91,6 +95,31 @@ impl Widget for RecordsWidget {
     }
 }
 
+/// The newest posts, under the post list's columns, each linking to its page, with a link to the
+/// full list. Only a user who may open the post list sees it.
+pub struct LatestPostsWidget;
+
+impl Widget for LatestPostsWidget {
+    fn declare() -> WidgetDef {
+        WidgetDef::new()
+            .full_width()
+            .access(can_list::<PostResource>)
+    }
+
+    async fn render(cx: &Cx) -> Result<impl View> {
+        let table = RecordTable::new()
+            .heading(tablo::text!("widget-latest-posts"))
+            // A relation column takes its label's key as its name, so the author column is named
+            // `label-author`.
+            .columns(["title", "label-author", "published_at"])
+            .order_by(Post::fields().created_at().desc());
+        Ok(contained(
+            cx,
+            tablo::record_table::<PostResource>(cx, table).await?,
+        ))
+    }
+}
+
 /// The shop's dashboard.
 pub struct ShopDashboard;
 
@@ -104,7 +133,9 @@ impl Page for ShopDashboard {
             // The widgets read the shop's rows directly, so the page asks the role first.
             .access(|cx| roles::reaches(cx, Domain::Shop))
             .widget::<SalesWidget>()
+            .widget::<RevenueWidget>()
             .widget::<PipelineWidget>()
+            .widget::<LatestOrdersWidget>()
             .widget::<CustomersWidget>()
     }
 
@@ -131,19 +162,10 @@ impl Widget for SalesWidget {
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
-        let now = Timestamp::now();
-        let sales: Vec<Sale> = scoped_query::<OrderResource>(cx)?
-            .exec(&mut db(cx)?)
-            .await?
-            .iter()
-            .map(|order| Sale::of(now, order))
-            .collect();
+        let sales = load_sales(cx).await?;
         let last = Totals::window(&sales, 0, MONTH);
         let before = Totals::window(&sales, MONTH, MONTH);
-        let weeks: Vec<Totals> = (0..WEEKS as i64)
-            .rev()
-            .map(|week| Totals::window(&sales, week * WEEK, WEEK))
-            .collect();
+        let weeks = weeks_of(&sales);
 
         let revenue = trended(
             Stat::new(tablo::text!("stat-revenue"), dollars(last.revenue))
@@ -183,6 +205,30 @@ impl Widget for SalesWidget {
         .detail(points_change(last.cancellation(), before.cancellation()));
 
         Ok(tablo::stats(cx, [revenue, placed, average, cancellation]))
+    }
+}
+
+/// Revenue over the last twelve weeks, a point a week, oldest first. Only a user who may open the
+/// order list sees it.
+pub struct RevenueWidget;
+
+impl Widget for RevenueWidget {
+    fn declare() -> WidgetDef {
+        WidgetDef::new()
+            .full_width()
+            .access(can_list::<OrderResource>)
+    }
+
+    async fn render(cx: &Cx) -> Result<impl View> {
+        let weeks = weeks_of(&load_sales(cx).await?);
+        let chart = Chart::line(week_labels(Zoned::now().date()))
+            .heading(tablo::text!("chart-revenue"))
+            .description(tablo::text!("chart-weeks"))
+            .series(Series::new(
+                tablo::text!("series-revenue"),
+                weeks.iter().map(|week| week.revenue),
+            ));
+        Ok(contained(cx, tablo::chart(cx, chart)))
     }
 }
 
@@ -248,6 +294,35 @@ impl Widget for PipelineWidget {
             url.map(|url| format!("{url}?sort=created_at&dir=asc")),
         ));
         Ok(tablo::stats(cx, tiles))
+    }
+}
+
+/// The newest orders, under the order list's columns, each linking to its page, with a link to the
+/// full list. Only a user who may open the order list sees it.
+pub struct LatestOrdersWidget;
+
+impl Widget for LatestOrdersWidget {
+    fn declare() -> WidgetDef {
+        WidgetDef::new()
+            .full_width()
+            .access(can_list::<OrderResource>)
+    }
+
+    async fn render(cx: &Cx) -> Result<impl View> {
+        let table = RecordTable::new()
+            .heading(tablo::text!("widget-latest-orders"))
+            .columns([
+                "number",
+                "label-customer",
+                "status",
+                "total_price",
+                "created_at",
+            ])
+            .order_by(Order::fields().created_at().desc());
+        Ok(contained(
+            cx,
+            tablo::record_table::<OrderResource>(cx, table).await?,
+        ))
     }
 }
 
@@ -346,7 +421,10 @@ impl Page for HrDashboard {
             .access(|cx| roles::reaches(cx, Domain::Hr))
             .widget::<WorkforceWidget>()
             .widget::<TimeWidget>()
+            .widget::<HoursWidget>()
             .widget::<ApprovalsWidget>()
+            .widget::<LeaveQueueWidget>()
+            .widget::<ExpenseQueueWidget>()
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
@@ -529,6 +607,43 @@ impl Widget for TimeWidget {
     }
 }
 
+/// The hours booked each week over the last twelve, billable and not, as a pair of bars. Only a
+/// user who may open the timesheet list sees it.
+pub struct HoursWidget;
+
+impl Widget for HoursWidget {
+    fn declare() -> WidgetDef {
+        WidgetDef::new()
+            .full_width()
+            .access(can_list::<TimesheetResource>)
+    }
+
+    async fn render(cx: &Cx) -> Result<impl View> {
+        let today = Zoned::now().date();
+        let sheets = scoped_query::<TimesheetResource>(cx)?
+            .exec(&mut db(cx)?)
+            .await?;
+        let billable = weekly_sums(
+            sheets
+                .iter()
+                .filter(|sheet| sheet.is_billable)
+                .map(|sheet| (days_before(today, sheet.date), sheet.hours)),
+        );
+        let other = weekly_sums(
+            sheets
+                .iter()
+                .filter(|sheet| !sheet.is_billable)
+                .map(|sheet| (days_before(today, sheet.date), sheet.hours)),
+        );
+        let chart = Chart::bar(week_labels(today))
+            .heading(tablo::text!("chart-hours"))
+            .description(tablo::text!("chart-weeks"))
+            .series(Series::new(tablo::text!("series-billable"), billable).color(Color::Primary))
+            .series(Series::new(tablo::text!("series-not-billable"), other).color(Color::Gray));
+        Ok(contained(cx, tablo::chart(cx, chart)))
+    }
+}
+
 /// The queues someone must clear: leave to review and expenses to approve, and what has been paid
 /// back. Shown to those who may open both lists.
 pub struct ApprovalsWidget;
@@ -592,6 +707,61 @@ impl Widget for ApprovalsWidget {
     }
 }
 
+/// The leave requests waiting for a decision, the oldest first, under the leave list's columns.
+/// Only a user who may open the leave list sees it.
+pub struct LeaveQueueWidget;
+
+impl Widget for LeaveQueueWidget {
+    fn declare() -> WidgetDef {
+        WidgetDef::new()
+            .full_width()
+            .access(can_list::<LeaveRequestResource>)
+    }
+
+    async fn render(cx: &Cx) -> Result<impl View> {
+        let table = RecordTable::new()
+            .heading(tablo::text!("widget-leave-queue"))
+            .description(tablo::text!("widget-queue-description"))
+            .columns(["label-employee", "kind", "start_date", "end_date"])
+            .filter(LeaveRequest::fields().status().eq(LeaveStatus::Pending))
+            .order_by(LeaveRequest::fields().created_at().asc());
+        Ok(contained(
+            cx,
+            tablo::record_table::<LeaveRequestResource>(cx, table).await?,
+        ))
+    }
+}
+
+/// The expenses submitted and not yet decided, the oldest first, under the expense list's columns.
+/// Only a user who may open the expense list sees it.
+pub struct ExpenseQueueWidget;
+
+impl Widget for ExpenseQueueWidget {
+    fn declare() -> WidgetDef {
+        WidgetDef::new()
+            .full_width()
+            .access(can_list::<ExpenseResource>)
+    }
+
+    async fn render(cx: &Cx) -> Result<impl View> {
+        let table = RecordTable::new()
+            .heading(tablo::text!("widget-expense-queue"))
+            .description(tablo::text!("widget-queue-description"))
+            .columns([
+                "expense_number",
+                "label-employee",
+                "total_amount",
+                "submitted_at",
+            ])
+            .filter(Expense::fields().status().eq(ExpenseStatus::Submitted))
+            .order_by(Expense::fields().submitted_at().asc());
+        Ok(contained(
+            cx,
+            tablo::record_table::<ExpenseResource>(cx, table).await?,
+        ))
+    }
+}
+
 /// The tile counting `R`'s records, with a sparkline of the weeks they were created in. Nothing
 /// when the request may not list `R`, and nothing is read then. `created` reads a record's
 /// creation time.
@@ -610,6 +780,55 @@ async fn record_tile<R: Resource>(
             .map(|record| (days_since(now, created(record)), 1.0)),
     );
     Ok(Some(stat.chart(weeks)))
+}
+
+/// `body`, clipped to its own cell. Tablo's charts and record tables label parts of themselves for
+/// screen readers with `sr-only`, which positions them against the nearest positioned ancestor, the
+/// page. A label that lands past the cell's edge, such as a chart's data table, scrolls the page
+/// sideways; a positioned, clipped cell holds it in place.
+fn contained<'a>(cx: &'a Cx, body: BoxView<'a>) -> BoxView<'a> {
+    view! {
+        cx =>
+        <div class="relative overflow-hidden">
+            (body)
+        </div>
+    }
+    .boxed()
+}
+
+/// The orders the sales figures read, each as a [`Sale`].
+async fn load_sales(cx: &Cx) -> Result<Vec<Sale>> {
+    let now = Timestamp::now();
+    let orders = scoped_query::<OrderResource>(cx)?
+        .exec(&mut db(cx)?)
+        .await?;
+    Ok(orders.iter().map(|order| Sale::of(now, order)).collect())
+}
+
+/// What the sales placed in each of the last [`WEEKS`] weeks came to, oldest week first.
+fn weeks_of(sales: &[Sale]) -> Vec<Totals> {
+    (0..WEEKS as i64)
+        .rev()
+        .map(|week| Totals::window(sales, week * WEEK, WEEK))
+        .collect()
+}
+
+/// Each of the last [`WEEKS`] weeks, oldest first, labelled with the day it began, spelled as the
+/// locale spells a day and a month.
+fn week_labels(today: Date) -> Vec<Text> {
+    (0..WEEKS as i64)
+        .rev()
+        .map(|week| {
+            // The week's newest day is `week` weeks before today, and its oldest one six days
+            // before that.
+            let began = today.saturating_sub(jiff::Span::new().days(week * WEEK + WEEK - 1));
+            tablo::text!(
+                "chart-week-start",
+                month = format!("{:02}", began.month()),
+                day = format!("{:02}", began.day())
+            )
+        })
+        .collect()
 }
 
 /// One order as the sales figures read it: how many days ago it was placed, what it brought in
