@@ -61,8 +61,9 @@ cannot, and what blocks it. Everything not listed here is translated.
 
 | Gap | Blocker |
 | --- | --- |
-| Charts | Tablo has no charting |
-| Widgets that follow the list's table state or the dashboard's filters | no widget system; a page reads neither |
+| Charts other than a sparkline | a stat tile draws a sparkline, and Tablo draws no other chart: no axes, bars or legends |
+| Table widgets on a dashboard (latest orders, top products) | Tablo ships stat tiles as its only widget, so a table of records is a list page's, and the dashboard links to it |
+| Widgets that follow the list's table state or the dashboard's filters | a widget reads no request state, and a page has no filters for them to follow |
 | Brand wordmark logo with a dark-mode variant | `Brand::logo` is one square mark beside the name |
 | `topbar(false)`, Vite theme | the shell is Tablo's |
 | `command+k` for global search | no shortcut |

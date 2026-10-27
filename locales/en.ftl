@@ -47,34 +47,46 @@ resource-expense = Expense
 
 ## Dashboard figures
 
-caption-top-products = Top products by revenue
-caption-flagged-orders = Flagged orders (oldest first)
+stat-revenue = Revenue, last 30 days
+stat-orders-placed = Orders, last 30 days
+stat-average-order = Average order, last 30 days
+stat-cancellation-rate = Cancellation rate, last 30 days
+stat-detail-change = { $change } on the 30 days before
+stat-detail-points = { $change } points on the 30 days before
+stat-detail-share = { $share } of orders
+stat-flagged-orders = Waiting too long
+stat-detail-flagged = New for { $new } days or more, processing for { $processing } or more
 
 stat-repeat-customer-rate = Repeat customer rate
 stat-detail-repeat = { $repeat } of { $total } customers
 stat-avg-items-per-order = Avg items / order
 stat-detail-items = { $items } items, { $orders } orders
-stat-cancellation-rate = Cancellation rate
-stat-detail-cancelled = { $count } cancelled orders
 stat-revenue-per-customer = Revenue / customer
 stat-detail-revenue = { $total } total revenue
 stat-avg-tenure = Avg tenure
 stat-years = { $years } years
+stat-detail-tenure = across the active workforce
 stat-detail-active = { $count } active employees
-stat-turnover-rate = Turnover rate
-stat-detail-inactive = { $inactive } of { $total } inactive
-stat-open-capacity = Open capacity
-stat-detail-seats = { $seats } seats across the active departments
 stat-contractor-ratio = Contractor ratio
 stat-detail-contractors = { $count } contractors
+stat-open-capacity = Open capacity
+stat-detail-seats = { $seats } seats across the active departments
+stat-hours-booked = Hours, last 30 days
+stat-billable-share = Billable share, last 30 days
+stat-detail-billable = { $hours } h billable
+stat-project-budget = Project budget used
+stat-detail-budget = { $spent } of { $budget } spent
+stat-leave-to-review = Leave to review
+stat-detail-pending-leave = waiting for a decision
+stat-expenses-to-review = Expenses to review
+stat-detail-submitted = submitted, not yet decided
+stat-reimbursed = Reimbursed expenses
+stat-detail-reimbursed = { $count } claims reimbursed
 stat-detail-posts = the blog's articles
 stat-detail-products = what the shop sells
 stat-detail-orders = placed by customers
 stat-detail-employees = across every department
-stat-detail-tasks = across every project
 stat-detail-timesheets = booked entries
-stat-detail-leave = all statuses
-stat-detail-expenses = claims filed
 
 ## Form tabs
 
