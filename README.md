@@ -93,7 +93,8 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
 - **Global search** in the topbar, over every resource, with results that respect
   the list's tenancy, trash and field access and open the record's page.
 - **Translations** in English and French, the browser's `Accept-Language`
-  choosing. The demo's own words are in [`locales/`](locales/), beside Tablo's
+  choosing until a visitor picks the other from the language menu in the
+  sidebar footer. The demo's own words are in [`locales/`](locales/), beside Tablo's
   catalog.
 
 [GAPS.md](GAPS.md) lists what the Filament demo does that this demo cannot,
