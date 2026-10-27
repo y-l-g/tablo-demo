@@ -88,6 +88,21 @@ stat-detail-orders = placed by customers
 stat-detail-employees = across every department
 stat-detail-timesheets = booked entries
 
+## Dashboard charts and tables
+
+chart-revenue = Revenue by week
+chart-hours = Hours booked by week
+chart-weeks = The last twelve weeks, each labelled by the day it began
+chart-week-start = { $month }/{ $day }
+series-revenue = Revenue
+series-billable = Billable
+series-not-billable = Not billable
+widget-latest-posts = Latest posts
+widget-latest-orders = Latest orders
+widget-leave-queue = Leave to review
+widget-expense-queue = Expenses to review
+widget-queue-description = Oldest first
+
 ## Form tabs
 
 tab-personal = Personal

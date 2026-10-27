@@ -97,8 +97,11 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
 - **Actions**, record and bulk, with input dialogs, confirmation and success
   notifications.
 - **Dashboards** built from Tablo's widgets, each page a grid of them: figures
-  as stat tiles with trends and sparklines, linked to the lists they count, and
-  the status and approval queues that link to their filtered lists.
+  as stat tiles with trends and sparklines, linked to the lists they count and
+  to their filtered lists; line and bar charts over the last twelve weeks, of
+  revenue and of hours booked, billable and not; and tables of the newest posts
+  and orders, and of the leave and expenses waiting for a decision, each row
+  linking to its record.
 - **Navigation** that swaps the page in place, and an icon of its own for every
   sidebar entry, from a Lucide subset the build stages.
 - **Auth** on the `app` panel: sign-up, password reset, email verification, a
