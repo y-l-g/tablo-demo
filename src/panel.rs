@@ -26,6 +26,7 @@ use crate::{
     dashboards::{Dashboard, HrDashboard, ShopDashboard},
     mailbox::Postbox,
     seed,
+    welcome::{AdminPanel, AppPanel},
 };
 
 /// The theme's sans font, `Albert Sans`.
@@ -198,10 +199,11 @@ fn cookie_key() -> Key {
         .expect("TABLO_DEMO_COOKIE_KEY holds 128 hex characters")
 }
 
-/// Mounts both panels on a router, with the asset bundle the build script wrote.
+/// Mounts both panels on a router, with the asset bundle the build script wrote, and keeps their
+/// handles for the welcome page at `/`.
 pub fn router(db: Db) -> Router {
     let bundle = AssetBundle::load().expect("load the asset bundle beside the executable");
-    Router::builder()
+    let builder = Router::builder()
         .discover()
         .with(db)
         .with(cookie_key())
@@ -211,6 +213,8 @@ pub fn router(db: Db) -> Router {
         .panel(admin_panel().shell_assets(tailwind::stylesheet!(), ALBERT_SANS))
         .expect("the admin panel mounts")
         .panel(app_panel().shell_assets(tailwind::stylesheet!(), ALBERT_SANS))
-        .expect("the app panel mounts")
-        .build()
+        .expect("the app panel mounts");
+    let admin = builder.panel_handle("admin").expect("mounted above");
+    let app = builder.panel_handle("app").expect("mounted above");
+    builder.with(AdminPanel(admin)).with(AppPanel(app)).build()
 }

@@ -13,3 +13,4 @@ pub mod notifications;
 pub mod panel;
 pub mod seed;
 pub mod shop;
+pub mod welcome;

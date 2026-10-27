@@ -11,6 +11,11 @@ Two panels are mounted:
 | `admin` | `/admin` | every resource: the blog, the shop, HR and projects, plus the shop and HR dashboards. Administrators only |
 | `app`   | `/app`   | the tenant panel: every auth page, a team switcher and the settings page             |
 
+The page at `/` introduces both, with a tour of the features worth trying: each
+stop links to the page that shows it and to the file that declares it. It is
+public, rendered in the admin panel's document and catalog through its
+`PanelHandle`, in [`src/welcome.rs`](src/welcome.rs).
+
 Sign in with `admin@example.com` / `password`, the one account the seed marks as
 an administrator. An account that signs up on `/app` is not one: it verifies its
 address, registers a team of its own, and `/admin` refuses it.
@@ -35,7 +40,7 @@ cargo install --git https://github.com/tokio-rs/topcoat --rev 01bd585394891052a4
 
 ```sh
 cargo run
-# open http://127.0.0.1:3000/admin
+# open http://127.0.0.1:3000/
 ```
 
 The database is in-memory SQLite, created and seeded on every start, so a restart
