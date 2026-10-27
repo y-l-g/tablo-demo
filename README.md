@@ -79,8 +79,9 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   served only at signed links that expire.
 - **Actions**, record and bulk, with input dialogs, confirmation and success
   notifications.
-- **Dashboards** that read the seeded data: figures as Tablo's stat tiles,
-  linked to their lists, and ranked lists the demo draws itself.
+- **Dashboards** built from Tablo's widgets, each page a grid of them: figures
+  as stat tiles with trends and sparklines, linked to the lists they count, and
+  the status and approval queues that link to their filtered lists.
 - **Navigation** that swaps the page in place, and an icon of its own for every
   sidebar entry, from a Lucide subset the build stages.
 - **Auth** on the `app` panel: sign-up, password reset, email verification, a
