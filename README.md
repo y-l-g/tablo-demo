@@ -38,18 +38,20 @@ it, each start draws a key.
 ### Mail
 
 The app panel mails sign-up verification links, password reset links,
-email-change confirmations and two-factor codes. Every mail lands in the admin
-panel's **Mailbox** page. To deliver them too, point the demo at an SMTP
-server:
+email-change confirmations and two-factor codes through an SMTP server. Its
+settings are below. Without `TABLO_DEMO_SMTP_HOST` no mail goes out, and each
+send that fails is logged. The demo keeps no copy of what it sends.
 
 | Variable                   | What it is                                                    |
 | -------------------------- | ------------------------------------------------------------- |
-| `TABLO_DEMO_SMTP_HOST`     | the server, e.g. `smtp-relay.brevo.com`; unset keeps mail in memory only |
-| `TABLO_DEMO_SMTP_PORT`     | `587` (STARTTLS, the default) or `465` (implicit TLS)          |
+| `TABLO_DEMO_SMTP_HOST`     | the server, e.g. `smtp-relay.brevo.com`; unset, no mail is sent |
+| `TABLO_DEMO_SMTP_PORT`     | `465` (implicit TLS), or any other port with STARTTLS; `587` by default          |
 | `TABLO_DEMO_SMTP_USERNAME` | the SMTP login                                                 |
 | `TABLO_DEMO_SMTP_PASSWORD` | the SMTP key or password                                       |
 | `TABLO_DEMO_MAIL_FROM`     | the sender address, one your provider has verified             |
 | `TABLO_DEMO_BASE_URL`      | the URL the mailed links start with; `http://127.0.0.1:3000` by default |
+
+Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
 
 ## What it covers
 

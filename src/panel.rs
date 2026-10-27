@@ -24,7 +24,7 @@ use crate::{
     auth::{DemoAuth, DemoResetter, DemoTenantRegistrar, DemoVerifier, SignedIn},
     blog::{AuthorResource, CommentResource, PostCategoryResource, PostResource},
     dashboards::{Dashboard, HrDashboard, ShopDashboard},
-    mailbox::{Mailbox, Postbox},
+    mailbox::Postbox,
     seed,
 };
 
@@ -58,7 +58,6 @@ pub fn admin_panel() -> Panel {
         .page::<ShopDashboard>()
         .page::<HrDashboard>()
         .page::<crate::audit::AuditTrail>()
-        .page::<crate::mailbox::Sent>()
         // The first resource of a group fixes the group's place in the sidebar,
         // so the registration order is the demo's navigation order.
         .resource::<crate::shop::ProductResource>()
@@ -112,7 +111,7 @@ fn app_auth() -> Auth<SignedIn> {
 }
 
 /// The address the app panel's mail comes from: `TABLO_DEMO_MAIL_FROM`, which
-/// a mail provider has verified, or a placeholder the mailbox keeps.
+/// a mail provider has verified, or a placeholder.
 fn sender() -> Sender {
     let address = std::env::var("TABLO_DEMO_MAIL_FROM")
         .unwrap_or_else(|_| "no-reply@demo.example.com".to_string());
@@ -200,16 +199,14 @@ fn cookie_key() -> Key {
 }
 
 /// Mounts both panels on a router, with the asset bundle the build script wrote.
-pub fn router(db: Db, mailbox: Mailbox) -> Router {
+pub fn router(db: Db) -> Router {
     let bundle = AssetBundle::load().expect("load the asset bundle beside the executable");
     Router::builder()
         .discover()
         .app_context(db)
-        .app_context(mailbox.clone())
         .app_context(cookie_key())
-        // The mails the app panel sends land in the mailbox, which the admin
-        // panel's Mailbox page lists, and go out over SMTP when it is set up.
-        .mail(MailConfig::builder().transport(Postbox::new(mailbox.clone())).build())
+        // The app panel's mail goes out through the SMTP server the environment names.
+        .mail(MailConfig::builder().transport(Postbox::from_env()).build())
         .assets(bundle)
         .panel(admin_panel().shell_assets(tailwind::stylesheet!(), ALBERT_SANS))
         .expect("the admin panel mounts")

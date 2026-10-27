@@ -1,10 +1,14 @@
-use std::sync::Arc;
-
 use toasty::Db;
-use topcoat::mail::MemoryTransport;
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() {
+    // Tablo logs a mail that failed to send, and the log is where it shows.
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+        )
+        .init();
     let mut db = Db::builder()
         .models(tablo::models!(
             tablo_demo::models::Address,
@@ -41,8 +45,6 @@ async fn main() {
     tablo_demo::seed::seed(&mut db)
         .await
         .expect("seed the demo data");
-    // The mails the app panel sends land here, whether or not SMTP sends them.
-    let mailbox = Arc::new(MemoryTransport::new());
-    let router = tablo_demo::panel::router(db, mailbox);
+    let router = tablo_demo::panel::router(db);
     topcoat::start(router).await.expect("serve");
 }

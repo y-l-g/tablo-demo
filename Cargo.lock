@@ -3855,6 +3855,7 @@ dependencies = [
  "toasty",
  "tokio",
  "topcoat",
+ "tracing-subscriber",
  "uuid",
 ]
 
