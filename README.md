@@ -20,10 +20,21 @@ which admits every account to both panels.
 
 ## Running it
 
-Toasty comes from crates.io. Tablo is pinned to a commit on its `main`, for the
-per-panel `can_access_panel` and the tenant fixes that followed 0.8.0, and Tablo
-in turn tracks Topcoat's `main`, which `Cargo.toml` patches in. No other checkout
-is needed.
+Tablo comes from its [Git repository](https://github.com/y-l-g/tablo) at the
+last commit of its `master` branch. Topcoat comes from its
+[Git repository](https://github.com/tokio-rs/topcoat) at `01bd5853`, the commit
+Tablo's `master` builds against, through the `[patch.crates-io]` section of
+`Cargo.toml`. Toasty comes from crates.io, so no other checkout is needed.
+`Cargo.lock` records the commit a build uses; `cargo update -p tablo` moves
+Tablo to the newest one. The demo needs `can_access_panel` to receive the
+asking panel's prefix, so the commit cannot be older than Tablo's `424077a9`.
+
+The asset bundle has to come from that same Topcoat commit, so install its CLI
+from there:
+
+```sh
+cargo install --git https://github.com/tokio-rs/topcoat --rev 01bd585394891052a4bd68213a36ac8f8e8687c9 topcoat-cli --locked
+```
 
 ```sh
 cargo run
