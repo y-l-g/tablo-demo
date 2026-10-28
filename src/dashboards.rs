@@ -1,6 +1,8 @@
-//! The panel's dashboards. Each page is a grid of Tablo widgets: rows of stat tiles that read the
-//! seeded data, with trends, sparklines and links included; line and bar charts over the last
-//! twelve weeks; and tables of the newest records and of the queues awaiting a decision.
+//! The panel's dashboards, and the widgets above three lists. Each page is a grid of Tablo widgets:
+//! rows of stat tiles that read the seeded data, with trends, sparklines and links included; line
+//! and bar charts over the last twelve weeks; and tables of the newest records and of the queues
+//! awaiting a decision. The orders, leave requests and posts lists show their figures above their
+//! tables.
 
 use std::{
     cmp::Ordering,
@@ -233,12 +235,14 @@ impl Widget for RevenueWidget {
 }
 
 /// Where the shop's orders sit now, a tile per status linked to the orders in it, and the orders
-/// that have waited too long.
+/// that have waited too long. The shop dashboard shows it, and so does the order list.
 pub struct PipelineWidget;
 
 impl Widget for PipelineWidget {
     fn declare() -> WidgetDef {
-        WidgetDef::new().full_width()
+        WidgetDef::new()
+            .full_width()
+            .access(can_list::<OrderResource>)
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
@@ -762,6 +766,88 @@ impl Widget for ExpenseQueueWidget {
     }
 }
 
+/// The leave requests by status, a tile per status linked to the requests in it, above the leave
+/// list. Only a user who may open the leave list sees it.
+pub struct LeaveStatusWidget;
+
+impl Widget for LeaveStatusWidget {
+    fn declare() -> WidgetDef {
+        WidgetDef::new()
+            .full_width()
+            .access(can_list::<LeaveRequestResource>)
+    }
+
+    async fn render(cx: &Cx) -> Result<impl View> {
+        let requests = scoped_query::<LeaveRequestResource>(cx)?
+            .exec(&mut db(cx)?)
+            .await?;
+        let url = tablo::url::resource::<LeaveRequestResource>(cx);
+        let tiles: Vec<Stat> = [
+            LeaveStatus::Pending,
+            LeaveStatus::Approved,
+            LeaveStatus::Taken,
+            LeaveStatus::Rejected,
+            LeaveStatus::Cancelled,
+        ]
+        .into_iter()
+        .map(|status| {
+            let count = requests
+                .iter()
+                .filter(|request| request.status == status)
+                .count();
+            let tile = Stat::new(status.label(), count.to_string())
+                .detail(tablo::text!(
+                    "stat-detail-share-requests",
+                    share = percent(share(count as f64, requests.len() as f64))
+                ))
+                .color(leave_status_color(status));
+            linked(
+                tile,
+                url.as_ref()
+                    .map(|url| format!("{url}?f.status={}", status.value())),
+            )
+        })
+        .collect();
+        Ok(tablo::stats(cx, tiles))
+    }
+}
+
+/// The articles published and the drafts, above the post list. A post dated after today counts as
+/// a draft, as the list's status column shows it. The list filters by date alone, so the tiles do
+/// not link. Only a user who may open the post list sees it.
+pub struct PostStatusWidget;
+
+impl Widget for PostStatusWidget {
+    fn declare() -> WidgetDef {
+        WidgetDef::new()
+            .full_width()
+            .access(can_list::<PostResource>)
+    }
+
+    async fn render(cx: &Cx) -> Result<impl View> {
+        let posts = scoped_query::<PostResource>(cx)?.exec(&mut db(cx)?).await?;
+        let published = posts.iter().filter(|post| post.is_published()).count();
+        let drafts = posts.len() - published;
+        let detail = |count: usize| {
+            tablo::text!(
+                "stat-detail-share-articles",
+                share = percent(share(count as f64, posts.len() as f64))
+            )
+        };
+        Ok(tablo::stats(
+            cx,
+            [
+                Stat::new(tablo::text!("status-published"), published.to_string())
+                    .detail(detail(published))
+                    .color(Color::Success),
+                Stat::new(tablo::text!("status-draft"), drafts.to_string())
+                    .detail(detail(drafts))
+                    .color(Color::Gray),
+            ],
+        ))
+    }
+}
+
 /// The tile counting `R`'s records, with a sparkline of the weeks they were created in. Nothing
 /// when the request may not list `R`, and nothing is read then. `created` reads a record's
 /// creation time.
@@ -969,6 +1055,17 @@ fn status_color(status: OrderStatus) -> Color {
         OrderStatus::Processing => Color::Warning,
         OrderStatus::Shipped | OrderStatus::Delivered => Color::Success,
         OrderStatus::Cancelled => Color::Danger,
+    }
+}
+
+/// The colour a leave request's status reads as, as the list's badges show it.
+fn leave_status_color(status: LeaveStatus) -> Color {
+    match status {
+        LeaveStatus::Pending => Color::Warning,
+        LeaveStatus::Approved => Color::Success,
+        LeaveStatus::Taken => Color::Info,
+        LeaveStatus::Rejected => Color::Danger,
+        LeaveStatus::Cancelled => Color::Gray,
     }
 }
 

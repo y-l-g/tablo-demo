@@ -11,6 +11,7 @@ use tablo::{
 use topcoat::{Result, context::Cx};
 
 use crate::blog::CommentResource;
+use crate::dashboards::PipelineWidget;
 use crate::enums::{CountryCode, OrderStatus};
 use crate::models::replica_suffix;
 use crate::models::{
@@ -777,6 +778,8 @@ impl Resource for OrderResource {
             .action::<ReplicateOrder>()
             .action::<CancelOrder>()
             .soft_delete(lens!(Order.deleted_at))
+            // The pipeline the shop dashboard counts, above the orders it counts.
+            .list_widget::<PipelineWidget>()
     }
 
     /// Tells the signed-in user about a new order, once the write committed.

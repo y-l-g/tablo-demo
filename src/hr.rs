@@ -9,6 +9,7 @@ use tablo::{
 };
 use topcoat::{Result, context::Cx};
 
+use crate::dashboards::LeaveStatusWidget;
 use crate::enums::{
     EmploymentType, ExpenseCategory, ExpenseStatus, LeaveStatus, LeaveType, ProjectStatus,
     TaskPriority, TaskStatus,
@@ -614,6 +615,8 @@ impl Resource for LeaveRequestResource {
             .action::<RejectLeaveRequest>()
             .action::<BulkApproveLeaveRequests>()
             .action::<BulkRejectLeaveRequests>()
+            // The requests by status, above the list.
+            .list_widget::<LeaveStatusWidget>()
     }
 
     /// Refuses dates that overlap another request of the employee, then stores the day count

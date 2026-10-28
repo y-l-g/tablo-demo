@@ -62,7 +62,7 @@ cannot, and what blocks it.
 | Gap | Blocker |
 | --- | --- |
 | Top products on a dashboard | a record table orders by a column of the record, and a product keeps no count of what it sold |
-| Widgets that follow the list's table state or the dashboard's filters | a widget reads no request state, and a page has no filters for them to follow |
+| Widgets that follow the list's table state or the dashboard's filters | a widget reads no request state: a list's widgets rerun with its table but show the same figures under any filter, and a page has no filters to follow |
 | Brand wordmark logo with a dark-mode variant | `Brand::logo` takes one image |
 | `topbar(false)`, Vite theme | the shell is Tablo's |
 | `command+k` for global search | no shortcut |

@@ -9,6 +9,7 @@ use tablo::{
 };
 use topcoat::{Result, context::Cx};
 
+use crate::dashboards::PostStatusWidget;
 use crate::models::{Author, Comment, Post, PostCategory};
 use crate::panel::{IMAGE_EXTENSIONS, IMAGE_MAX_BYTES};
 use crate::roles::{self, Domain};
@@ -57,6 +58,8 @@ impl Resource for PostResource {
                 Comment::fields().post_id(),
             ))
             .action::<TogglePostPublish>()
+            // The published and draft articles, above the list.
+            .list_widget::<PostStatusWidget>()
     }
 
     crate::audit!();
