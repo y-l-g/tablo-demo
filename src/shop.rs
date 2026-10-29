@@ -1,10 +1,10 @@
 //! The shop resources: products, brands, categories, customers and orders.
 
 use tablo::{
-    Action, ActionLayout, BooleanColumn, Change, ColumnToggle, ColumnWidth, Currency, DateColumn,
-    DateFilter, Detail, FieldErrors, FormInput, GlobalSearch, Grid, ImageColumn, Outcome, Places,
-    Relation, RelationColumn, Resource, ResourceDef, RichTextColumn, Schema, Section, SelectFilter,
-    Table, TernaryFilter, Text, TextColumn, WriteError,
+    Action, ActionLayout, BooleanColumn, Change, Color, ColumnToggle, ColumnWidth, Currency,
+    DateColumn, DateFilter, Detail, FieldErrors, FormInput, GlobalSearch, Grid, ImageColumn,
+    Outcome, Places, Reads, Relation, RelationColumn, Resource, ResourceDef, RichTextColumn,
+    Schema, Section, SelectFilter, Table, TernaryFilter, Text, TextColumn, WriteError,
     extend::{Column, Includes},
     lens, relation,
 };
@@ -817,6 +817,8 @@ fn order_table() -> Table<Order> {
     ))
     .default_sort_desc(lens!(Order.created_at))
     .action_layout(ActionLayout::Menu)
+    .row_color(|order: &Order| (order.status == OrderStatus::Cancelled).then_some(Color::Danger))
+    .row_color_reading(Reads::of(lens!(Order.status)))
     .option_tabs(|status: OrderStatus| Order::fields().status().eq(status))
     .filters((DateFilter::new(lens!(Order.created_at))
         .label(tablo::text!("label-order-date"))

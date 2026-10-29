@@ -2,10 +2,11 @@
 
 use jiff::{Span, Timestamp, Zoned};
 use tablo::{
-    Action, ActionLayout, BooleanColumn, ColorColumn, ComputedColumn, CountColumn, Currency,
+    Action, ActionLayout, BooleanColumn, Color, ColorColumn, ComputedColumn, CountColumn, Currency,
     DateColumn, DateFilter, Detail, FieldAccess, FileColumn, FormInput, GlobalSearch, Grid,
-    Outcome, Places, RecordForm, Relation, RelationColumn, Resource, ResourceDef, Schema, Section,
-    SelectFilter, Tab, Table, Tabs, TernaryFilter, Text, TextColumn, WriteError, lens, relation,
+    Outcome, Places, Reads, RecordForm, Relation, RelationColumn, Resource, ResourceDef, Schema,
+    Section, SelectFilter, Tab, Table, Tabs, TernaryFilter, Text, TextColumn, WriteError, lens,
+    relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -555,6 +556,10 @@ impl Resource for LeaveRequestResource {
                 ))
                 .default_sort_desc(lens!(LeaveRequest.start_date))
                 .action_layout(ActionLayout::Menu)
+                .row_color(|request: &LeaveRequest| {
+                    (request.status == LeaveStatus::Rejected).then_some(Color::Danger)
+                })
+                .row_color_reading(Reads::of(lens!(LeaveRequest.status)))
                 .option_tabs(|status: LeaveStatus| LeaveRequest::fields().status().eq(status))
                 .filters((
                     SelectFilter::of(lens!(LeaveRequest.kind)).label(tablo::text!("label-type")),
@@ -1841,6 +1846,10 @@ impl Resource for ExpenseResource {
                         .toggleable(),
                 ))
                 .action_layout(ActionLayout::Menu)
+                .row_color(|expense: &Expense| {
+                    (expense.status == ExpenseStatus::Rejected).then_some(Color::Danger)
+                })
+                .row_color_reading(Reads::of(lens!(Expense.status)))
                 .option_tabs(|status: ExpenseStatus| Expense::fields().status().eq(status))
                 .filters((
                     SelectFilter::of(lens!(Expense.category)),

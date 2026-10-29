@@ -1,4 +1,4 @@
-//! One Lucide icon per sidebar entry, from the set `build.rs` stages.
+//! One Lucide icon per sidebar entry and per order status, from the set `build.rs` stages.
 
 use topcoat::icon::{IconData, iconify::iconify_icon};
 
@@ -18,6 +18,10 @@ pub const ORDER_ITEMS: IconData = iconify_icon!("lucide:clipboard-list");
 pub const PAYMENTS: IconData = iconify_icon!("lucide:credit-card");
 pub const ADDRESSES: IconData = iconify_icon!("lucide:map-pin");
 pub const ORDER_ADDRESSES: IconData = iconify_icon!("lucide:truck");
+
+pub const ORDER_NEW: IconData = iconify_icon!("lucide:clipboard-list");
+pub const ORDER_PROCESSING: IconData = iconify_icon!("lucide:package");
+pub const ORDER_SHIPPED: IconData = iconify_icon!("lucide:truck");
 
 pub const PROJECTS: IconData = iconify_icon!("lucide:folder");
 pub const TASKS: IconData = iconify_icon!("lucide:list-checks");
