@@ -112,6 +112,10 @@ tab-employment = Employment
 tab-overview = Overview
 tab-budget = Budget
 
+## List tabs
+
+list-tab-all = All
+
 ## Sections
 
 section-address = Address

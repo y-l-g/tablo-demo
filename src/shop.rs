@@ -20,6 +20,7 @@ use crate::models::{
 };
 use crate::panel::{IMAGE_EXTENSIONS, IMAGE_MAX_BYTES};
 use crate::roles::{self, Domain};
+use crate::tabs::OptionTabs;
 
 /// Products.
 pub struct ProductResource;
@@ -816,12 +817,10 @@ fn order_table() -> Table<Order> {
     ))
     .default_sort_desc(lens!(Order.created_at))
     .action_layout(ActionLayout::Menu)
-    .filters((
-        DateFilter::new(lens!(Order.created_at))
-            .label(tablo::text!("label-order-date"))
-            .range(),
-        SelectFilter::of(lens!(Order.status)),
-    ))
+    .option_tabs(|status: OrderStatus| Order::fields().status().eq(status))
+    .filters((DateFilter::new(lens!(Order.created_at))
+        .label(tablo::text!("label-order-date"))
+        .range(),))
 }
 
 /// The order's record form.

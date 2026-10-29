@@ -20,6 +20,7 @@ use crate::models::{
 };
 use crate::panel::{RECEIPT_EXTENSIONS, RECEIPT_MAX_BYTES};
 use crate::roles::{self, Domain};
+use crate::tabs::OptionTabs;
 
 /// Departments.
 pub struct DepartmentResource;
@@ -341,8 +342,10 @@ fn employee_table() -> Table<Employee> {
     ))
     .default_sort(lens!(Employee.name))
     .action_layout(ActionLayout::Menu)
+    .option_tabs(|employment_type: EmploymentType| {
+        Employee::fields().employment_type().eq(employment_type)
+    })
     .filters((
-        SelectFilter::of(lens!(Employee.employment_type)),
         SelectFilter::relationship::<DepartmentResource>(lens!(Employee.department_id))
             .label(tablo::text!("label-department")),
         TernaryFilter::new(lens!(Employee.is_active)),
@@ -552,8 +555,8 @@ impl Resource for LeaveRequestResource {
                 ))
                 .default_sort_desc(lens!(LeaveRequest.start_date))
                 .action_layout(ActionLayout::Menu)
+                .option_tabs(|status: LeaveStatus| LeaveRequest::fields().status().eq(status))
                 .filters((
-                    SelectFilter::of(lens!(LeaveRequest.status)),
                     SelectFilter::of(lens!(LeaveRequest.kind)).label(tablo::text!("label-type")),
                 )),
             )
@@ -1838,8 +1841,8 @@ impl Resource for ExpenseResource {
                         .toggleable(),
                 ))
                 .action_layout(ActionLayout::Menu)
+                .option_tabs(|status: ExpenseStatus| Expense::fields().status().eq(status))
                 .filters((
-                    SelectFilter::of(lens!(Expense.status)),
                     SelectFilter::of(lens!(Expense.category)),
                     SelectFilter::relationship::<EmployeeResource>(lens!(Expense.employee_id))
                         .label(tablo::text!("label-employee")),

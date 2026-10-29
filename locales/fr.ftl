@@ -173,6 +173,10 @@ section-task-details = Détails de la tâche
 section-timesheet = Feuille de temps
 section-timesheet-entry = Saisie de temps
 
+## Onglets des listes
+
+list-tab-all = Tous
+
 ## Libellés
 
 label-active = Actif
