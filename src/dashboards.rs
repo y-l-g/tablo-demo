@@ -53,6 +53,8 @@ impl Page for Dashboard {
             .icon(crate::icons::WELCOME)
             .navigation_order(-2)
             .widget::<RecordsWidget>()
+            .widget::<RevenueWidget>()
+            .widget::<HoursWidget>()
             .widget::<LatestPostsWidget>()
     }
 }
@@ -122,6 +124,7 @@ impl Page for ShopDashboard {
             .access(|cx| roles::reaches(cx, Domain::Shop))
             .widget::<SalesWidget>()
             .widget::<RevenueWidget>()
+            .widget::<OrdersWidget>()
             .widget::<PipelineWidget>()
             .widget::<LatestOrdersWidget>()
             .widget::<CustomersWidget>()
@@ -189,9 +192,7 @@ pub struct RevenueWidget;
 
 impl Widget for RevenueWidget {
     fn declare() -> WidgetDef {
-        WidgetDef::new()
-            .full_width()
-            .access(can_list::<OrderResource>)
+        WidgetDef::new().access(can_list::<OrderResource>)
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
@@ -203,6 +204,31 @@ impl Widget for RevenueWidget {
                 tablo::text!("series-revenue"),
                 weeks.iter().map(|week| week.revenue),
             ));
+        Ok(contained(cx, tablo::chart(cx, chart)))
+    }
+}
+
+/// The orders placed each week over the last twelve, oldest first. Only a user who may open the
+/// order list sees it.
+pub struct OrdersWidget;
+
+impl Widget for OrdersWidget {
+    fn declare() -> WidgetDef {
+        WidgetDef::new().access(can_list::<OrderResource>)
+    }
+
+    async fn render(cx: &Cx) -> Result<impl View> {
+        let weeks = weeks_of(&load_sales(cx).await?);
+        let chart = Chart::bar(week_labels(Zoned::now().date()))
+            .heading(tablo::text!("chart-orders"))
+            .description(tablo::text!("chart-weeks"))
+            .series(
+                Series::new(
+                    tablo::text!("series-orders"),
+                    weeks.iter().map(|week| week.placed),
+                )
+                .color(Color::Primary),
+            );
         Ok(contained(cx, tablo::chart(cx, chart)))
     }
 }
@@ -395,6 +421,7 @@ impl Page for HrDashboard {
             .widget::<WorkforceWidget>()
             .widget::<TimeWidget>()
             .widget::<HoursWidget>()
+            .widget::<HeadcountWidget>()
             .widget::<ApprovalsWidget>()
             .widget::<LeaveQueueWidget>()
             .widget::<ExpenseQueueWidget>()
@@ -573,9 +600,7 @@ pub struct HoursWidget;
 
 impl Widget for HoursWidget {
     fn declare() -> WidgetDef {
-        WidgetDef::new()
-            .full_width()
-            .access(can_list::<TimesheetResource>)
+        WidgetDef::new().access(can_list::<TimesheetResource>)
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
@@ -600,6 +625,48 @@ impl Widget for HoursWidget {
             .description(tablo::text!("chart-weeks"))
             .series(Series::new(tablo::text!("series-billable"), billable).color(Color::Primary))
             .series(Series::new(tablo::text!("series-not-billable"), other).color(Color::Gray));
+        Ok(contained(cx, tablo::chart(cx, chart)))
+    }
+}
+
+/// How many active employees each department holds, against the seats it may fill. Only a user
+/// who may open the employee list sees it.
+pub struct HeadcountWidget;
+
+impl Widget for HeadcountWidget {
+    fn declare() -> WidgetDef {
+        WidgetDef::new().access(can_list::<EmployeeResource>)
+    }
+
+    async fn render(cx: &Cx) -> Result<impl View> {
+        let employees = scoped_query::<EmployeeResource>(cx)?
+            .exec(&mut db(cx)?)
+            .await?;
+        let mut departments = scoped_query::<DepartmentResource>(cx)?
+            .exec(&mut db(cx)?)
+            .await?;
+        departments.retain(|department| department.is_active);
+        departments.sort_by(|a, b| a.name.cmp(&b.name));
+        let staffed = departments.iter().map(|department| {
+            employees
+                .iter()
+                .filter(|employee| {
+                    employee.is_active && employee.department_id == Some(department.id)
+                })
+                .count() as f64
+        });
+        let seats = departments
+            .iter()
+            .map(|department| department.headcount_limit as f64);
+        let labels: Vec<Text> = departments
+            .iter()
+            .map(|department| department.name.clone().into())
+            .collect();
+        let chart = Chart::bar(labels)
+            .heading(tablo::text!("chart-headcount"))
+            .description(tablo::text!("chart-headcount-description"))
+            .series(Series::new(tablo::text!("series-staffed"), staffed).color(Color::Primary))
+            .series(Series::new(tablo::text!("series-seats"), seats).color(Color::Gray));
         Ok(contained(cx, tablo::chart(cx, chart)))
     }
 }
@@ -673,9 +740,7 @@ pub struct LeaveQueueWidget;
 
 impl Widget for LeaveQueueWidget {
     fn declare() -> WidgetDef {
-        WidgetDef::new()
-            .full_width()
-            .access(can_list::<LeaveRequestResource>)
+        WidgetDef::new().access(can_list::<LeaveRequestResource>)
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
@@ -685,7 +750,6 @@ impl Widget for LeaveQueueWidget {
             .column_named("label-employee")
             .column(LeaveRequest::fields().kind())
             .column(LeaveRequest::fields().start_date())
-            .column(LeaveRequest::fields().end_date())
             .filter(LeaveRequest::fields().status().eq(LeaveStatus::Pending))
             .order_by(LeaveRequest::fields().created_at().asc());
         tablo::record_table::<LeaveRequestResource>(cx, table).await
@@ -698,9 +762,7 @@ pub struct ExpenseQueueWidget;
 
 impl Widget for ExpenseQueueWidget {
     fn declare() -> WidgetDef {
-        WidgetDef::new()
-            .full_width()
-            .access(can_list::<ExpenseResource>)
+        WidgetDef::new().access(can_list::<ExpenseResource>)
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
@@ -710,7 +772,6 @@ impl Widget for ExpenseQueueWidget {
             .column(Expense::fields().expense_number())
             .column_named("label-employee")
             .column(Expense::fields().total_amount())
-            .column(Expense::fields().submitted_at())
             .filter(Expense::fields().status().eq(ExpenseStatus::Submitted))
             .order_by(Expense::fields().submitted_at().asc());
         tablo::record_table::<ExpenseResource>(cx, table).await
@@ -819,15 +880,14 @@ async fn record_tile<R: Resource>(
     Ok(Some(stat.chart(weeks)))
 }
 
-/// `body`, clipped to its own cell. Tablo's charts and record tables label parts of themselves for
-/// screen readers with `sr-only`, which positions them against the nearest positioned ancestor, the
-/// page. A label that lands past the cell's edge, such as a chart's data table, scrolls the page
-/// sideways; a positioned, clipped cell holds it in place.
-fn contained<'a>(cx: &'a Cx, body: BoxView<'a>) -> BoxView<'a> {
+/// `chart`, clipped to its own cell. A chart labels its values for screen readers with an
+/// `sr-only` table, which positions itself against the nearest positioned ancestor; without this
+/// one it lands past the page's edge and scrolls the page sideways.
+fn contained<'a>(cx: &'a Cx, chart: BoxView<'a>) -> BoxView<'a> {
     view! {
         cx =>
-        <div class="relative overflow-hidden">
-            (body)
+        <div class="relative overflow-hidden rounded-xl">
+            (chart)
         </div>
     }
     .boxed()

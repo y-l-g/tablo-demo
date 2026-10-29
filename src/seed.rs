@@ -599,17 +599,25 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
     for _ in 0..LEAVE_REQUESTS {
         let employee_id = rng.pick(&employees).id;
         let approver_id = rng.boolean(60).then(|| rng.pick(&employees).id);
-        let start_date = today_back(rng.below(400) as i64);
-        let end_date = start_date
-            .checked_add(Span::new().days(rng.below(10) as i64))
-            .unwrap_or(start_date);
         let status = *rng.pick(&[
             LeaveStatus::Pending,
             LeaveStatus::Approved,
             LeaveStatus::Rejected,
             LeaveStatus::Taken,
+            LeaveStatus::Taken,
             LeaveStatus::Cancelled,
         ]);
+        // Leave waiting for a decision or approved lies ahead, leave taken behind.
+        let start_date = match status {
+            LeaveStatus::Pending | LeaveStatus::Approved => {
+                today_back(-(rng.between(3, 120) as i64))
+            }
+            LeaveStatus::Taken => today_back(rng.between(5, 400) as i64),
+            _ => today_back(rng.below(400) as i64 - 60),
+        };
+        let end_date = start_date
+            .checked_add(Span::new().days(rng.below(10) as i64))
+            .unwrap_or(start_date);
         toasty::create!(LeaveRequest {
             employee_id,
             approver_id,

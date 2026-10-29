@@ -1,4 +1,49 @@
 @source "./src/**/*.rs";
 
-@theme {
+/* The demo's brand over Tablo's tokens: an indigo primary, and grays tinted toward it so the
+   chrome and the accent read as one palette. */
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(0.99 0.004 285);
+  --foreground: oklch(0.2 0.025 285);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.025 285);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.025 285);
+  --muted: oklch(0.963 0.008 285);
+  --muted-foreground: oklch(0.5 0.025 285);
+  --primary: oklch(0.5 0.22 277);
+  --primary-foreground: oklch(0.985 0.012 277);
+  --border: oklch(0.91 0.012 285);
+  --ring: oklch(0.62 0.18 277);
+  --shadow-xs: 0 1px 2px oklch(0.25 0.05 285 / 6%);
+  --shadow-sm:
+    0 1px 2px oklch(0.25 0.05 285 / 6%),
+    0 4px 12px -4px oklch(0.25 0.05 285 / 10%);
+  --sidebar: oklch(0.965 0.01 285);
+  --sidebar-foreground: oklch(0.3 0.025 285);
+  --sidebar-accent: oklch(0.925 0.035 280);
+  --sidebar-accent-foreground: oklch(0.28 0.09 277);
+  --sidebar-border: oklch(0.9 0.014 285);
+}
+
+.dark {
+  --background: oklch(0.17 0.018 280);
+  --foreground: oklch(0.95 0.008 285);
+  --card: oklch(0.205 0.022 280);
+  --card-foreground: oklch(0.95 0.008 285);
+  --popover: oklch(0.225 0.024 280);
+  --popover-foreground: oklch(0.95 0.008 285);
+  --muted: oklch(0.25 0.024 280);
+  --muted-foreground: oklch(0.7 0.025 285);
+  --primary: oklch(0.72 0.15 277);
+  --primary-foreground: oklch(0.18 0.05 277);
+  --border: oklch(0.285 0.024 280);
+  --ring: oklch(0.66 0.15 277);
+  --sidebar: oklch(0.145 0.016 280);
+  --sidebar-foreground: oklch(0.86 0.012 285);
+  --sidebar-accent: oklch(0.25 0.045 278);
+  --sidebar-accent-foreground: oklch(0.96 0.01 285);
+  --sidebar-border: oklch(0.24 0.02 280);
 }
