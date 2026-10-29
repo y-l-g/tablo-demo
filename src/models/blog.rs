@@ -69,8 +69,8 @@ pub struct Post {
     /// The post's image, the path of the uploaded file.
     #[default(String::new())]
     pub image: String,
-    /// The post's tags, comma separated.
-    pub tags: String,
+    #[default(Vec::<String>::new())]
+    pub tags: Vec<String>,
     pub seo_title: Option<String>,
     pub seo_description: Option<String>,
     #[default(Timestamp::now())]

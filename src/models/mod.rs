@@ -96,13 +96,3 @@ pub fn replica_suffix() -> String {
         })
         .collect()
 }
-
-/// How a dashboard amount renders: two decimals behind a dollar sign.
-pub fn money(amount: &f64) -> String {
-    format!("${amount:.2}")
-}
-
-/// How a whole-dollar amount renders.
-pub fn dollars(amount: f64) -> String {
-    format!("${amount:.0}")
-}

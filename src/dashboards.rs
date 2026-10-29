@@ -11,14 +11,10 @@ use std::{
 
 use jiff::{Timestamp, Zoned, civil::Date};
 use tablo::{
-    Chart, Color, Page, PageDef, RecordTable, Resource, Series, Stat, Text, Trend, Widget,
-    WidgetDef, can_list, db::db, scoped_query,
+    Chart, Color, Currency, FormScalar, Page, PageDef, RecordTable, Resource, Series, Stat, Text,
+    Trend, Widget, WidgetDef, can_list, db::db, scoped_query,
 };
-use topcoat::{
-    Result,
-    context::Cx,
-    view::{BoxView, View, ViewExt, view},
-};
+use topcoat::{Result, context::Cx, view::View};
 
 use crate::{
     blog::PostResource,
@@ -27,9 +23,7 @@ use crate::{
         DepartmentResource, EmployeeResource, ExpenseResource, LeaveRequestResource,
         ProjectResource, TimesheetResource,
     },
-    models::{
-        Customer, Employee, Expense, LeaveRequest, Order, Post, Product, Timesheet, dollars, money,
-    },
+    models::{Customer, Employee, Expense, LeaveRequest, Order, Post, Product, Timesheet},
     roles::{self, Domain},
     shop::{CustomerResource, OrderItemResource, OrderResource, ProductResource},
 };
@@ -50,23 +44,14 @@ impl Page for Dashboard {
     fn declare() -> PageDef {
         PageDef::new()
             .label(tablo::text!("page-welcome"))
+            .title(tablo::text!("page-welcome-title"))
+            .description(tablo::text!("page-welcome-description"))
             .icon(crate::icons::WELCOME)
             .navigation_order(-2)
             .widget::<RecordsWidget>()
+            .widget::<RevenueWidget>()
+            .widget::<HoursWidget>()
             .widget::<LatestPostsWidget>()
-    }
-
-    async fn render(cx: &Cx) -> Result<impl View> {
-        Ok(view! {
-            cx =>
-            tablo::ui::page(
-                tablo::ui::page_header(
-                    tablo::ui::page_title((tablo::t!(cx, "page-welcome-title")))
-                    tablo::ui::page_description((tablo::t!(cx, "page-welcome-description")))
-                )
-                tablo::ui::page_content((tablo::widgets::<Self>(cx)))
-            )
-        })
     }
 }
 
@@ -116,10 +101,7 @@ impl Widget for LatestPostsWidget {
             .column_named("label-author")
             .column(Post::fields().published_at())
             .order_by(Post::fields().created_at().desc());
-        Ok(contained(
-            cx,
-            tablo::record_table::<PostResource>(cx, table).await?,
-        ))
+        tablo::record_table::<PostResource>(cx, table).await
     }
 }
 
@@ -131,28 +113,17 @@ impl Page for ShopDashboard {
         PageDef::new()
             .slug("shop")
             .label(tablo::text!("page-shop-dashboard"))
+            .description(tablo::text!("dashboard-shop-description"))
             .icon(crate::icons::SHOP_DASHBOARD)
             .navigation_order(2)
             // The widgets read the shop's rows directly, so the page asks the role first.
             .access(|cx| roles::reaches(cx, Domain::Shop))
             .widget::<SalesWidget>()
             .widget::<RevenueWidget>()
+            .widget::<OrdersWidget>()
             .widget::<PipelineWidget>()
             .widget::<LatestOrdersWidget>()
             .widget::<CustomersWidget>()
-    }
-
-    async fn render(cx: &Cx) -> Result<impl View> {
-        Ok(view! {
-            cx =>
-            tablo::ui::page(
-                tablo::ui::page_header(
-                    tablo::ui::page_title((tablo::t!(cx, "page-shop-dashboard")))
-                    tablo::ui::page_description((tablo::t!(cx, "dashboard-shop-description")))
-                )
-                tablo::ui::page_content((tablo::widgets::<Self>(cx)))
-            )
-        })
     }
 }
 
@@ -187,7 +158,7 @@ impl Widget for SalesWidget {
         )
         .detail(percent_change(last.placed, before.placed));
         let average = trended(
-            Stat::new(tablo::text!("stat-average-order"), money(&last.average()))
+            Stat::new(tablo::text!("stat-average-order"), money(last.average()))
                 .chart(weeks.iter().map(Totals::average)),
             last.average(),
             before.average(),
@@ -217,9 +188,7 @@ pub struct RevenueWidget;
 
 impl Widget for RevenueWidget {
     fn declare() -> WidgetDef {
-        WidgetDef::new()
-            .full_width()
-            .access(can_list::<OrderResource>)
+        WidgetDef::new().access(can_list::<OrderResource>)
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
@@ -231,7 +200,32 @@ impl Widget for RevenueWidget {
                 tablo::text!("series-revenue"),
                 weeks.iter().map(|week| week.revenue),
             ));
-        Ok(contained(cx, tablo::chart(cx, chart)))
+        Ok(tablo::chart(cx, chart))
+    }
+}
+
+/// The orders placed each week over the last twelve, oldest first. Only a user who may open the
+/// order list sees it.
+pub struct OrdersWidget;
+
+impl Widget for OrdersWidget {
+    fn declare() -> WidgetDef {
+        WidgetDef::new().access(can_list::<OrderResource>)
+    }
+
+    async fn render(cx: &Cx) -> Result<impl View> {
+        let weeks = weeks_of(&load_sales(cx).await?);
+        let chart = Chart::bar(week_labels(Zoned::now().date()))
+            .heading(tablo::text!("chart-orders"))
+            .description(tablo::text!("chart-weeks"))
+            .series(
+                Series::new(
+                    tablo::text!("series-orders"),
+                    weeks.iter().map(|week| week.placed),
+                )
+                .color(Color::Primary),
+            );
+        Ok(tablo::chart(cx, chart))
     }
 }
 
@@ -267,7 +261,7 @@ impl Widget for PipelineWidget {
                     "stat-detail-share",
                     share = percent(share(count as f64, orders.len() as f64))
                 ))
-                .color(status_color(status));
+                .color(status.color().unwrap_or(Color::Gray));
             linked(
                 tile,
                 url.as_ref()
@@ -322,10 +316,7 @@ impl Widget for LatestOrdersWidget {
             .column(Order::fields().total_price())
             .column(Order::fields().created_at())
             .order_by(Order::fields().created_at().desc());
-        Ok(contained(
-            cx,
-            tablo::record_table::<OrderResource>(cx, table).await?,
-        ))
+        tablo::record_table::<OrderResource>(cx, table).await
     }
 }
 
@@ -400,7 +391,7 @@ impl Widget for CustomersWidget {
                 )),
                 Stat::new(
                     tablo::text!("stat-revenue-per-customer"),
-                    money(&revenue_per_customer),
+                    money(revenue_per_customer),
                 )
                 .detail(tablo::text!(
                     "stat-detail-revenue",
@@ -419,28 +410,17 @@ impl Page for HrDashboard {
         PageDef::new()
             .slug("hr")
             .label(tablo::text!("page-hr-dashboard"))
+            .description(tablo::text!("dashboard-hr-description"))
             .icon(crate::icons::HR_DASHBOARD)
             .navigation_order(3)
             .access(|cx| roles::reaches(cx, Domain::Hr))
             .widget::<WorkforceWidget>()
             .widget::<TimeWidget>()
             .widget::<HoursWidget>()
+            .widget::<HeadcountWidget>()
             .widget::<ApprovalsWidget>()
             .widget::<LeaveQueueWidget>()
             .widget::<ExpenseQueueWidget>()
-    }
-
-    async fn render(cx: &Cx) -> Result<impl View> {
-        Ok(view! {
-            cx =>
-            tablo::ui::page(
-                tablo::ui::page_header(
-                    tablo::ui::page_title((tablo::t!(cx, "page-hr-dashboard")))
-                    tablo::ui::page_description((tablo::t!(cx, "dashboard-hr-description")))
-                )
-                tablo::ui::page_content((tablo::widgets::<Self>(cx)))
-            )
-        })
     }
 }
 
@@ -616,9 +596,7 @@ pub struct HoursWidget;
 
 impl Widget for HoursWidget {
     fn declare() -> WidgetDef {
-        WidgetDef::new()
-            .full_width()
-            .access(can_list::<TimesheetResource>)
+        WidgetDef::new().access(can_list::<TimesheetResource>)
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
@@ -643,7 +621,49 @@ impl Widget for HoursWidget {
             .description(tablo::text!("chart-weeks"))
             .series(Series::new(tablo::text!("series-billable"), billable).color(Color::Primary))
             .series(Series::new(tablo::text!("series-not-billable"), other).color(Color::Gray));
-        Ok(contained(cx, tablo::chart(cx, chart)))
+        Ok(tablo::chart(cx, chart))
+    }
+}
+
+/// How many active employees each department holds, against the seats it may fill. Only a user
+/// who may open the employee list sees it.
+pub struct HeadcountWidget;
+
+impl Widget for HeadcountWidget {
+    fn declare() -> WidgetDef {
+        WidgetDef::new().access(can_list::<EmployeeResource>)
+    }
+
+    async fn render(cx: &Cx) -> Result<impl View> {
+        let employees = scoped_query::<EmployeeResource>(cx)?
+            .exec(&mut db(cx)?)
+            .await?;
+        let mut departments = scoped_query::<DepartmentResource>(cx)?
+            .exec(&mut db(cx)?)
+            .await?;
+        departments.retain(|department| department.is_active);
+        departments.sort_by(|a, b| a.name.cmp(&b.name));
+        let staffed = departments.iter().map(|department| {
+            employees
+                .iter()
+                .filter(|employee| {
+                    employee.is_active && employee.department_id == Some(department.id)
+                })
+                .count() as f64
+        });
+        let seats = departments
+            .iter()
+            .map(|department| department.headcount_limit as f64);
+        let labels: Vec<Text> = departments
+            .iter()
+            .map(|department| department.name.clone().into())
+            .collect();
+        let chart = Chart::bar(labels)
+            .heading(tablo::text!("chart-headcount"))
+            .description(tablo::text!("chart-headcount-description"))
+            .series(Series::new(tablo::text!("series-staffed"), staffed).color(Color::Primary))
+            .series(Series::new(tablo::text!("series-seats"), seats).color(Color::Gray));
+        Ok(tablo::chart(cx, chart))
     }
 }
 
@@ -716,9 +736,7 @@ pub struct LeaveQueueWidget;
 
 impl Widget for LeaveQueueWidget {
     fn declare() -> WidgetDef {
-        WidgetDef::new()
-            .full_width()
-            .access(can_list::<LeaveRequestResource>)
+        WidgetDef::new().access(can_list::<LeaveRequestResource>)
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
@@ -728,13 +746,9 @@ impl Widget for LeaveQueueWidget {
             .column_named("label-employee")
             .column(LeaveRequest::fields().kind())
             .column(LeaveRequest::fields().start_date())
-            .column(LeaveRequest::fields().end_date())
             .filter(LeaveRequest::fields().status().eq(LeaveStatus::Pending))
             .order_by(LeaveRequest::fields().created_at().asc());
-        Ok(contained(
-            cx,
-            tablo::record_table::<LeaveRequestResource>(cx, table).await?,
-        ))
+        tablo::record_table::<LeaveRequestResource>(cx, table).await
     }
 }
 
@@ -744,9 +758,7 @@ pub struct ExpenseQueueWidget;
 
 impl Widget for ExpenseQueueWidget {
     fn declare() -> WidgetDef {
-        WidgetDef::new()
-            .full_width()
-            .access(can_list::<ExpenseResource>)
+        WidgetDef::new().access(can_list::<ExpenseResource>)
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
@@ -756,13 +768,9 @@ impl Widget for ExpenseQueueWidget {
             .column(Expense::fields().expense_number())
             .column_named("label-employee")
             .column(Expense::fields().total_amount())
-            .column(Expense::fields().submitted_at())
             .filter(Expense::fields().status().eq(ExpenseStatus::Submitted))
             .order_by(Expense::fields().submitted_at().asc());
-        Ok(contained(
-            cx,
-            tablo::record_table::<ExpenseResource>(cx, table).await?,
-        ))
+        tablo::record_table::<ExpenseResource>(cx, table).await
     }
 }
 
@@ -800,7 +808,7 @@ impl Widget for LeaveStatusWidget {
                     "stat-detail-share-requests",
                     share = percent(share(count as f64, requests.len() as f64))
                 ))
-                .color(leave_status_color(status));
+                .color(status.color().unwrap_or(Color::Gray));
             linked(
                 tile,
                 url.as_ref()
@@ -866,20 +874,6 @@ async fn record_tile<R: Resource>(
             .map(|record| (days_since(now, created(record)), 1.0)),
     );
     Ok(Some(stat.chart(weeks)))
-}
-
-/// `body`, clipped to its own cell. Tablo's charts and record tables label parts of themselves for
-/// screen readers with `sr-only`, which positions them against the nearest positioned ancestor, the
-/// page. A label that lands past the cell's edge, such as a chart's data table, scrolls the page
-/// sideways; a positioned, clipped cell holds it in place.
-fn contained<'a>(cx: &'a Cx, body: BoxView<'a>) -> BoxView<'a> {
-    view! {
-        cx =>
-        <div class="relative overflow-hidden">
-            (body)
-        </div>
-    }
-    .boxed()
 }
 
 /// The orders the sales figures read, each as a [`Sale`].
@@ -1048,27 +1042,6 @@ fn alert(count: usize, color: Color) -> Color {
     if count > 0 { color } else { Color::Gray }
 }
 
-/// The colour an order status reads as, as the list's badges show it.
-fn status_color(status: OrderStatus) -> Color {
-    match status {
-        OrderStatus::New => Color::Info,
-        OrderStatus::Processing => Color::Warning,
-        OrderStatus::Shipped | OrderStatus::Delivered => Color::Success,
-        OrderStatus::Cancelled => Color::Danger,
-    }
-}
-
-/// The colour a leave request's status reads as, as the list's badges show it.
-fn leave_status_color(status: LeaveStatus) -> Color {
-    match status {
-        LeaveStatus::Pending => Color::Warning,
-        LeaveStatus::Approved => Color::Success,
-        LeaveStatus::Taken => Color::Info,
-        LeaveStatus::Rejected => Color::Danger,
-        LeaveStatus::Cancelled => Color::Gray,
-    }
-}
-
 /// `stat`, linked to `url` when there is one.
 fn linked(stat: Stat, url: Option<String>) -> Stat {
     match url {
@@ -1093,6 +1066,16 @@ fn share(part: f64, total: f64) -> f64 {
     } else {
         part / total * 100.0
     }
+}
+
+/// An amount in dollars and cents, `$1,234.50`.
+fn money(amount: f64) -> String {
+    Currency::USD.format(amount)
+}
+
+/// An amount in whole dollars, `$1,235`.
+fn dollars(amount: f64) -> String {
+    Currency::USD.decimals(0).format(amount)
 }
 
 /// A percentage, rounded to one decimal.

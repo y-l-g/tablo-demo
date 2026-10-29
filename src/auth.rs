@@ -68,37 +68,25 @@ impl PanelUser for SignedIn {
 pub struct DemoAuth;
 
 impl DemoAuth {
-    /// Loads `user` with the teams they belong to, read through the
-    /// `team_user` pivot, so a fresh account acts for no team it never joined.
+    /// Loads `user` with the teams they belong to, so a fresh account acts for no team until it
+    /// registers one.
     ///
-    /// Reading the pivot is what gives the app panel's required tenant
-    /// registration something to do: a new account holds no team until it
-    /// creates one.
-    ///
-    /// Runs on `ex` rather than on a fresh handle: sign-up calls this while its
-    /// transaction holds the connection, and a second one would wait forever.
+    /// Runs on `ex` rather than on a fresh handle: sign-up calls this while its transaction holds
+    /// the connection, and a second one would wait forever.
     async fn signed_in(user: User, ex: &mut dyn toasty::Executor) -> topcoat::Result<SignedIn> {
-        let memberships = TeamUser::filter(TeamUser::fields().user_id().eq(user.id))
-            .exec(&mut *ex)
-            .await?;
-        let mut teams = Vec::new();
-        // One query a team: Toasty filters on no list of keys, and an account
-        // holds few teams.
-        for membership in memberships {
-            let team = Team::filter(Team::fields().id().eq(membership.team_id))
-                .first()
-                .exec(&mut *ex)
-                .await?;
-            if let Some(team) = team {
-                teams.push(Membership::new(team.id.into(), team.name));
-            }
-        }
+        let teams = user
+            .teams()
+            .exec(ex)
+            .await?
+            .into_iter()
+            .map(|team| Membership::new(team.id.into(), team.name))
+            .collect();
         Ok(SignedIn { user, teams })
     }
 
     /// Finds the account whose email address is `email`.
     async fn by_email(cx: &Cx, email: &str) -> topcoat::Result<Option<User>> {
-        let mut db = tablo::db::db(cx)?;
+        let mut db = db(cx)?;
         Ok(User::filter(User::fields().email().eq(email.to_string()))
             .first()
             .exec(&mut db)
@@ -122,7 +110,7 @@ impl Authenticator for DemoAuth {
         }
         match user {
             Some(user) => {
-                let mut db = tablo::db::db(cx)?;
+                let mut db = db(cx)?;
                 Ok(Some(Self::signed_in(user, &mut db).await?))
             }
             None => Ok(None),
@@ -133,7 +121,7 @@ impl Authenticator for DemoAuth {
         let Ok(id) = id.parse::<u64>() else {
             return Ok(None);
         };
-        let mut db = tablo::db::db(cx)?;
+        let mut db = db(cx)?;
         let user = User::filter(User::fields().id().eq(id))
             .first()
             .exec(&mut db)
@@ -218,6 +206,13 @@ pub async fn create_user(
     .await
 }
 
+/// The id of the account `user_id` names, as [`PanelUser::user_id`] spells it.
+fn account_id(user_id: &str) -> topcoat::Result<u64> {
+    user_id
+        .parse()
+        .map_err(|_| topcoat::Error::msg("the account's id is not a number"))
+}
+
 /// Resets a password, for the app panel's "Forgot your password?" page.
 pub struct DemoResetter;
 
@@ -243,9 +238,7 @@ impl tablo::auth::PasswordResetter for DemoResetter {
         password: &str,
         ex: &mut dyn toasty::Executor,
     ) -> topcoat::Result<()> {
-        let id: u64 = user_id
-            .parse()
-            .map_err(|_| topcoat::Error::msg("the account's id is not a number"))?;
+        let id = account_id(user_id)?;
         let password = hash_password(password).await?;
         User::filter(User::fields().id().eq(id))
             .update()
@@ -258,6 +251,7 @@ impl tablo::auth::PasswordResetter for DemoResetter {
 
 /// Records that an account proved it reads its address.
 pub struct DemoVerifier;
+
 impl tablo::auth::EmailVerifier for DemoVerifier {
     type User = SignedIn;
 
@@ -272,9 +266,7 @@ impl tablo::auth::EmailVerifier for DemoVerifier {
         email: &str,
         ex: &mut dyn toasty::Executor,
     ) -> topcoat::Result<()> {
-        let id: u64 = user_id
-            .parse()
-            .map_err(|_| topcoat::Error::msg("the account's id is not a number"))?;
+        let id = account_id(user_id)?;
         User::filter(User::fields().id().eq(id))
             .update()
             .email(email.to_string())
@@ -291,6 +283,17 @@ pub struct NewTeam {
     pub name: String,
 }
 
+impl NewTeam {
+    /// Refuses a blank name.
+    fn errors(&self) -> FieldErrors {
+        let mut errors = FieldErrors::new();
+        if self.name.trim().is_empty() {
+            errors.add("name", tablo::text!("error-team-name-required"));
+        }
+        errors
+    }
+}
+
 /// Creates a team for a signed-in user.
 pub struct DemoTenantRegistrar;
 
@@ -305,11 +308,7 @@ impl tablo::auth::TenantRegistrar for DemoTenantRegistrar {
         input: &Self::Input,
         _ex: &mut dyn toasty::Executor,
     ) -> topcoat::Result<FieldErrors> {
-        let mut errors = FieldErrors::new();
-        if input.name.trim().is_empty() {
-            errors.add("name", tablo::text!("error-team-name-required"));
-        }
-        Ok(errors)
+        Ok(input.errors())
     }
 
     async fn register(
@@ -429,7 +428,12 @@ impl TenantEditor for DemoTenantRegistrar {
     type Input = NewTeam;
     type User = SignedIn;
 
-    async fn fill(&self, _cx: &Cx, _user: &SignedIn, team: &Membership) -> topcoat::Result<NewTeam> {
+    async fn fill(
+        &self,
+        _cx: &Cx,
+        _user: &SignedIn,
+        team: &Membership,
+    ) -> topcoat::Result<NewTeam> {
         Ok(NewTeam {
             name: team.name.clone(),
         })
@@ -443,11 +447,7 @@ impl TenantEditor for DemoTenantRegistrar {
         input: &NewTeam,
         _ex: &mut dyn toasty::Executor,
     ) -> topcoat::Result<FieldErrors> {
-        let mut errors = FieldErrors::new();
-        if input.name.trim().is_empty() {
-            errors.add("name", tablo::text!("error-team-name-required"));
-        }
-        Ok(errors)
+        Ok(input.errors())
     }
 
     async fn save(

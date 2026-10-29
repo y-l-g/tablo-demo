@@ -4,6 +4,7 @@ use jiff::{Span, Timestamp, Zoned, civil::Date};
 use serde_json::json;
 use tablo::rich_text::from_text;
 use toasty::Db;
+use uuid::Uuid;
 
 use crate::auth::create_user;
 use crate::enums::{
@@ -17,6 +18,7 @@ use crate::models::{
     LeaveRequest, Order, OrderAddress, OrderItem, Payment, Post, PostCategory, Product,
     ProductCategory, ProductCategoryLink, Project, Task, Team, TeamUser, Timesheet,
 };
+use crate::panel::{UPLOAD_URL_PREFIX, upload_dir};
 
 /// The demo administrator's name.
 pub const ADMIN_NAME: &str = "Demo User";
@@ -82,10 +84,12 @@ pub async fn seed(db: &mut Db) -> toasty::Result<()> {
         );
     }
     let teams = seed_teams(db).await?;
+    let shots = upload_all(0, PRODUCT_SHOTS).await?;
+    let covers = upload_all(PRODUCT_SHOTS.len(), POST_COVERS).await?;
     let (brands, customers) = seed_shop(db, &mut rng, &now).await?;
-    let products = seed_products(db, &mut rng, &brands, &customers, today).await?;
+    let products = seed_products(db, &mut rng, &brands, &customers, &shots).await?;
     seed_orders(db, &mut rng, &now, &customers, &products).await?;
-    seed_blog(db, &mut rng, &now, &customers, today).await?;
+    seed_blog(db, &mut rng, &now, &customers, &covers).await?;
     seed_hr(db, &mut rng, &now, today).await?;
 
     // The demo's `team_user` pivot. The seeded administrator joins both teams, so
@@ -108,6 +112,21 @@ pub async fn seed(db: &mut Db) -> toasty::Result<()> {
         .await?;
     }
     Ok(())
+}
+
+/// Writes each of `images` to the upload directory and returns the paths the panel serves them
+/// at. A file's name is fixed by its place, from `first` on, so each start writes over the files
+/// the last one wrote.
+async fn upload_all(first: usize, images: &[(&str, &[u8])]) -> toasty::Result<Vec<String>> {
+    let dir = upload_dir();
+    tokio::fs::create_dir_all(&dir).await?;
+    let mut paths = Vec::new();
+    for (offset, (name, bytes)) in images.iter().enumerate() {
+        let file = format!("{}-{name}", Uuid::from_u128((first + offset) as u128 + 1));
+        tokio::fs::write(dir.join(&file), bytes).await?;
+        paths.push(format!("{UPLOAD_URL_PREFIX}/{file}"));
+    }
+    Ok(paths)
 }
 
 /// The teams the `app` panel switches between.
@@ -155,7 +174,7 @@ async fn seed_shop(
     let mut customers = Vec::new();
     for index in 0..CUSTOMERS {
         let name = person(rng);
-        let created_at = days_ago(now, 720 - (index as i64 * 720 / CUSTOMERS as i64));
+        let created_at = hours_ago(now, growth_age(index, CUSTOMERS) * 24.0);
         let customer = toasty::create!(Customer {
             name: name.clone(),
             email: format!("{}.{}@example.com", slug(&name), index + 1),
@@ -206,27 +225,29 @@ async fn seed_products(
     rng: &mut Rng,
     brands: &[Brand],
     customers: &[Customer],
-    today: Date,
+    shots: &[String],
 ) -> toasty::Result<Vec<Product>> {
     let categories: Vec<ProductCategory> = ProductCategory::all().exec(db).await?;
     let mut products = Vec::new();
     for (index, name) in PRODUCTS.iter().enumerate() {
         let draft = ProductDraft {
-            name,
-            price: rng.float(8.0, 500.0),
+            name: format!("{} {name}", rng.pick(PRODUCT_QUALIFIERS)),
+            price: 9.0 + 290.0 * rng.float(0.0, 1.0).powi(2),
             qty: rng.between(0, 200),
             index,
+            image: shots[index % shots.len()].clone(),
         };
-        products.push(create_product(db, rng, brands, today, draft).await?);
+        products.push(create_product(db, rng, brands, shots, draft).await?);
     }
     for (offset, (name, price, qty)) in PRICE_ANOMALIES.iter().enumerate() {
         let draft = ProductDraft {
-            name,
+            name: name.to_string(),
             price: *price,
             qty: *qty,
             index: PRODUCTS.len() + offset,
+            image: shots[(PRODUCTS.len() + offset) % shots.len()].clone(),
         };
-        products.push(create_product(db, rng, brands, today, draft).await?);
+        products.push(create_product(db, rng, brands, shots, draft).await?);
     }
 
     for product in &products {
@@ -256,12 +277,13 @@ async fn seed_products(
 }
 
 /// What one seeded product is made of.
-struct ProductDraft<'a> {
-    name: &'a str,
+struct ProductDraft {
+    name: String,
     price: f64,
     qty: u64,
     /// Its place in the demo's product list, which its SKU and barcode spell.
     index: usize,
+    image: String,
 }
 
 /// One product of `brands`.
@@ -269,29 +291,35 @@ async fn create_product(
     db: &mut Db,
     rng: &mut Rng,
     brands: &[Brand],
-    today: Date,
-    draft: ProductDraft<'_>,
+    shots: &[String],
+    draft: ProductDraft,
 ) -> toasty::Result<Product> {
     let ProductDraft {
         name,
         price,
         qty,
         index,
+        image,
     } = draft;
     let brand = rng.pick(brands);
-    let name = format!("{name} {}", rng.pick(PRODUCT_QUALIFIERS));
     let created_at = days_ago(&Zoned::now(), rng.below(700) as i64);
+    let is_visible = rng.boolean(85);
+    let gallery_size = rng.below(4);
+    let gallery = rng.pick_distinct(shots, gallery_size);
     toasty::create!(Product {
         brand_id: Some(brand.id),
         name: name.clone(),
         slug: Some(slug(&name)),
         sku: Some(format!("SKU-{:05}", index + 1)),
         barcode: Some(format!("{:013}", 100_000_000_000 + index as u64)),
-        description: Some(format!("A {name} from {}.", brand.name)),
+        description: Some(from_text(&format!(
+            "The {name}, made by {} to last for years of everyday use.",
+            brand.name
+        ))),
         qty,
         security_stock: rng.below(20),
         featured: rng.boolean(20),
-        is_visible: rng.boolean(80),
+        is_visible,
         old_price: Some(round(price * 1.2)),
         price: Some(round(price)),
         cost: Some(round(price * rng.float(0.3, 0.6))),
@@ -302,12 +330,14 @@ async fn create_product(
         }),
         backorder: rng.boolean(30),
         requires_shipping: rng.boolean(75),
-        published_at: Some(today),
+        published_at: is_visible.then(|| date_of(created_at)),
         weight_value: Some(round(rng.float(0.1, 20.0))),
         height_value: Some(round(rng.float(1.0, 100.0))),
         width_value: Some(round(rng.float(1.0, 100.0))),
         depth_value: Some(round(rng.float(1.0, 100.0))),
         volume_value: Some(round(rng.float(0.1, 50.0))),
+        image,
+        gallery,
         created_at,
         updated_at: created_at,
     })
@@ -315,7 +345,9 @@ async fn create_product(
     .await
 }
 
-/// Orders, each with its lines, its payments and its shipping address.
+/// Orders, each with its lines, its payments and its shipping address. The shop grows: each
+/// month brings more orders than the one before, and an order moves along the pipeline as it
+/// ages, a few stuck where the pipeline flags them.
 async fn seed_orders(
     db: &mut Db,
     rng: &mut Rng,
@@ -324,21 +356,44 @@ async fn seed_orders(
     products: &[Product],
 ) -> toasty::Result<()> {
     for index in 0..ORDERS {
-        let created_at = days_ago(now, 720 - (index as i64 * 720 / ORDERS as i64));
+        let age = growth_age(index, ORDERS) + rng.float(0.0, 1.0);
+        let created_at = hours_ago(now, age * 24.0);
+        let status = if rng.boolean(4) {
+            OrderStatus::Cancelled
+        } else if age < 2.0 || (age < 9.0 && rng.boolean(4)) {
+            OrderStatus::New
+        } else if age < 5.0 || (age < 20.0 && rng.boolean(3)) {
+            OrderStatus::Processing
+        } else if age < 10.0 {
+            OrderStatus::Shipped
+        } else {
+            OrderStatus::Delivered
+        };
+        let (shipping_method, shipping_price) = *rng.pick(SHIPPING_METHODS);
+
+        let mut lines = Vec::new();
+        for _ in 0..rng.between(1, 4) {
+            let product = rng.pick(products);
+            let qty = if rng.boolean(75) {
+                1
+            } else {
+                rng.between(2, 3) as i64
+            };
+            lines.push((product.id, qty, product.price.unwrap_or(25.0)));
+        }
+        let subtotal: f64 = lines
+            .iter()
+            .map(|(_, qty, price)| *qty as f64 * price)
+            .sum();
+        let total = round(subtotal + shipping_price);
+
         let order = toasty::create!(Order {
-            customer_id: rng.boolean(85).then(|| rng.pick(customers).id),
+            customer_id: rng.boolean(95).then(|| rng.pick(customers).id),
             number: format!("OR-{:06}", index + 1),
-            total_price: Some(round(rng.float(50.0, 3000.0))),
-            status: *rng.pick(&[
-                OrderStatus::New,
-                OrderStatus::Processing,
-                OrderStatus::Shipped,
-                OrderStatus::Delivered,
-                OrderStatus::Delivered,
-                OrderStatus::Cancelled,
-            ]),
-            shipping_price: Some(round(rng.float(0.0, 40.0))),
-            shipping_method: Some(rng.pick(SHIPPING_METHODS).to_string()),
+            total_price: Some(total),
+            status,
+            shipping_price: Some(shipping_price),
+            shipping_method: Some(shipping_method.to_string()),
             created_at,
             updated_at: created_at,
         })
@@ -348,20 +403,13 @@ async fn seed_orders(
         let address = AddressFields::draw(rng);
         address.create_for_order(db, order.id).await?;
 
-        for _ in 0..rng.between(1, 3) {
-            toasty::create!(Payment {
-                order_id: order.id,
-                reference: format!("PAY-{:08}", rng.below(100_000_000)),
-                provider: rng.pick(&["stripe", "paypal"]).to_string(),
-                method: *rng.pick(&[
-                    PaymentMethod::CreditCard,
-                    PaymentMethod::BankTransfer,
-                    PaymentMethod::Paypal,
-                    PaymentMethod::ApplePay,
-                    PaymentMethod::GooglePay,
-                ]),
-                amount: round(rng.float(20.0, 900.0)),
-                currency: CurrencyCode::Usd,
+        for (sort, (product_id, qty, unit_price)) in lines.into_iter().enumerate() {
+            toasty::create!(OrderItem {
+                sort: sort as u32,
+                order_id: Some(order.id),
+                product_id: Some(product_id),
+                qty,
+                unit_price,
                 created_at,
                 updated_at: created_at,
             })
@@ -369,20 +417,34 @@ async fn seed_orders(
             .await?;
         }
 
-        for sort in 0..rng.between(1, 8) {
-            let product = rng.pick(products);
-            toasty::create!(OrderItem {
-                sort: sort as u32,
-                order_id: Some(order.id),
-                product_id: Some(product.id),
-                qty: rng.between(1, 5) as i64,
-                unit_price: round(product.price.unwrap_or(25.0)),
-                created_at,
-                updated_at: created_at,
-            })
-            .exec(db)
-            .await?;
+        if matches!(status, OrderStatus::New | OrderStatus::Cancelled) {
+            continue;
         }
+        let (provider, method) = if rng.boolean(70) {
+            (
+                "stripe",
+                *rng.pick(&[
+                    PaymentMethod::CreditCard,
+                    PaymentMethod::CreditCard,
+                    PaymentMethod::ApplePay,
+                    PaymentMethod::GooglePay,
+                ]),
+            )
+        } else {
+            ("paypal", PaymentMethod::Paypal)
+        };
+        toasty::create!(Payment {
+            order_id: order.id,
+            reference: format!("PAY-{:08}", rng.below(100_000_000)),
+            provider: provider.to_string(),
+            method,
+            amount: total,
+            currency: CurrencyCode::Usd,
+            created_at,
+            updated_at: created_at,
+        })
+        .exec(db)
+        .await?;
     }
     Ok(())
 }
@@ -393,7 +455,7 @@ async fn seed_blog(
     rng: &mut Rng,
     now: &Zoned,
     customers: &[Customer],
-    today: Date,
+    covers: &[String],
 ) -> toasty::Result<()> {
     let mut categories = Vec::new();
     for name in POST_CATEGORIES {
@@ -412,59 +474,68 @@ async fn seed_blog(
         );
     }
 
-    for author_index in 0..AUTHORS {
+    let mut authors = Vec::new();
+    for index in 0..AUTHORS {
         let name = person(rng);
         let handle = slug(&name);
-        let created_at = days_ago(now, rng.below(700) as i64);
-        let author = toasty::create!(Author {
-            name: name.clone(),
-            email: format!("{handle}.{author_index}@example.com"),
-            bio: Some(format!("{name} writes about building software.")),
-            github_handle: Some(handle.clone()),
-            twitter_handle: Some(handle),
+        let created_at = days_ago(now, rng.between(400, 720) as i64);
+        authors.push(
+            toasty::create!(Author {
+                name: name.clone(),
+                email: format!("{handle}.{}@example.com", index + 1),
+                bio: Some(format!("{name} writes about building software.")),
+                github_handle: Some(handle.clone()),
+                twitter_handle: Some(handle),
+                created_at,
+                updated_at: created_at,
+            })
+            .exec(db)
+            .await?,
+        );
+    }
+
+    // About one post a week, the newest still drafts and one scheduled for next week.
+    for (index, draft) in POSTS.iter().enumerate() {
+        let age = ((POSTS.len() - index) * 7) as i64 - 4 + rng.below(3) as i64;
+        let created_at = days_ago(now, age);
+        let published_at = match POSTS.len() - index {
+            1 => Some(today_back(-7)),
+            2 => None,
+            _ => Some(date_of(created_at)),
+        };
+        let category = categories
+            .iter()
+            .find(|category| category.name == draft.category)
+            .unwrap_or(&categories[0]);
+        let tag_count = rng.between(2, 4);
+        let post = toasty::create!(Post {
+            author_id: Some(rng.pick(&authors).id),
+            post_category_id: Some(category.id),
+            title: draft.title.to_string(),
+            slug: slug(draft.title),
+            content: from_text(draft.content),
+            published_at,
+            image: covers[index % covers.len()].clone(),
+            tags: rng.pick_distinct(TAGS, tag_count),
+            seo_title: Some(draft.title.to_string()),
+            seo_description: Some(draft.content.chars().take(120).collect()),
             created_at,
             updated_at: created_at,
         })
         .exec(db)
         .await?;
 
-        for (template_index, template) in POST_TEMPLATES.iter().enumerate() {
-            let title = format!(
-                "{} {}",
-                template.title,
-                author_index * POST_TEMPLATES.len() as u64 + template_index as u64
-            );
-            let created_at = days_ago(now, rng.below(720) as i64);
-            let tag_count = rng.between(2, 5);
-            let tags = rng.pick_distinct(TAGS, tag_count);
-            let post = toasty::create!(Post {
-                author_id: Some(author.id),
-                post_category_id: Some(rng.pick(&categories).id),
-                title: title.clone(),
-                slug: slug(&title),
-                content: from_text(template.content),
-                published_at: rng.boolean(80).then_some(today),
-                tags: tags.join(","),
-                seo_title: Some(title),
-                seo_description: Some(template.content.chars().take(120).collect()),
-                created_at,
-                updated_at: created_at,
+        for _ in 0..rng.between(1, 4) {
+            toasty::create!(Comment {
+                customer_id: Some(rng.pick(customers).id),
+                post_id: Some(post.id),
+                title: Some(rng.pick(REPLY_TITLES).to_string()),
+                content: Some(rng.pick(REPLIES).to_string()),
+                is_visible: rng.boolean(85),
+                created_at: days_ago(now, rng.below(age.max(1) as u64) as i64),
             })
             .exec(db)
             .await?;
-
-            for _ in 0..rng.between(1, 4) {
-                toasty::create!(Comment {
-                    customer_id: Some(rng.pick(customers).id),
-                    post_id: Some(post.id),
-                    title: Some(rng.pick(REPLY_TITLES).to_string()),
-                    content: Some(rng.pick(REPLIES).to_string()),
-                    is_visible: rng.boolean(85),
-                    created_at: days_ago(now, rng.below(400) as i64),
-                })
-                .exec(db)
-                .await?;
-            }
         }
     }
     Ok(())
@@ -528,17 +599,25 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
     for _ in 0..LEAVE_REQUESTS {
         let employee_id = rng.pick(&employees).id;
         let approver_id = rng.boolean(60).then(|| rng.pick(&employees).id);
-        let start_date = today_back(rng.below(400) as i64);
-        let end_date = start_date
-            .checked_add(Span::new().days(rng.below(10) as i64))
-            .unwrap_or(start_date);
         let status = *rng.pick(&[
             LeaveStatus::Pending,
             LeaveStatus::Approved,
             LeaveStatus::Rejected,
             LeaveStatus::Taken,
+            LeaveStatus::Taken,
             LeaveStatus::Cancelled,
         ]);
+        // Leave waiting for a decision or approved lies ahead, leave taken behind.
+        let start_date = match status {
+            LeaveStatus::Pending | LeaveStatus::Approved => {
+                today_back(-(rng.between(3, 120) as i64))
+            }
+            LeaveStatus::Taken => today_back(rng.between(5, 400) as i64),
+            _ => today_back(rng.below(400) as i64 - 60),
+        };
+        let end_date = start_date
+            .checked_add(Span::new().days(rng.below(10) as i64))
+            .unwrap_or(start_date);
         toasty::create!(LeaveRequest {
             employee_id,
             approver_id,
@@ -613,21 +692,17 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
             .await?,
         );
     }
-    // Budgets that stand out on the burn-rate chart.
-    for (offset, (budget, spent)) in [
-        (400_000.0, 50_000.0),
-        (20_000.0, 95_000.0),
-        (15_000.0, 45_000.0),
-    ]
-    .into_iter()
-    .enumerate()
-    {
-        let name = format!("{} Overhaul {}", PROJECT_NAMES[offset], offset + 1);
+    // Budgets that stand out: one barely touched, two spent several times over.
+    for (name, budget, spent) in [
+        ("Warehouse Overhaul", 400_000.0, 50_000.0),
+        ("Checkout Rewrite", 20_000.0, 95_000.0),
+        ("Brand Refresh", 15_000.0, 45_000.0),
+    ] {
         projects.push(
             toasty::create!(Project {
                 department_id: Some(rng.pick(&departments).id),
-                name: name.clone(),
-                slug: slug(&name),
+                name: name.to_string(),
+                slug: slug(name),
                 status: ProjectStatus::Active,
                 priority: TaskPriority::High,
                 budget,
@@ -651,7 +726,7 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
             toasty::create!(Task {
                 project_id,
                 assigned_to: rng.boolean(70).then(|| rng.pick(&employees).id),
-                title: format!("{} {}", rng.pick(TASK_TITLES), index + 1),
+                title: rng.pick(TASK_TITLES).to_string(),
                 description: Some(rng.pick(TASK_DESCRIPTIONS).to_string()),
                 status: *rng.pick(&[
                     TaskStatus::Backlog,
@@ -951,11 +1026,30 @@ impl Rng {
     }
 }
 
+/// How many days ago the `index`th of `count` records was made, the oldest two years ago, so
+/// that more of them fall in each month than in the one before.
+fn growth_age(index: u64, count: u64) -> f64 {
+    let left = 1.0 - index as f64 / count as f64;
+    HISTORY_DAYS * left.powf(1.3)
+}
+
+/// A timestamp `hours` before `now`.
+fn hours_ago(now: &Zoned, hours: f64) -> Timestamp {
+    now.timestamp()
+        .checked_sub(Span::new().seconds((hours * 3600.0) as i64))
+        .unwrap_or_else(|_| now.timestamp())
+}
+
 /// A timestamp `days` before `now`.
 fn days_ago(now: &Zoned, days: i64) -> Timestamp {
     now.checked_sub(Span::new().days(days))
         .unwrap_or_else(|_| now.clone())
         .timestamp()
+}
+
+/// The day `at` falls on, where the demo runs.
+fn date_of(at: Timestamp) -> Date {
+    at.to_zoned(jiff::tz::TimeZone::system()).date()
 }
 
 /// The date `days` before today, or after it when `days` is negative.
@@ -1000,9 +1094,12 @@ fn hex_color(rng: &mut Rng) -> String {
     format!("#{:06x}", rng.below(0x100_0000))
 }
 
+/// How far back the shop's history reaches.
+const HISTORY_DAYS: f64 = 720.0;
+
 const CUSTOMERS: u64 = 600;
 const ORDERS: u64 = 600;
-const AUTHORS: u64 = 8;
+const AUTHORS: u64 = 6;
 const EMPLOYEES: u64 = 120;
 const LEAVE_REQUESTS: u64 = 300;
 const TASKS: u64 = 200;
@@ -1134,7 +1231,14 @@ const SUBCATEGORIES: &[&str] = &[
     "Essentials",
 ];
 
-const SHIPPING_METHODS: &[&str] = &["Standard", "Express", "Pickup", "International"];
+/// The ways an order ships, and what each costs.
+const SHIPPING_METHODS: &[(&str, f64)] = &[
+    ("Standard", 4.99),
+    ("Standard", 4.99),
+    ("Express", 14.99),
+    ("Pickup", 0.0),
+    ("International", 24.99),
+];
 
 const POST_CATEGORIES: &[&str] = &[
     "Announcements",
@@ -1147,10 +1251,10 @@ const POST_CATEGORIES: &[&str] = &[
     "Testing",
 ];
 
-const TAGS: &[&str] = &[
-    "Laravel",
-    "PHP",
-    "JavaScript",
+/// The tags the seeded posts carry, and the post form suggests.
+pub const TAGS: &[&str] = &[
+    "Rust",
+    "Async",
     "CSS",
     "DevOps",
     "Testing",
@@ -1162,55 +1266,117 @@ const TAGS: &[&str] = &[
     "Database",
     "Accessibility",
     "Deployment",
-    "Design Patterns",
+    "Design",
 ];
 
-/// One blog post body the seeder draws from.
-struct PostTemplate {
+/// Embeds each named image of `assets/seed/{dir}`.
+macro_rules! images {
+    ($dir:literal: $($name:literal),* $(,)?) => {
+        &[$(($name, include_bytes!(concat!("../assets/seed/", $dir, "/", $name)))),*]
+    };
+}
+
+/// The product shots the seeded products show.
+const PRODUCT_SHOTS: &[(&str, &[u8])] = images!("products":
+    "product-01.webp", "product-02.webp", "product-03.webp", "product-04.webp",
+    "product-05.webp", "product-06.webp", "product-07.webp", "product-08.webp",
+    "product-09.webp", "product-10.webp", "product-11.webp", "product-12.webp",
+    "product-13.webp", "product-14.webp", "product-15.webp", "product-16.webp",
+);
+
+/// The covers the seeded posts show.
+const POST_COVERS: &[(&str, &[u8])] = images!("posts":
+    "cover-01.webp", "cover-02.webp", "cover-03.webp", "cover-04.webp",
+    "cover-05.webp", "cover-06.webp", "cover-07.webp", "cover-08.webp",
+);
+
+/// One blog post the seeder writes, newest last.
+struct PostDraft {
     title: &'static str,
+    category: &'static str,
     content: &'static str,
 }
 
-const POST_TEMPLATES: &[PostTemplate] = &[
-    PostTemplate {
-        title: "Getting Started with Queues",
-        content: "Queues defer slow work such as sending mail, so a request stays fast. \
-                  Configure a driver, write a job, and let a worker drain the queue.",
+const POSTS: &[PostDraft] = &[
+    PostDraft {
+        title: "Shipping a Rust Admin Panel in a Weekend",
+        category: "Product",
+        content: "A list, a form and a detail page per table, declared next to the models they serve. Most of the weekend went into the data, not the screens.",
     },
-    PostTemplate {
+    PostDraft {
+        title: "Why Our Queues Got Faster",
+        category: "Performance",
+        content: "Slow work such as sending mail now leaves the request. A worker drains the queue, and the page answers before the mail is written.",
+    },
+    PostDraft {
         title: "Building Accessible Forms",
-        content: "Label every input, describe every error, and keep the whole form reachable \
-                  from the keyboard. Accessibility is a requirement, not a polish step.",
+        category: "Design",
+        content: "Label every input, describe every error, and keep the whole form reachable from the keyboard. Accessibility is a requirement, not a polish step.",
     },
-    PostTemplate {
-        title: "Understanding Database Indexing",
-        content: "An index trades write cost for read speed. Index the columns your filters \
-                  and joins touch, and check the plan before you add another one.",
+    PostDraft {
+        title: "Understanding Database Indexes",
+        category: "Engineering",
+        content: "An index trades write cost for read speed. Index the columns your filters and joins touch, and read the plan before you add another one.",
     },
-    PostTemplate {
-        title: "A Guide to Code Review",
-        content: "Review the code, not the author. Keep changes small, say why, and answer \
-                  within a day so the branch does not drift.",
+    PostDraft {
+        title: "A Field Guide to Code Review",
+        category: "Guides",
+        content: "Review the code, not the author. Keep changes small, say why, and answer within a day so the branch does not drift.",
     },
-    PostTemplate {
-        title: "Designing RESTful APIs",
-        content: "Name resources with nouns, answer with consistent errors, and paginate \
-                  every list. Version before the first breaking change, not after.",
+    PostDraft {
+        title: "Designing APIs People Enjoy",
+        category: "Engineering",
+        content: "Name resources with nouns, answer with consistent errors, and paginate every list. Version before the first breaking change, not after.",
     },
-    PostTemplate {
-        title: "The Art of Writing Clean CSS",
-        content: "Prefer classes to ids, keep selectors shallow, and let design tokens carry \
-                  the values that repeat.",
+    PostDraft {
+        title: "Design Tokens Without the Ceremony",
+        category: "Design",
+        content: "Colours, radii and shadows live in one place. A theme is a handful of variables, and dark mode is the same handful again.",
     },
-    PostTemplate {
+    PostDraft {
         title: "Testing Strategies That Scale",
-        content: "Many fast unit tests, fewer integration tests, and a handful of end-to-end \
-                  runs that prove the whole path.",
+        category: "Testing",
+        content: "Many fast unit tests, fewer integration tests, and a handful of end-to-end runs that prove the whole path.",
     },
-    PostTemplate {
-        title: "Deploying with Zero Downtime",
-        content: "Run two environments, move traffic once the new one is healthy, and split \
-                  every schema change across two releases.",
+    PostDraft {
+        title: "Deploying With Zero Downtime",
+        category: "Engineering",
+        content: "Run two environments, move traffic once the new one is healthy, and split every schema change across two releases.",
+    },
+    PostDraft {
+        title: "What We Learned From a Year of Async Rust",
+        category: "Engineering",
+        content: "Hold no lock across an await, keep futures Send, and let the runtime do the scheduling. The rest is ordinary Rust.",
+    },
+    PostDraft {
+        title: "Two-Factor Sign-In, Explained",
+        category: "Security",
+        content: "An authenticator app or a mailed code, then recovery codes for the day the phone is lost. Each step is a page of its own.",
+    },
+    PostDraft {
+        title: "Charts That Answer a Question",
+        category: "Product",
+        content: "A chart earns its place when it answers something: is revenue growing, which week was quiet. Twelve weeks is usually enough to tell.",
+    },
+    PostDraft {
+        title: "The Case for Boring Infrastructure",
+        category: "Engineering",
+        content: "One database, one binary, one container. Interesting problems should come from the product, not from the deploy.",
+    },
+    PostDraft {
+        title: "Writing Release Notes People Read",
+        category: "Announcements",
+        content: "Lead with what changed for the reader, link the details, and keep the version number out of the first sentence.",
+    },
+    PostDraft {
+        title: "Securing File Uploads",
+        category: "Security",
+        content: "Check the extension and the size before storing, serve files from signed links that expire, and never trust a filename.",
+    },
+    PostDraft {
+        title: "Spring Release: Tabs, Tags and Charts",
+        category: "Announcements",
+        content: "Record pages split into tabs, tags became real lists, and dashboards gained line and bar charts over the last twelve weeks.",
     },
 ];
 
@@ -1254,17 +1420,18 @@ pub const JOB_TITLES: &[&str] = &[
     "DevOps Engineer",
 ];
 
-const SKILLS: &[&str] = &[
-    "PHP",
-    "Laravel",
-    "JavaScript",
+/// The skills the seeded employees claim, and the employee form suggests.
+pub const SKILLS: &[&str] = &[
+    "Rust",
     "TypeScript",
     "React",
-    "Vue.js",
     "Python",
     "SQL",
     "Docker",
+    "Kubernetes",
     "AWS",
+    "Figma",
+    "Go",
 ];
 
 const CERTIFICATIONS: &[&str] = &["AWS Certified", "PMP", "Scrum Master", "None"];
@@ -1327,7 +1494,8 @@ const TASK_DESCRIPTIONS: &[&str] = &[
     "Check the empty and error states before merging.",
 ];
 
-const TASK_LABELS: &[&str] = &[
+/// The labels the seeded tasks carry, and the task form suggests.
+pub const TASK_LABELS: &[&str] = &[
     "bug",
     "feature",
     "enhancement",

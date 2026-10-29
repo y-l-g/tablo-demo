@@ -30,6 +30,52 @@ const GUIDE: &str = "https://y-l.fr/tablo/nightly/guide/";
 const SOURCE: &str = "https://github.com/y-l-g/tablo-demo";
 
 const ARROW: IconData = iconify_icon!("lucide:arrow-right");
+const BOOK: IconData = iconify_icon!("lucide:book-open");
+const USER_PLUS: IconData = iconify_icon!("lucide:user-plus");
+
+/// What the demo shows, a tile each: its icon, its title and the line under it.
+const FEATURES: [(IconData, &str, &str); 8] = [
+    (
+        iconify_icon!("lucide:layers"),
+        "home-feature-resources",
+        "home-feature-resources-body",
+    ),
+    (
+        iconify_icon!("lucide:table"),
+        "home-feature-tables",
+        "home-feature-tables-body",
+    ),
+    (
+        iconify_icon!("lucide:square-pen"),
+        "home-feature-forms",
+        "home-feature-forms-body",
+    ),
+    (
+        iconify_icon!("lucide:zap"),
+        "home-feature-actions",
+        "home-feature-actions-body",
+    ),
+    (
+        iconify_icon!("lucide:chart-column"),
+        "home-feature-dashboards",
+        "home-feature-dashboards-body",
+    ),
+    (
+        iconify_icon!("lucide:shield-check"),
+        "home-feature-auth",
+        "home-feature-auth-body",
+    ),
+    (
+        iconify_icon!("lucide:search"),
+        "home-feature-search",
+        "home-feature-search-body",
+    ),
+    (
+        iconify_icon!("lucide:languages"),
+        "home-feature-i18n",
+        "home-feature-i18n-body",
+    ),
+];
 
 /// The panels' locales, each named in its own language.
 const LANGUAGES: [(&str, &str); 2] = [("en", "English"), ("fr", "Français")];
@@ -42,7 +88,11 @@ const LOCALE_COOKIE: &str = "tablo_locale";
 const THEME_COOKIE: &str = "tablo_theme";
 
 /// One option of the page's language and theme switches.
-const SEGMENT: &str = "grid h-7 min-w-7 place-items-center rounded-[5px] px-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground";
+const SEGMENT: &str = "grid h-7 min-w-7 place-items-center rounded-md px-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground";
+
+/// A switch of the page's header.
+const SWITCH: &str =
+    "flex rounded-lg border border-border bg-card/80 p-0.5 shadow-xs backdrop-blur";
 
 /// `GET /` — the welcome page, rendered in the admin panel's document and catalog.
 #[page("/")]
@@ -60,18 +110,35 @@ async fn welcome(cx: &Cx) -> Result<impl View> {
     // The buttons post the panels' login forms, which check this token against its cookie.
     let csrf = tablo::csrf::ensure_token(outer);
     let staff_role = |role: StaffRole| match role {
-        StaffRole::Administrator => ("home-role-administrator", "home-role-administrator-about"),
-        StaffRole::ShopManager => ("home-role-shop-manager", "home-role-shop-manager-about"),
-        StaffRole::HrManager => ("home-role-hr-manager", "home-role-hr-manager-about"),
-        StaffRole::Viewer => ("home-role-viewer", "home-role-viewer-about"),
+        StaffRole::Administrator => (
+            "home-role-administrator",
+            "home-role-administrator-about",
+            "bg-primary/10 text-primary",
+        ),
+        StaffRole::ShopManager => (
+            "home-role-shop-manager",
+            "home-role-shop-manager-about",
+            "bg-warning/15 text-warning",
+        ),
+        StaffRole::HrManager => (
+            "home-role-hr-manager",
+            "home-role-hr-manager-about",
+            "bg-success/15 text-success",
+        ),
+        StaffRole::Viewer => (
+            "home-role-viewer",
+            "home-role-viewer-about",
+            "bg-muted text-muted-foreground",
+        ),
     };
     let persona = |name, email, role| {
-        let (role, about) = staff_role(role);
+        let (role, about, tone) = staff_role(role);
         Persona {
             name,
             email,
             role: t(role),
             about: t(about),
+            tone,
         }
     };
     let mut admin_personas = vec![persona(
@@ -89,7 +156,9 @@ async fn welcome(cx: &Cx) -> Result<impl View> {
         email: seed::ADMIN_EMAIL,
         role: t("home-role-member"),
         about: t("home-role-member-about"),
+        tone: "bg-info/15 text-info",
     }];
+    let features = FEATURES.map(|(data, title, body)| (data, t(title), t(body)));
 
     let locale = topcoat::l10n::try_locale(cx).map(ToString::to_string);
     let languages = LANGUAGES.map(|(tag, name)| (tag, name, locale.as_deref() == Some(tag)));
@@ -116,81 +185,145 @@ async fn welcome(cx: &Cx) -> Result<impl View> {
         let cx = entered.clone();
         move |id: &'static str| tablo::t!(&cx, id)
     };
+    let admin_login = format!("{admin_url}/login");
+    let sign_up = format!("{app_url}/register");
     let body = view! {
-        <div lang=(lang) class="min-h-screen bg-background text-foreground">
-            <div class="mx-auto flex w-full max-w-2xl flex-col px-6 py-8 sm:py-12">
-                <header class="flex flex-wrap items-center justify-end gap-2">
-                    <div
-                        role="group"
-                        aria-label=(t("tablo-shell-language"))
-                        class="flex rounded-md border border-border p-0.5"
-                    >
-                        for (tag, name, current) in languages {
-                            <form method="post" action="/locale">
-                                <input type="hidden" name=(tablo::csrf::FIELD_NAME) value=(csrf.clone())>
-                                <input type="hidden" name="locale" value=(tag)>
+        <div lang=(lang) class="relative isolate min-h-screen overflow-hidden bg-background text-foreground">
+            <div
+                aria-hidden="true"
+                class="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[40rem] bg-[radial-gradient(55%_60%_at_50%_0%,color-mix(in_oklch,var(--primary)_24%,transparent),transparent)]"
+            ></div>
+            <div
+                aria-hidden="true"
+                class="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[40rem] bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(50%_60%_at_50%_0%,black,transparent)]"
+            ></div>
+            <div class="mx-auto flex w-full max-w-5xl flex-col px-6 py-6">
+                <header class="flex flex-wrap items-center justify-between gap-3">
+                    <a href="/" class="flex items-center gap-2.5 text-sm font-semibold">
+                        <span class="grid size-8 place-items-center rounded-lg bg-primary font-bold text-primary-foreground shadow-sm">
+                            "T"
+                        </span>
+                        "Tablo"
+                    </a>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div role="group" aria-label=(t("tablo-shell-language")) class=(SWITCH)>
+                            for (tag, name, current) in languages {
+                                <form method="post" action="/locale">
+                                    <input type="hidden" name=(tablo::csrf::FIELD_NAME) value=(csrf.clone())>
+                                    <input type="hidden" name="locale" value=(tag)>
+                                    <button
+                                        type="submit"
+                                        title=(name)
+                                        aria-current=(current.then_some("true"))
+                                        class=(class!(SEGMENT, "uppercase aria-[current=true]:bg-muted aria-[current=true]:text-foreground"))
+                                    >
+                                        (tag)
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                        <div role="radiogroup" aria-label=(t("tablo-shell-theme")) class=(SWITCH)>
+                            for (name, data, label, checked) in themes {
                                 <button
-                                    type="submit"
-                                    title=(name)
-                                    aria-current=(current.then_some("true"))
-                                    class=(class!(SEGMENT, "uppercase aria-[current=true]:bg-muted aria-[current=true]:text-foreground"))
+                                    type="button"
+                                    role="radio"
+                                    data-theme-set=(name)
+                                    aria-checked=(if checked { "true" } else { "false" })
+                                    aria-label=(label.clone())
+                                    title=(label)
+                                    class=(class!(SEGMENT, "aria-checked:bg-muted aria-checked:text-foreground"))
                                 >
-                                    (tag)
+                                    icon(data: data)
                                 </button>
-                            </form>
-                        }
-                    </div>
-                    <div
-                        role="radiogroup"
-                        aria-label=(t("tablo-shell-theme"))
-                        class="flex rounded-md border border-border p-0.5"
-                    >
-                        for (name, data, label, checked) in themes {
-                            <button
-                                type="button"
-                                role="radio"
-                                data-theme-set=(name)
-                                aria-checked=(if checked { "true" } else { "false" })
-                                aria-label=(label.clone())
-                                title=(label)
-                                class=(class!(SEGMENT, "aria-checked:bg-muted aria-checked:text-foreground"))
-                            >
-                                icon(data: data)
-                            </button>
-                        }
+                            }
+                        </div>
                     </div>
                 </header>
 
-                <main class="mt-16 sm:mt-24">
-                    <h1 class="text-3xl font-semibold tracking-tight">(t("home-title"))</h1>
-                    <p class="mt-3 text-muted-foreground text-pretty">
-                        (t("home-lead"))
-                        " "
-                        (t("home-password-note"))
-                        " "
-                        <code class="font-mono text-foreground">(seed::ADMIN_PASSWORD)</code>
-                        "."
-                    </p>
-                    panel(
-                        path: admin_url,
-                        body: t("home-admin-body"),
-                        personas: admin_personas,
-                        csrf: csrf.clone(),
-                        open: t("home-sign-in-page"),
-                    )
-                    panel(
-                        path: app_url,
-                        body: t("home-app-body"),
-                        personas: app_personas,
-                        csrf: csrf.clone(),
-                        open: t("home-sign-in-page"),
-                    )
+                <main>
+                    <section class="mx-auto mt-16 max-w-3xl text-center sm:mt-24">
+                        <h1 class="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
+                            (t("home-title"))
+                        </h1>
+                        <p class="mx-auto mt-5 max-w-2xl text-base text-muted-foreground text-pretty sm:text-lg">
+                            (t("home-lead"))
+                            " "
+                            (t("home-password-note"))
+                            " "
+                            <code class="rounded bg-muted px-1 font-mono text-foreground">(seed::ADMIN_PASSWORD)</code>
+                            "."
+                        </p>
+                        <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+                            <form method="post" action=(admin_login)>
+                                <input type="hidden" name=(tablo::csrf::FIELD_NAME) value=(csrf.clone())>
+                                <input type="hidden" name=(tablo::auth::LOGIN_FIELD) value=(seed::ADMIN_EMAIL)>
+                                <input type="hidden" name=(tablo::auth::PASSWORD_FIELD) value=(seed::ADMIN_PASSWORD)>
+                                <button
+                                    type="submit"
+                                    class="inline-flex h-11 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                                >
+                                    (t("home-cta-admin"))
+                                    icon(data: ARROW)
+                                </button>
+                            </form>
+                            <a
+                                href=(GUIDE)
+                                class="inline-flex h-11 items-center gap-2 rounded-lg border border-border bg-card px-5 text-sm font-medium shadow-xs transition-colors hover:bg-muted"
+                            >
+                                icon(data: BOOK)
+                                (t("home-cta-guide"))
+                            </a>
+                        </div>
+                    </section>
+
+                    <div class="mt-20 grid items-start gap-6 lg:grid-cols-5">
+                        panel(
+                            path: admin_url,
+                            title: t("home-admin-title"),
+                            body: t("home-admin-body"),
+                            personas: admin_personas,
+                            csrf: csrf.clone(),
+                            open: t("home-sign-in-page"),
+                            sign_up: None,
+                            span: "lg:col-span-3",
+                        )
+                        panel(
+                            path: app_url,
+                            title: t("home-app-title"),
+                            body: t("home-app-body"),
+                            personas: app_personas,
+                            csrf: csrf.clone(),
+                            open: t("home-sign-in-page"),
+                            sign_up: Some((sign_up, t("home-sign-up"))),
+                            span: "lg:col-span-2",
+                        )
+                    </div>
+
+                    <section class="mt-20">
+                        <h2 class="text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            (t("home-features-title"))
+                        </h2>
+                        <div class="mt-6 grid gap-px overflow-hidden rounded-2xl border border-border bg-border shadow-xs sm:grid-cols-2 lg:grid-cols-4">
+                            for (data, title, body) in features {
+                                <div class="bg-card p-5">
+                                    <span class="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary">
+                                        icon(data: data)
+                                    </span>
+                                    <h3 class="mt-4 text-sm font-semibold">(title)</h3>
+                                    <p class="mt-1 text-sm text-muted-foreground text-pretty">(body)</p>
+                                </div>
+                            }
+                        </div>
+                    </section>
                 </main>
 
-                <footer class="mt-16 flex flex-wrap gap-x-5 gap-y-2 border-t border-border pt-6 text-sm text-muted-foreground">
-                    <a href=(GUIDE) class="hover:text-foreground">(t("home-guide"))</a>
-                    <a href=(TABLO) class="hover:text-foreground">"Tablo"</a>
-                    <a href=(SOURCE) class="hover:text-foreground">(t("home-source"))</a>
+                <footer class="mt-20 flex flex-wrap items-center justify-between gap-4 border-t border-border py-6 text-sm text-muted-foreground">
+                    <p>(t("home-built-with"))</p>
+                    <nav class="flex gap-5">
+                        <a href=(GUIDE) class="hover:text-foreground">(t("home-guide"))</a>
+                        <a href=(TABLO) class="hover:text-foreground">"Tablo"</a>
+                        <a href=(SOURCE) class="hover:text-foreground">(t("home-source"))</a>
+                    </nav>
                 </footer>
             </div>
         </div>
@@ -234,35 +367,52 @@ async fn pick_locale(cx: &Cx, Form(form): Form<LocaleForm>) -> Result<(HeaderMap
     Ok((headers, see_other("/")))
 }
 
-/// One account a visitor may continue as: who it is, and what its role lets it do.
+/// One account a visitor may continue as: who it is, what its role lets it do, and the tint of
+/// its avatar.
 struct Persona {
     name: &'static str,
     email: &'static str,
     role: String,
     about: String,
+    tone: &'static str,
 }
 
-/// One panel: its path, what it is, and a button per account that signs in to it.
+/// The initials of `name`, such as `DU` for `Demo User`.
+fn initials(name: &str) -> String {
+    name.split_whitespace()
+        .filter_map(|word| word.chars().next())
+        .take(2)
+        .collect()
+}
+
+/// One panel: its path, what it is, and a button per account that signs in to it, with a link
+/// to its sign-up page when it has one.
 ///
 /// Each button posts the panel's own login form, with the CSRF token the page set, so a visitor
 /// signs in the way the login page signs them in: throttle, two-factor and all.
 #[component]
 async fn panel(
     path: String,
+    title: String,
     body: String,
     personas: Vec<Persona>,
     csrf: String,
     open: String,
+    sign_up: Option<(String, String)>,
+    span: &'static str,
 ) -> Result<impl View> {
     let login = format!("{path}/login");
     Ok(view! {
-        <section class="mt-12">
-            <div class="flex items-baseline justify-between gap-4">
-                <h2 class="font-mono text-sm font-medium">(path.clone())</h2>
-                <a href=(path) class="text-sm text-muted-foreground hover:text-foreground">(open)</a>
+        <section class=(class!("flex flex-col rounded-2xl border border-border bg-card p-2 shadow-sm", span))>
+            <div class="px-3 pt-3 pb-4">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-base font-semibold">(title)</h2>
+                    <code class="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">(path.clone())</code>
+                    <a href=(path) class="ml-auto text-sm font-medium text-primary underline-offset-4 hover:underline">(open)</a>
+                </div>
+                <p class="mt-1 text-sm text-muted-foreground text-pretty">(body)</p>
             </div>
-            <p class="mt-1 text-sm text-muted-foreground text-pretty">(body)</p>
-            <ul class="mt-4 divide-y divide-border overflow-hidden rounded-lg border border-border">
+            <ul class="flex flex-col gap-0.5">
                 for persona in personas {
                     <li>
                         <form method="post" action=(login.clone())>
@@ -271,16 +421,19 @@ async fn panel(
                             <input type="hidden" name=(tablo::auth::PASSWORD_FIELD) value=(seed::ADMIN_PASSWORD)>
                             <button
                                 type="submit"
-                                class="group flex w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
+                                class="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
                             >
+                                <span class=(class!("grid size-10 shrink-0 place-items-center rounded-full text-sm font-semibold", persona.tone))>
+                                    (initials(persona.name))
+                                </span>
                                 <span class="min-w-0 flex-1">
-                                    <span class="flex flex-wrap items-baseline gap-x-2 text-sm">
-                                        <span class="font-medium">(persona.role)</span>
+                                    <span class="flex flex-wrap items-baseline gap-x-2">
+                                        <span class="text-sm font-medium">(persona.role)</span>
                                         <span class="text-xs text-muted-foreground">(persona.name)</span>
                                     </span>
-                                    <span class="mt-0.5 block text-xs text-muted-foreground">(persona.about)</span>
+                                    <span class="mt-0.5 block text-xs text-muted-foreground text-pretty">(persona.about)</span>
                                 </span>
-                                <span class="text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground">
+                                <span class="text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-foreground">
                                     icon(data: ARROW)
                                 </span>
                             </button>
@@ -288,6 +441,15 @@ async fn panel(
                     </li>
                 }
             </ul>
+            if let Some((href, label)) = sign_up {
+                <a
+                    href=(href)
+                    class="m-1 mt-2 flex items-center justify-center gap-2 rounded-xl border border-dashed border-border px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                >
+                    icon(data: USER_PLUS)
+                    (label)
+                </a>
+            }
         </section>
     })
 }

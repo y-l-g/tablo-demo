@@ -2,14 +2,15 @@
 
 use tablo::{
     Action, ActionLayout, BooleanColumn, Change, DateColumn, DateFilter, Detail, Grid, ImageColumn,
-    Outcome, Places, Relation, RelationColumn, Resource, ResourceDef, RichTextColumn, Schema,
-    Section, Table, Text, TextColumn, WriteError,
+    ListColumn, Outcome, Places, Relation, RelationColumn, Resource, ResourceDef, RichTextColumn,
+    Schema, Section, Table, Text, TextColumn, WriteError,
     extend::{Column, Includes},
     lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
 use crate::dashboards::PostStatusWidget;
+use crate::enums::PostTags;
 use crate::models::{Author, Comment, Post, PostCategory};
 use crate::panel::{IMAGE_EXTENSIONS, IMAGE_MAX_BYTES};
 use crate::roles::{self, Domain};
@@ -41,9 +42,7 @@ impl Resource for PostResource {
                             .searchable()
                             .label(tablo::text!("label-category")),
                         c.published_at.label(tablo::text!("label-publishing-date")),
-                        c.tags
-                            .label(tablo::text!("label-tags"))
-                            .placeholder(tablo::text!("hint-tags")),
+                        c.tags.label(tablo::text!("label-tags")),
                     )),
                 ),
                 Section::new(tablo::text!("section-image")).schema(
@@ -53,10 +52,8 @@ impl Resource for PostResource {
                 ),
             )))
             .record_title(lens!(Post.title))
-            // The comments of a post, as `ManagePostComments` manages them.
             .relation(Relation::has_many::<CommentResource>(Comment::fields().post_id()).tab())
             .action::<TogglePostPublish>()
-            // The published and draft articles, above the list.
             .list_widget::<PostStatusWidget>()
     }
 
@@ -102,6 +99,9 @@ fn post_table() -> Table<Post> {
             .label(tablo::text!("label-author"))
             .toggleable(),
         PostStatusColumn,
+        ListColumn::new(lens!(Post.tags))
+            .label(tablo::text!("label-tags"))
+            .toggleable(),
         RelationColumn::of::<PostCategoryResource>(relation!(Post.post_category))
             .label(tablo::text!("label-post-category"))
             .toggleable()
@@ -130,7 +130,7 @@ fn post_detail() -> Detail<Post> {
                     .label(tablo::text!("label-author")),
                 RelationColumn::of::<PostCategoryResource>(relation!(Post.post_category))
                     .label(tablo::text!("label-category")),
-                TextColumn::new(lens!(Post.tags)),
+                ListColumn::new(lens!(Post.tags)).label(tablo::text!("label-tags")),
             )),
             ImageColumn::new(lens!(Post.image)),
         )),
@@ -151,8 +151,8 @@ pub struct PostForm {
     #[form(relationship = PostCategoryResource)]
     pub post_category_id: Option<u64>,
     pub published_at: Option<jiff::civil::Date>,
-    #[form(optional)]
-    pub tags: String,
+    #[form(tags, options = PostTags)]
+    pub tags: Vec<String>,
     #[form(file, optional)]
     pub image: String,
 }
@@ -367,7 +367,6 @@ impl Resource for CommentResource {
         let c = CommentForm::controls();
         ResourceDef::new()
             .icon(crate::icons::COMMENTS)
-            // Reached through its owner's tab, so it has no sidebar entry.
             .navigation_hidden()
             .policy(roles::policy(Domain::Shop))
             .table(Table::new((

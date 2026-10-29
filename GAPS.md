@@ -10,7 +10,7 @@ cannot, and what blocks it.
 | Polymorphic relations (addresses, comments), so no Attach/Detach on addresses | Toasty has no polymorphic relation; two nullable keys instead |
 | `Customer::payments` (has-many-through) is not shown | Toasty has no through relation |
 | Money is `f64`, not `decimal(10,2)` | SQLite stores a decimal as text, so a price or total column cannot sort numerically |
-| Post tags are a comma-separated string | no tag input, no polymorphic pivot |
+| Post tags are a list on the post, not rows shared between models | Toasty has no polymorphic pivot |
 
 ## Tables
 
@@ -34,7 +34,6 @@ cannot, and what blocks it.
 | Nested relationship forms (order address, order items, expense lines) | a repeater edits a `#[document]` list, not related rows |
 | Wizards (create order, create expense) | no wizard |
 | `createOptionForm` on the order's customer | no create-in-place |
-| Skills and labels checkbox lists | a multiple choice must bind a many-to-many field, not `Vec<String>` |
 | Employee metadata (`KeyValue`), project plan (`Builder`) | no key-value or block builder field |
 | Colour picker, masked phone and hours | no colour or mask control |
 | `required()` on nullable columns (product slug, SKU, barcode; shipping price) | an `Option` field always has a blank answer |
