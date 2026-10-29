@@ -114,9 +114,7 @@ impl Resource for ProductResource {
                     .detail(tablo::text!("label-sku"), lens!(Product.sku))
                     .detail(tablo::text!("label-price"), lens!(Product.price)),
             )
-            .relation(Relation::has_many::<CommentResource>(
-                Comment::fields().product_id(),
-            ))
+            .relation(Relation::has_many::<CommentResource>(Comment::fields().product_id()).tab())
             .action::<ToggleProductVisibility>()
             .action::<BulkSetProductVisibility>()
             .action::<AdjustProductPrice>()
@@ -405,9 +403,7 @@ impl Resource for BrandResource {
             .relation(Relation::has_many::<ProductResource>(
                 Product::fields().brand_id(),
             ))
-            .relation(Relation::has_many::<AddressResource>(
-                Address::fields().brand_id(),
-            ))
+            .relation(Relation::has_many::<AddressResource>(Address::fields().brand_id()).tab())
             .action::<ToggleBrandVisibility>()
     }
 
@@ -617,9 +613,7 @@ impl Resource for CustomerResource {
                     .detail(tablo::text!("label-email"), lens!(Customer.email))
                     .detail(tablo::text!("label-phone"), lens!(Customer.phone)),
             )
-            .relation(Relation::has_many::<AddressResource>(
-                Address::fields().customer_id(),
-            ))
+            .relation(Relation::has_many::<AddressResource>(Address::fields().customer_id()).tab())
             .action::<SendCustomerEmail>()
             .soft_delete(lens!(Customer.deleted_at))
     }
@@ -768,15 +762,11 @@ impl Resource for OrderResource {
                     .detail(tablo::text!("label-status"), lens!(Order.status))
                     .detail(tablo::text!("label-total"), lens!(Order.total_price)),
             )
-            .relation(Relation::has_many::<OrderItemResource>(
-                OrderItem::fields().order_id(),
-            ))
-            .relation(Relation::has_many::<OrderAddressResource>(
-                OrderAddress::fields().order_id(),
-            ))
-            .relation(Relation::has_many::<PaymentResource>(
-                Payment::fields().order_id(),
-            ))
+            .relation(Relation::has_many::<OrderItemResource>(OrderItem::fields().order_id()).tab())
+            .relation(
+                Relation::has_many::<OrderAddressResource>(OrderAddress::fields().order_id()).tab(),
+            )
+            .relation(Relation::has_many::<PaymentResource>(Payment::fields().order_id()).tab())
             .action::<ProcessOrder>()
             .action::<ShipOrder>()
             .action::<DeliverOrder>()
@@ -820,7 +810,9 @@ fn order_table() -> Table<Order> {
     .action_layout(ActionLayout::Menu)
     .row_color(|order: &Order| (order.status == OrderStatus::Cancelled).then_some(Color::Danger))
     .row_color_reading(Reads::of(lens!(Order.status)))
-    .option_tabs(|status: OrderStatus| Order::fields().status().eq(status))
+    .option_tabs(lens!(Order.status), |status: OrderStatus| {
+        Order::fields().status().eq(status)
+    })
     .filters((DateFilter::new(lens!(Order.created_at))
         .label(tablo::text!("label-order-date"))
         .range(),))
@@ -1025,8 +1017,8 @@ impl Resource for OrderItemResource {
         let c = OrderItemForm::controls();
         ResourceDef::new()
             .icon(crate::icons::ORDER_ITEMS)
-            .navigation_group(tablo::text!("navigation-shop"))
-            .navigation_order(10)
+            // Reached through its owner's tab, so it has no sidebar entry.
+            .navigation_hidden()
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(Table::new((
@@ -1093,8 +1085,8 @@ impl Resource for PaymentResource {
         let c = PaymentForm::controls();
         ResourceDef::new()
             .icon(crate::icons::PAYMENTS)
-            .navigation_group(tablo::text!("navigation-shop"))
-            .navigation_order(11)
+            // Reached through its owner's tab, so it has no sidebar entry.
+            .navigation_hidden()
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(Table::new((
@@ -1172,8 +1164,8 @@ impl Resource for AddressResource {
         let c = AddressForm::controls();
         ResourceDef::new()
             .icon(crate::icons::ADDRESSES)
-            .navigation_group(tablo::text!("navigation-shop"))
-            .navigation_order(12)
+            // Reached through its owner's tab, so it has no sidebar entry.
+            .navigation_hidden()
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(
@@ -1245,8 +1237,8 @@ impl Resource for OrderAddressResource {
         let c = OrderAddressForm::controls();
         ResourceDef::new()
             .icon(crate::icons::ORDER_ADDRESSES)
-            .navigation_group(tablo::text!("navigation-shop"))
-            .navigation_order(13)
+            // Reached through its owner's tab, so it has no sidebar entry.
+            .navigation_hidden()
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(Table::new((

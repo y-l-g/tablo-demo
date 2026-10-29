@@ -2,11 +2,11 @@
 
 use jiff::{Span, Timestamp, Zoned};
 use tablo::{
-    Action, ActionLayout, BooleanColumn, Color, ColorColumn, ComputedColumn, CountColumn, Currency,
+    Action, ActionLayout, BooleanColumn, ColorColumn, ComputedColumn, CountColumn, Currency,
     DateColumn, DateFilter, Detail, FieldAccess, FileColumn, FormInput, GlobalSearch, Grid,
-    Outcome, Places, Reads, RecordForm, Relation, RelationColumn, Resource, ResourceDef, Schema,
-    Section, SelectColumn, SelectFilter, Tab, Table, Tabs, TernaryFilter, Text, TextColumn,
-    WriteError, lens, relation,
+    Outcome, Places, RecordForm, Relation, RelationColumn, Resource, ResourceDef, Schema, Section,
+    SelectColumn, SelectFilter, Tab, Table, Tabs, TernaryFilter, Text, TextColumn, WriteError,
+    lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -343,9 +343,10 @@ fn employee_table() -> Table<Employee> {
     ))
     .default_sort(lens!(Employee.name))
     .action_layout(ActionLayout::Menu)
-    .option_tabs(|employment_type: EmploymentType| {
-        Employee::fields().employment_type().eq(employment_type)
-    })
+    .option_tabs(
+        lens!(Employee.employment_type),
+        |employment_type: EmploymentType| Employee::fields().employment_type().eq(employment_type),
+    )
     .filters((
         SelectFilter::relationship::<DepartmentResource>(lens!(Employee.department_id))
             .label(tablo::text!("label-department")),
@@ -556,11 +557,9 @@ impl Resource for LeaveRequestResource {
                 ))
                 .default_sort_desc(lens!(LeaveRequest.start_date))
                 .action_layout(ActionLayout::Menu)
-                .row_color(|request: &LeaveRequest| {
-                    (request.status == LeaveStatus::Rejected).then_some(Color::Danger)
+                .option_tabs(lens!(LeaveRequest.status), |status: LeaveStatus| {
+                    LeaveRequest::fields().status().eq(status)
                 })
-                .row_color_reading(Reads::of(lens!(LeaveRequest.status)))
-                .option_tabs(|status: LeaveStatus| LeaveRequest::fields().status().eq(status))
                 .filters((
                     SelectFilter::of(lens!(LeaveRequest.kind)).label(tablo::text!("label-type")),
                 )),
@@ -1846,11 +1845,9 @@ impl Resource for ExpenseResource {
                         .toggleable(),
                 ))
                 .action_layout(ActionLayout::Menu)
-                .row_color(|expense: &Expense| {
-                    (expense.status == ExpenseStatus::Rejected).then_some(Color::Danger)
+                .option_tabs(lens!(Expense.status), |status: ExpenseStatus| {
+                    Expense::fields().status().eq(status)
                 })
-                .row_color_reading(Reads::of(lens!(Expense.status)))
-                .option_tabs(|status: ExpenseStatus| Expense::fields().status().eq(status))
                 .filters((
                     SelectFilter::of(lens!(Expense.category)),
                     SelectFilter::relationship::<EmployeeResource>(lens!(Expense.employee_id))
@@ -1907,9 +1904,9 @@ impl Resource for ExpenseResource {
                 ),
             )))
             .record_title(lens!(Expense.expense_number))
-            .relation(Relation::has_many::<ExpenseLineResource>(
-                ExpenseLine::fields().expense_id(),
-            ))
+            .relation(
+                Relation::has_many::<ExpenseLineResource>(ExpenseLine::fields().expense_id()).tab(),
+            )
             .action::<SubmitExpense>()
             .action::<ApproveExpense>()
             .action::<RejectExpense>()
@@ -2130,8 +2127,8 @@ impl Resource for ExpenseLineResource {
         let c = ExpenseLineForm::controls();
         ResourceDef::new()
             .icon(crate::icons::EXPENSE_LINES)
-            .navigation_group(tablo::text!("navigation-hr"))
-            .navigation_order(4)
+            // Reached through its owner's tab, so it has no sidebar entry.
+            .navigation_hidden()
             .policy(roles::policy(Domain::Hr))
             .without_global_search()
             .table(Table::new((
