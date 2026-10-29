@@ -11,8 +11,8 @@ use std::{
 
 use jiff::{Timestamp, Zoned, civil::Date};
 use tablo::{
-    Chart, Color, FormScalar, Page, PageDef, RecordTable, Resource, Series, Stat, Text, Trend,
-    Widget, WidgetDef, can_list, db::db, scoped_query,
+    Chart, Color, Currency, FormScalar, Page, PageDef, RecordTable, Resource, Series, Stat, Text,
+    Trend, Widget, WidgetDef, can_list, db::db, scoped_query,
 };
 use topcoat::{
     Result,
@@ -27,9 +27,7 @@ use crate::{
         DepartmentResource, EmployeeResource, ExpenseResource, LeaveRequestResource,
         ProjectResource, TimesheetResource,
     },
-    models::{
-        Customer, Employee, Expense, LeaveRequest, Order, Post, Product, Timesheet, dollars, money,
-    },
+    models::{Customer, Employee, Expense, LeaveRequest, Order, Post, Product, Timesheet},
     roles::{self, Domain},
     shop::{CustomerResource, OrderItemResource, OrderResource, ProductResource},
 };
@@ -161,7 +159,7 @@ impl Widget for SalesWidget {
         )
         .detail(percent_change(last.placed, before.placed));
         let average = trended(
-            Stat::new(tablo::text!("stat-average-order"), money(&last.average()))
+            Stat::new(tablo::text!("stat-average-order"), money(last.average()))
                 .chart(weeks.iter().map(Totals::average)),
             last.average(),
             before.average(),
@@ -371,7 +369,7 @@ impl Widget for CustomersWidget {
                 )),
                 Stat::new(
                     tablo::text!("stat-revenue-per-customer"),
-                    money(&revenue_per_customer),
+                    money(revenue_per_customer),
                 )
                 .detail(tablo::text!(
                     "stat-detail-revenue",
@@ -1025,6 +1023,16 @@ fn share(part: f64, total: f64) -> f64 {
     } else {
         part / total * 100.0
     }
+}
+
+/// An amount in dollars and cents, `$1,234.50`.
+fn money(amount: f64) -> String {
+    Currency::USD.format(amount)
+}
+
+/// An amount in whole dollars, `$1,235`.
+fn dollars(amount: f64) -> String {
+    Currency::USD.decimals(0).format(amount)
 }
 
 /// A percentage, rounded to one decimal.
