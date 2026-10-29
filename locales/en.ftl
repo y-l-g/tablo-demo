@@ -507,7 +507,6 @@ action-toggle-visibility = Toggle visibility
 home-lang = en
 home-document-title = Tablo demo
 home-title = Admin panels for Rust, declared beside your models.
-home-eyebrow = Built on Topcoat and Toasty
 home-lead = Two panels made with Tablo: resources, tables, forms, actions and dashboards from a few declarations.
 home-cta-admin = Explore as administrator
 home-cta-guide = Read the guide

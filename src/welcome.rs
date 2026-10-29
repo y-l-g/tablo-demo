@@ -242,11 +242,7 @@ async fn welcome(cx: &Cx) -> Result<impl View> {
 
                 <main>
                     <section class="mx-auto mt-16 max-w-3xl text-center sm:mt-24">
-                        <span class="inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-3 py-1 text-xs font-medium text-muted-foreground shadow-xs backdrop-blur">
-                            <span class="size-1.5 rounded-full bg-primary"></span>
-                            (t("home-eyebrow"))
-                        </span>
-                        <h1 class="mt-6 text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
+                        <h1 class="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
                             (t("home-title"))
                         </h1>
                         <p class="mx-auto mt-5 max-w-2xl text-base text-muted-foreground text-pretty sm:text-lg">
