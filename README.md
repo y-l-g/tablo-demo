@@ -12,7 +12,8 @@ Two panels are mounted:
 | `app`   | `/app`   | the tenant panel: every auth page, a team switcher and the settings page             |
 
 The page at `/` introduces both, with a button per demo account that signs in to
-it, and switches for the language and the theme that the panels share. It is
+it, a tour of what Tablo covers, and switches for the language and the theme that
+the panels share. It is
 public, rendered in the admin panel's document and catalog through its
 `PanelHandle`, in [`src/welcome.rs`](src/welcome.rs).
 
@@ -56,7 +57,10 @@ cargo run
 ```
 
 The database is in-memory SQLite, created and seeded on every start, so a restart
-is always a clean demo. `topcoat dev` builds the asset bundle and serves the app
+is always a clean demo. The seed covers a year of a shop that grows, with its
+orders paid, shipped and now and then cancelled; its product shots and blog
+covers are generated art in [`assets/seed/`](assets/seed/), copied to the upload
+directory at start. `topcoat dev` builds the asset bundle and serves the app
 the way a release build does; a plain `cargo run` needs `topcoat asset bundle`
 first, because the panel serves its stylesheet, font and scripts from a bundle
 beside the executable.
@@ -97,7 +101,8 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   orders are tinted.
 - **Forms** with choice enums, relationship choices, dependent choices,
   conditional fields, tabs, embedded values, `has_many` and `belongs_to` writes,
-  and file uploads, a product's gallery of up to four images among them,
+  tags edited as lists with suggestions (a post's tags, an employee's skills, a
+  task's labels), and file uploads, a product's gallery of up to four images among them,
   checked by extension and size before they are stored and
   served only at signed links that expire.
 - **Actions**, record and bulk, with input dialogs, confirmation and success
@@ -105,12 +110,15 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
 - **Dashboards** built from Tablo's widgets, each page a grid of them: figures
   as stat tiles with trends and sparklines, linked to the lists they count and
   to their filtered lists; line and bar charts over the last twelve weeks, of
-  revenue and of hours booked, billable and not; and tables of the newest posts
+  revenue, orders placed and hours booked, billable and not, and of each
+  department's headcount against its seats; and tables of the newest posts
   and orders, and of the leave and expenses waiting for a decision, each row
   linking to its record.
 - **List widgets** above three lists, the orders, leave requests and posts: the
   order pipeline, the leave requests by status, and the articles by publishing
   state. The order and leave figures link to their list tabs.
+- **Theming** through Tablo's tokens: [`styles.css`](styles.css) gives both
+  panels an indigo brand, in light and dark.
 - **Navigation** that swaps the page in place, and an icon of its own for every
   sidebar entry, from a Lucide subset the build stages.
 - **Auth** on the `app` panel: sign-up, password reset, email verification, a
