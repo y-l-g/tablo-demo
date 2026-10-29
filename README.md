@@ -88,11 +88,17 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
 ## What it covers
 
 - **Resources** for twenty-one tables across four domains, each with a list, a
-  record form, a detail page and its relations.
-- **Tables** with search, sort, filters, grouping, pagination and CSV export.
+  record form, a detail page and its relations. A record's child tables, its
+  comments, addresses, order items, payments and expense lines, are tabs on its
+  page, so their resources have no sidebar entry.
+- **Tables** with search, sort, filters, grouping, pagination and CSV export,
+  status tabs with their counts, and switches and selects that save in their
+  cells: a product's or a brand's visibility, a leave request's status. Cancelled
+  orders are tinted.
 - **Forms** with choice enums, relationship choices, dependent choices,
   conditional fields, tabs, embedded values, `has_many` and `belongs_to` writes,
-  and file uploads, checked by extension and size before they are stored and
+  and file uploads, a product's gallery of up to four images among them,
+  checked by extension and size before they are stored and
   served only at signed links that expire.
 - **Actions**, record and bulk, with input dialogs, confirmation and success
   notifications.
@@ -104,7 +110,7 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   linking to its record.
 - **List widgets** above three lists, the orders, leave requests and posts: the
   order pipeline, the leave requests by status, and the articles by publishing
-  state. The order and leave figures link to their filtered lists.
+  state. The order and leave figures link to their list tabs.
 - **Navigation** that swaps the page in place, and an icon of its own for every
   sidebar entry, from a Lucide subset the build stages.
 - **Auth** on the `app` panel: sign-up, password reset, email verification, a

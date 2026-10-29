@@ -10,7 +10,6 @@ cannot, and what blocks it.
 | Polymorphic relations (addresses, comments), so no Attach/Detach on addresses | Toasty has no polymorphic relation; two nullable keys instead |
 | `Customer::payments` (has-many-through) is not shown | Toasty has no through relation |
 | Money is `f64`, not `decimal(10,2)` | Tablo binds no decimal type, and an app cannot add one |
-| Several images per product (`multiple`, `maxFiles`, `reorderable`) | a file field binds one `String` column |
 | Post tags are a comma-separated string | no tag input, no polymorphic pivot |
 
 ## Tables
@@ -20,14 +19,11 @@ cannot, and what blocks it.
 | Summaries (`Sum`, `Average`, `Count`, `Range`) | no summarizer |
 | Several groupings per table (tasks, timesheets) | `group_by` takes one lens |
 | Five default sorts (brands by `sort`; tasks, expenses, comments, payments by `created_at`) | a default sort must name a sortable column the table shows |
-| Inline editing (`SelectColumn` on leave status) | no editable column |
 | Product `QueryBuilder` | no query builder; fixed filters instead |
-| Status tabs with badges (orders, employees, leave requests, expenses) | no list tabs; select filters instead |
-| Row colours (`recordClasses`) | no row classes |
+| Row colours on leave requests and expenses (`recordClasses`) | a row colour refuses a page whose columns load employees, whose salary is restricted |
 | Link columns and actions (GitHub, Twitter, website, "open product") | an action is a mutation; a column renders no link |
 | Per-row currency on payments | `money` takes one currency per column |
 | Post status badge | a computed column renders no badge |
-| Option icons (`HasIcon`) | options carry a colour, not an icon |
 | `copyable`, `limit`, `tooltip`, `weight`, empty-value `placeholder` | no equivalent |
 | `poll`, `deferFilters`, collapsible filters, `stackedOnMobile` | no equivalent |
 | Drag to reorder brands | no reorderable table |
@@ -51,7 +47,6 @@ cannot, and what blocks it.
 
 | Gap | Blocker |
 | --- | --- |
-| Relation tables are on the detail page, not the edit page; Comments, Addresses, Order items, Order addresses, Payments and Expense lines get sidebar entries | a relation renders a registered resource, every registered resource has a sidebar entry, and a related table on the edit page would reset the form |
 | Nested URLs (`shop/orders`) | a slug is one URL segment |
 | Delete shows a "don't be cheeky" warning instead of deleting | the built-in Delete cannot be replaced |
 | "Toggle billable" greys out on an old timesheet | `can_run` hides the button instead |
