@@ -5,7 +5,7 @@ use tablo::{
     Action, ActionLayout, BooleanColumn, ColorColumn, ComputedColumn, CountColumn, Currency,
     DateColumn, DateFilter, Detail, FieldAccess, FileColumn, FormInput, GlobalSearch, Grid,
     Outcome, Places, RecordForm, Relation, RelationColumn, Resource, ResourceDef, Schema, Section,
-    SelectFilter, Tab, Table, Tabs, TernaryFilter, TextColumn, WriteError, lens, relation,
+    SelectFilter, Tab, Table, Tabs, TernaryFilter, Text, TextColumn, WriteError, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -136,8 +136,8 @@ impl Action<DepartmentResource> for AdjustDepartmentBudget {
         Ok(Outcome::done())
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-budget-saved")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-budget-saved")
     }
 }
 
@@ -173,8 +173,8 @@ impl Action<DepartmentResource> for ReplicateDepartment {
         Ok(Outcome::done())
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-department-replicated")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-department-replicated")
     }
 }
 
@@ -427,8 +427,8 @@ impl Action<EmployeeResource> for BulkChangeEmployeeDepartment {
     const NAME: &'static str = "bulk-change-department";
     const PLACES: Places = Places::BULK;
 
-    fn label(cx: &Cx) -> String {
-        tablo::t!(cx, "action-bulk-change-department")
+    fn label() -> Text {
+        tablo::text!("action-bulk-change-department")
     }
 
     async fn run(
@@ -440,8 +440,8 @@ impl Action<EmployeeResource> for BulkChangeEmployeeDepartment {
         move_department(employees, choice.department_id, ex).await
     }
 
-    fn success(cx: &Cx, count: usize) -> String {
-        tablo::t!(cx, "flash-employees-moved", count = count)
+    fn success(count: usize) -> Text {
+        tablo::text!("flash-employees-moved", count = count)
     }
 }
 
@@ -488,8 +488,8 @@ impl Action<EmployeeResource> for BulkSetEmployeeActive {
     const NAME: &'static str = "bulk-set-active";
     const PLACES: Places = Places::BULK;
 
-    fn label(cx: &Cx) -> String {
-        tablo::t!(cx, "action-bulk-set-active")
+    fn label() -> Text {
+        tablo::text!("action-bulk-set-active")
     }
 
     async fn run(
@@ -508,8 +508,8 @@ impl Action<EmployeeResource> for BulkSetEmployeeActive {
         Ok(Outcome::done())
     }
 
-    fn success(cx: &Cx, count: usize) -> String {
-        tablo::t!(cx, "flash-employees-updated", count = count)
+    fn success(count: usize) -> Text {
+        tablo::text!("flash-employees-updated", count = count)
     }
 }
 
@@ -753,8 +753,8 @@ impl Action<LeaveRequestResource> for ApproveLeaveRequest {
         review(requests, LeaveStatus::Approved, None, ex).await
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-leave-approved")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-leave-approved")
     }
 }
 
@@ -785,8 +785,8 @@ impl Action<LeaveRequestResource> for RejectLeaveRequest {
         .await
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-leave-rejected")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-leave-rejected")
     }
 }
 
@@ -798,8 +798,8 @@ impl Action<LeaveRequestResource> for BulkApproveLeaveRequests {
     const NAME: &'static str = "bulk-approve";
     const PLACES: Places = Places::BULK;
 
-    fn label(cx: &Cx) -> String {
-        tablo::t!(cx, "action-bulk-approve")
+    fn label() -> Text {
+        tablo::text!("action-bulk-approve")
     }
     const CONFIRM: bool = true;
 
@@ -816,8 +816,8 @@ impl Action<LeaveRequestResource> for BulkApproveLeaveRequests {
         review(requests, LeaveStatus::Approved, None, ex).await
     }
 
-    fn success(cx: &Cx, count: usize) -> String {
-        tablo::t!(cx, "flash-leaves-approved", count = count)
+    fn success(count: usize) -> Text {
+        tablo::text!("flash-leaves-approved", count = count)
     }
 }
 
@@ -829,8 +829,8 @@ impl Action<LeaveRequestResource> for BulkRejectLeaveRequests {
     const NAME: &'static str = "bulk-reject";
     const PLACES: Places = Places::BULK;
 
-    fn label(cx: &Cx) -> String {
-        tablo::t!(cx, "action-bulk-reject")
+    fn label() -> Text {
+        tablo::text!("action-bulk-reject")
     }
 
     fn can_run(_cx: &Cx, request: &LeaveRequest) -> bool {
@@ -852,8 +852,8 @@ impl Action<LeaveRequestResource> for BulkRejectLeaveRequests {
         .await
     }
 
-    fn success(cx: &Cx, count: usize) -> String {
-        tablo::t!(cx, "flash-leaves-rejected", count = count)
+    fn success(count: usize) -> Text {
+        tablo::text!("flash-leaves-rejected", count = count)
     }
 }
 
@@ -1054,8 +1054,8 @@ impl Action<ProjectResource> for ChangeProjectStatus {
         set_project_status(projects, change.status, ex).await
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-project-saved")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-project-saved")
     }
 }
 
@@ -1081,8 +1081,8 @@ impl Action<ProjectResource> for HoldProject {
         set_project_status(projects, ProjectStatus::OnHold, ex).await
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-project-on-hold")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-project-on-hold")
     }
 }
 
@@ -1107,8 +1107,8 @@ impl Action<ProjectResource> for ResumeProject {
         set_project_status(projects, ProjectStatus::Active, ex).await
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-project-resumed")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-project-resumed")
     }
 }
 
@@ -1145,8 +1145,8 @@ impl Action<ProjectResource> for CompleteProject {
         Ok(Outcome::done())
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-project-completed")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-project-completed")
     }
 }
 
@@ -1302,8 +1302,8 @@ impl Action<TaskResource> for StartTask {
         set_task_status(tasks, TaskStatus::InProgress, ex).await
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-task-started")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-task-started")
     }
 }
 
@@ -1328,8 +1328,8 @@ impl Action<TaskResource> for SendTaskToReview {
         set_task_status(tasks, TaskStatus::InReview, ex).await
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-task-sent-to-review")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-task-sent-to-review")
     }
 }
 
@@ -1369,8 +1369,8 @@ impl Action<TaskResource> for CompleteTask {
         Ok(Outcome::done())
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-task-completed")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-task-completed")
     }
 }
 
@@ -1406,8 +1406,8 @@ impl Action<TaskResource> for BulkAssignTask {
     const NAME: &'static str = "bulk-assign";
     const PLACES: Places = Places::BULK;
 
-    fn label(cx: &Cx) -> String {
-        tablo::t!(cx, "action-bulk-assign")
+    fn label() -> Text {
+        tablo::text!("action-bulk-assign")
     }
 
     async fn run(
@@ -1419,8 +1419,8 @@ impl Action<TaskResource> for BulkAssignTask {
         assign(tasks, choice.assigned_to, ex).await
     }
 
-    fn success(cx: &Cx, count: usize) -> String {
-        tablo::t!(cx, "flash-tasks-assigned", count = count)
+    fn success(count: usize) -> Text {
+        tablo::text!("flash-tasks-assigned", count = count)
     }
 }
 
@@ -1487,8 +1487,8 @@ impl Action<TaskResource> for BulkSetTaskStatus {
     const NAME: &'static str = "bulk-set-status";
     const PLACES: Places = Places::BULK;
 
-    fn label(cx: &Cx) -> String {
-        tablo::t!(cx, "action-bulk-set-status")
+    fn label() -> Text {
+        tablo::text!("action-bulk-set-status")
     }
 
     async fn run(
@@ -1500,8 +1500,8 @@ impl Action<TaskResource> for BulkSetTaskStatus {
         set_task_status(tasks, change.status, ex).await
     }
 
-    fn success(cx: &Cx, count: usize) -> String {
-        tablo::t!(cx, "flash-tasks-updated", count = count)
+    fn success(count: usize) -> Text {
+        tablo::text!("flash-tasks-updated", count = count)
     }
 }
 
@@ -1538,8 +1538,8 @@ impl Action<TaskResource> for ReplicateTask {
         Ok(Outcome::done())
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-task-replicated")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-task-replicated")
     }
 }
 
@@ -1759,8 +1759,8 @@ impl Action<TimesheetResource> for BulkMarkBillable {
         set_billable(timesheets, true, ex).await
     }
 
-    fn success(cx: &Cx, count: usize) -> String {
-        tablo::t!(cx, "flash-timesheets-billable", count = count)
+    fn success(count: usize) -> Text {
+        tablo::text!("flash-timesheets-billable", count = count)
     }
 }
 
@@ -1782,8 +1782,8 @@ impl Action<TimesheetResource> for BulkMarkNonBillable {
         set_billable(timesheets, false, ex).await
     }
 
-    fn success(cx: &Cx, count: usize) -> String {
-        tablo::t!(cx, "flash-timesheets-not-billable", count = count)
+    fn success(count: usize) -> Text {
+        tablo::text!("flash-timesheets-not-billable", count = count)
     }
 }
 
@@ -1962,8 +1962,8 @@ impl Action<ExpenseResource> for SubmitExpense {
         Ok(Outcome::done())
     }
 
-    fn success(cx: &Cx, count: usize) -> String {
-        tablo::t!(cx, "flash-expenses-submitted", count = count)
+    fn success(count: usize) -> Text {
+        tablo::text!("flash-expenses-submitted", count = count)
     }
 }
 
@@ -1997,8 +1997,8 @@ impl Action<ExpenseResource> for ApproveExpense {
         Ok(Outcome::done())
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-expense-approved")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-expense-approved")
     }
 }
 
@@ -2038,8 +2038,8 @@ impl Action<ExpenseResource> for RejectExpense {
         Ok(Outcome::done())
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-expense-rejected")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-expense-rejected")
     }
 }
 
@@ -2072,8 +2072,8 @@ impl Action<ExpenseResource> for ReimburseExpense {
         Ok(Outcome::done())
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-expense-reimbursed")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-expense-reimbursed")
     }
 }
 
@@ -2102,8 +2102,8 @@ impl Action<ExpenseResource> for FlagExpense {
         Ok(Outcome::done())
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-expense-flagged")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-expense-flagged")
     }
 }
 

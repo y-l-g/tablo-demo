@@ -5,7 +5,7 @@ FROM rust:1.99-bookworm AS builder
 # The CLI bundles the assets the panel loads at runtime. It must come from the
 # same Topcoat commit as the `[patch.crates-io]` section of Cargo.toml, or the
 # bundle it writes is unreadable.
-ARG TOPCOAT_REV=01bd585394891052a4bd68213a36ac8f8e8687c9
+ARG TOPCOAT_REV=d84362b72bc1034a8342e00c1cdf1a36d68dd9cf
 
 WORKDIR /src/tablo-demo
 COPY . .

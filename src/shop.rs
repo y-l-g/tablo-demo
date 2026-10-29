@@ -266,8 +266,8 @@ impl Action<ProductResource> for BulkSetProductVisibility {
         Ok(Outcome::done())
     }
 
-    fn label(cx: &Cx) -> String {
-        tablo::t!(cx, "action-set-visibility")
+    fn label() -> Text {
+        tablo::text!("action-set-visibility")
     }
 }
 
@@ -318,10 +318,13 @@ impl Action<ProductResource> for AdjustProductStock {
     const NAME: &'static str = "adjust-stock";
     const PLACES: Places = Places::ROW;
 
-    fn validate_input(_cx: &Cx, input: &StockChange) -> FieldErrors {
+    fn validate_input(_cx: &Cx, input: &StockChange) -> FieldErrors<StockChangeField> {
         let mut errors = FieldErrors::new();
         if input.qty < 0 {
-            errors.add("qty", tablo::text!("error-quantity-negative"));
+            errors.add(
+                StockChangeField::Qty,
+                tablo::text!("error-quantity-negative"),
+            );
         }
         errors
     }
@@ -707,8 +710,8 @@ impl Action<CustomerResource> for SendCustomerEmail {
         Ok(Outcome::done())
     }
 
-    fn success(cx: &Cx, count: usize) -> String {
-        tablo::t!(cx, "flash-email-sent", count = count)
+    fn success(count: usize) -> Text {
+        tablo::text!("flash-email-sent", count = count)
     }
 }
 
@@ -854,8 +857,8 @@ impl Action<OrderResource> for ProcessOrder {
         set_status(orders, OrderStatus::Processing, ex).await
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-order-processing")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-order-processing")
     }
 }
 
@@ -895,8 +898,8 @@ impl Action<OrderResource> for ShipOrder {
         Ok(Outcome::done())
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-order-shipped")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-order-shipped")
     }
 }
 
@@ -922,8 +925,8 @@ impl Action<OrderResource> for DeliverOrder {
         set_status(orders, OrderStatus::Delivered, ex).await
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-order-delivered")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-order-delivered")
     }
 }
 
@@ -958,8 +961,8 @@ impl Action<OrderResource> for ReplicateOrder {
         Ok(Outcome::done())
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-order-replicated")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-order-replicated")
     }
 }
 
@@ -988,8 +991,8 @@ impl Action<OrderResource> for CancelOrder {
         set_status(orders, OrderStatus::Cancelled, ex).await
     }
 
-    fn success(cx: &Cx, _count: usize) -> String {
-        tablo::t!(cx, "flash-order-cancelled")
+    fn success(_count: usize) -> Text {
+        tablo::text!("flash-order-cancelled")
     }
 }
 

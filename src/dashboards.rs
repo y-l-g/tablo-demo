@@ -111,9 +111,10 @@ impl Widget for LatestPostsWidget {
     async fn render(cx: &Cx) -> Result<impl View> {
         let table = RecordTable::new()
             .heading(tablo::text!("widget-latest-posts"))
-            // A relation column takes its label's key as its name, so the author column is named
-            // `label-author`.
-            .columns(["title", "label-author", "published_at"])
+            .column(Post::fields().title())
+            // A relation column is named by its label's key, as the list names it.
+            .column_named("label-author")
+            .column(Post::fields().published_at())
             .order_by(Post::fields().created_at().desc());
         Ok(contained(
             cx,
@@ -315,13 +316,11 @@ impl Widget for LatestOrdersWidget {
     async fn render(cx: &Cx) -> Result<impl View> {
         let table = RecordTable::new()
             .heading(tablo::text!("widget-latest-orders"))
-            .columns([
-                "number",
-                "label-customer",
-                "status",
-                "total_price",
-                "created_at",
-            ])
+            .column(Order::fields().number())
+            .column_named("label-customer")
+            .column(Order::fields().status())
+            .column(Order::fields().total_price())
+            .column(Order::fields().created_at())
             .order_by(Order::fields().created_at().desc());
         Ok(contained(
             cx,
@@ -726,7 +725,10 @@ impl Widget for LeaveQueueWidget {
         let table = RecordTable::new()
             .heading(tablo::text!("widget-leave-queue"))
             .description(tablo::text!("widget-queue-description"))
-            .columns(["label-employee", "kind", "start_date", "end_date"])
+            .column_named("label-employee")
+            .column(LeaveRequest::fields().kind())
+            .column(LeaveRequest::fields().start_date())
+            .column(LeaveRequest::fields().end_date())
             .filter(LeaveRequest::fields().status().eq(LeaveStatus::Pending))
             .order_by(LeaveRequest::fields().created_at().asc());
         Ok(contained(
@@ -751,12 +753,10 @@ impl Widget for ExpenseQueueWidget {
         let table = RecordTable::new()
             .heading(tablo::text!("widget-expense-queue"))
             .description(tablo::text!("widget-queue-description"))
-            .columns([
-                "expense_number",
-                "label-employee",
-                "total_amount",
-                "submitted_at",
-            ])
+            .column(Expense::fields().expense_number())
+            .column_named("label-employee")
+            .column(Expense::fields().total_amount())
+            .column(Expense::fields().submitted_at())
             .filter(Expense::fields().status().eq(ExpenseStatus::Submitted))
             .order_by(Expense::fields().submitted_at().asc());
         Ok(contained(
