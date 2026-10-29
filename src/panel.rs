@@ -207,7 +207,6 @@ pub fn router(db: Db) -> Router {
         .discover()
         .with(db)
         .with(cookie_key())
-        // The app panel's mail goes out through the SMTP server the environment names.
         .mail(MailConfig::builder().transport(Postbox::from_env()).build())
         .assets(bundle)
         .panel(admin_panel().shell_assets(tailwind::stylesheet!(), ALBERT_SANS))

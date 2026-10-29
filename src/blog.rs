@@ -53,10 +53,8 @@ impl Resource for PostResource {
                 ),
             )))
             .record_title(lens!(Post.title))
-            // The comments of a post, as `ManagePostComments` manages them.
             .relation(Relation::has_many::<CommentResource>(Comment::fields().post_id()).tab())
             .action::<TogglePostPublish>()
-            // The published and draft articles, above the list.
             .list_widget::<PostStatusWidget>()
     }
 
@@ -367,7 +365,6 @@ impl Resource for CommentResource {
         let c = CommentForm::controls();
         ResourceDef::new()
             .icon(crate::icons::COMMENTS)
-            // Reached through its owner's tab, so it has no sidebar entry.
             .navigation_hidden()
             .policy(roles::policy(Domain::Shop))
             .table(Table::new((

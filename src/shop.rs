@@ -52,7 +52,6 @@ impl Resource for ProductResource {
                     c.image
                         .extensions(IMAGE_EXTENSIONS)
                         .max_bytes(IMAGE_MAX_BYTES),
-                    // Reordered by drag or its buttons, and four at most.
                     c.gallery
                         .extensions(IMAGE_EXTENSIONS)
                         .max_bytes(IMAGE_MAX_BYTES)
@@ -784,7 +783,6 @@ impl Resource for OrderResource {
             .action::<ReplicateOrder>()
             .action::<CancelOrder>()
             .soft_delete(lens!(Order.deleted_at))
-            // The pipeline the shop dashboard counts, above the orders it counts.
             .list_widget::<PipelineWidget>()
     }
 
@@ -1028,7 +1026,6 @@ impl Resource for OrderItemResource {
         let c = OrderItemForm::controls();
         ResourceDef::new()
             .icon(crate::icons::ORDER_ITEMS)
-            // Reached through its owner's tab, so it has no sidebar entry.
             .navigation_hidden()
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
@@ -1096,7 +1093,6 @@ impl Resource for PaymentResource {
         let c = PaymentForm::controls();
         ResourceDef::new()
             .icon(crate::icons::PAYMENTS)
-            // Reached through its owner's tab, so it has no sidebar entry.
             .navigation_hidden()
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
@@ -1175,7 +1171,6 @@ impl Resource for AddressResource {
         let c = AddressForm::controls();
         ResourceDef::new()
             .icon(crate::icons::ADDRESSES)
-            // Reached through its owner's tab, so it has no sidebar entry.
             .navigation_hidden()
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
@@ -1248,7 +1243,6 @@ impl Resource for OrderAddressResource {
         let c = OrderAddressForm::controls();
         ResourceDef::new()
             .icon(crate::icons::ORDER_ADDRESSES)
-            // Reached through its owner's tab, so it has no sidebar entry.
             .navigation_hidden()
             .policy(roles::policy(Domain::Shop))
             .without_global_search()

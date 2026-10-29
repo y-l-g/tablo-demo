@@ -11,8 +11,8 @@ use std::{
 
 use jiff::{Timestamp, Zoned, civil::Date};
 use tablo::{
-    Chart, Color, Page, PageDef, RecordTable, Resource, Series, Stat, Text, Trend, Widget,
-    WidgetDef, can_list, db::db, scoped_query,
+    Chart, Color, FormScalar, Page, PageDef, RecordTable, Resource, Series, Stat, Text, Trend,
+    Widget, WidgetDef, can_list, db::db, scoped_query,
 };
 use topcoat::{
     Result,
@@ -50,23 +50,12 @@ impl Page for Dashboard {
     fn declare() -> PageDef {
         PageDef::new()
             .label(tablo::text!("page-welcome"))
+            .title(tablo::text!("page-welcome-title"))
+            .description(tablo::text!("page-welcome-description"))
             .icon(crate::icons::WELCOME)
             .navigation_order(-2)
             .widget::<RecordsWidget>()
             .widget::<LatestPostsWidget>()
-    }
-
-    async fn render(cx: &Cx) -> Result<impl View> {
-        Ok(view! {
-            cx =>
-            tablo::ui::page(
-                tablo::ui::page_header(
-                    tablo::ui::page_title((tablo::t!(cx, "page-welcome-title")))
-                    tablo::ui::page_description((tablo::t!(cx, "page-welcome-description")))
-                )
-                tablo::ui::page_content((tablo::widgets::<Self>(cx)))
-            )
-        })
     }
 }
 
@@ -116,10 +105,7 @@ impl Widget for LatestPostsWidget {
             .column_named("label-author")
             .column(Post::fields().published_at())
             .order_by(Post::fields().created_at().desc());
-        Ok(contained(
-            cx,
-            tablo::record_table::<PostResource>(cx, table).await?,
-        ))
+        tablo::record_table::<PostResource>(cx, table).await
     }
 }
 
@@ -131,6 +117,7 @@ impl Page for ShopDashboard {
         PageDef::new()
             .slug("shop")
             .label(tablo::text!("page-shop-dashboard"))
+            .description(tablo::text!("dashboard-shop-description"))
             .icon(crate::icons::SHOP_DASHBOARD)
             .navigation_order(2)
             // The widgets read the shop's rows directly, so the page asks the role first.
@@ -140,19 +127,6 @@ impl Page for ShopDashboard {
             .widget::<PipelineWidget>()
             .widget::<LatestOrdersWidget>()
             .widget::<CustomersWidget>()
-    }
-
-    async fn render(cx: &Cx) -> Result<impl View> {
-        Ok(view! {
-            cx =>
-            tablo::ui::page(
-                tablo::ui::page_header(
-                    tablo::ui::page_title((tablo::t!(cx, "page-shop-dashboard")))
-                    tablo::ui::page_description((tablo::t!(cx, "dashboard-shop-description")))
-                )
-                tablo::ui::page_content((tablo::widgets::<Self>(cx)))
-            )
-        })
     }
 }
 
@@ -267,7 +241,7 @@ impl Widget for PipelineWidget {
                     "stat-detail-share",
                     share = percent(share(count as f64, orders.len() as f64))
                 ))
-                .color(status_color(status));
+                .color(status.color().unwrap_or(Color::Gray));
             linked(
                 tile,
                 url.as_ref()
@@ -322,10 +296,7 @@ impl Widget for LatestOrdersWidget {
             .column(Order::fields().total_price())
             .column(Order::fields().created_at())
             .order_by(Order::fields().created_at().desc());
-        Ok(contained(
-            cx,
-            tablo::record_table::<OrderResource>(cx, table).await?,
-        ))
+        tablo::record_table::<OrderResource>(cx, table).await
     }
 }
 
@@ -419,6 +390,7 @@ impl Page for HrDashboard {
         PageDef::new()
             .slug("hr")
             .label(tablo::text!("page-hr-dashboard"))
+            .description(tablo::text!("dashboard-hr-description"))
             .icon(crate::icons::HR_DASHBOARD)
             .navigation_order(3)
             .access(|cx| roles::reaches(cx, Domain::Hr))
@@ -428,19 +400,6 @@ impl Page for HrDashboard {
             .widget::<ApprovalsWidget>()
             .widget::<LeaveQueueWidget>()
             .widget::<ExpenseQueueWidget>()
-    }
-
-    async fn render(cx: &Cx) -> Result<impl View> {
-        Ok(view! {
-            cx =>
-            tablo::ui::page(
-                tablo::ui::page_header(
-                    tablo::ui::page_title((tablo::t!(cx, "page-hr-dashboard")))
-                    tablo::ui::page_description((tablo::t!(cx, "dashboard-hr-description")))
-                )
-                tablo::ui::page_content((tablo::widgets::<Self>(cx)))
-            )
-        })
     }
 }
 
@@ -731,10 +690,7 @@ impl Widget for LeaveQueueWidget {
             .column(LeaveRequest::fields().end_date())
             .filter(LeaveRequest::fields().status().eq(LeaveStatus::Pending))
             .order_by(LeaveRequest::fields().created_at().asc());
-        Ok(contained(
-            cx,
-            tablo::record_table::<LeaveRequestResource>(cx, table).await?,
-        ))
+        tablo::record_table::<LeaveRequestResource>(cx, table).await
     }
 }
 
@@ -759,10 +715,7 @@ impl Widget for ExpenseQueueWidget {
             .column(Expense::fields().submitted_at())
             .filter(Expense::fields().status().eq(ExpenseStatus::Submitted))
             .order_by(Expense::fields().submitted_at().asc());
-        Ok(contained(
-            cx,
-            tablo::record_table::<ExpenseResource>(cx, table).await?,
-        ))
+        tablo::record_table::<ExpenseResource>(cx, table).await
     }
 }
 
@@ -800,7 +753,7 @@ impl Widget for LeaveStatusWidget {
                     "stat-detail-share-requests",
                     share = percent(share(count as f64, requests.len() as f64))
                 ))
-                .color(leave_status_color(status));
+                .color(status.color().unwrap_or(Color::Gray));
             linked(
                 tile,
                 url.as_ref()
@@ -1046,27 +999,6 @@ fn points_change(now: f64, before: f64) -> Text {
 /// `color` while `count` is above zero, and muted while nothing waits.
 fn alert(count: usize, color: Color) -> Color {
     if count > 0 { color } else { Color::Gray }
-}
-
-/// The colour an order status reads as, as the list's badges show it.
-fn status_color(status: OrderStatus) -> Color {
-    match status {
-        OrderStatus::New => Color::Info,
-        OrderStatus::Processing => Color::Warning,
-        OrderStatus::Shipped | OrderStatus::Delivered => Color::Success,
-        OrderStatus::Cancelled => Color::Danger,
-    }
-}
-
-/// The colour a leave request's status reads as, as the list's badges show it.
-fn leave_status_color(status: LeaveStatus) -> Color {
-    match status {
-        LeaveStatus::Pending => Color::Warning,
-        LeaveStatus::Approved => Color::Success,
-        LeaveStatus::Taken => Color::Info,
-        LeaveStatus::Rejected => Color::Danger,
-        LeaveStatus::Cancelled => Color::Gray,
-    }
 }
 
 /// `stat`, linked to `url` when there is one.

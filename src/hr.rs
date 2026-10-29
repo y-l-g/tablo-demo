@@ -214,8 +214,6 @@ impl Resource for EmployeeResource {
 
     fn declare() -> ResourceDef<Self> {
         let c = EmployeeForm::controls();
-        // `visible_when` borrows the field it watches, so the conditioned
-        // controls are built before the schema takes them.
         let salary = c
             .salary
             .prefix("$")
@@ -527,8 +525,6 @@ impl Resource for LeaveRequestResource {
 
     fn declare() -> ResourceDef<Self> {
         let c = LeaveRequestForm::controls();
-        // `gte` borrows the start date it compares with, so the start date is built first and
-        // the schema takes it after the comparison.
         let start_date = c.start_date;
         let end_date = c.end_date.gte(&start_date);
         ResourceDef::new()
@@ -603,7 +599,6 @@ impl Resource for LeaveRequestResource {
                         c.start_time
                             .label(tablo::text!("label-start-time-half-days")),
                         c.end_time.label(tablo::text!("label-end-time-half-days")),
-                        c.days_requested,
                         c.reason.multiline(4),
                     )),
                 ),
@@ -618,11 +613,11 @@ impl Resource for LeaveRequestResource {
                 ),
             )))
             .record_title(lens!(LeaveRequest.reason))
+            .create_column(lens!(LeaveRequest.days_requested))
             .action::<ApproveLeaveRequest>()
             .action::<RejectLeaveRequest>()
             .action::<BulkApproveLeaveRequests>()
             .action::<BulkRejectLeaveRequests>()
-            // The requests by status, above the list.
             .list_widget::<LeaveStatusWidget>()
     }
 
@@ -724,7 +719,6 @@ pub struct LeaveRequestForm {
     pub end_date: jiff::civil::Date,
     pub start_time: Option<jiff::civil::Time>,
     pub end_time: Option<jiff::civil::Time>,
-    pub days_requested: f64,
     pub reason: String,
     pub reviewer_notes: Option<String>,
     #[form(relationship = EmployeeResource)]
@@ -892,8 +886,6 @@ impl Resource for ProjectResource {
 
     fn declare() -> ResourceDef<Self> {
         let c = ProjectForm::controls();
-        // `gte` borrows the start date it compares with, so the start date is built first and
-        // the schema takes it after the comparison.
         let start_date = c.start_date;
         let end_date = c.end_date.gte(&start_date);
         ResourceDef::new()
@@ -1656,11 +1648,11 @@ impl Resource for TimesheetResource {
                         c.minutes.suffix(tablo::text!("unit-minutes")),
                         c.is_billable.switch().label(tablo::text!("label-billable")),
                         c.hourly_rate.prefix("$"),
-                        c.total_cost.prefix("$"),
                         c.description.multiline(2),
                     )),
                 ),
             ))
+            .create_column(lens!(Timesheet.total_cost))
             .action::<ToggleTimesheetBillable>()
             .action::<BulkMarkBillable>()
             .action::<BulkMarkNonBillable>()
@@ -1711,7 +1703,6 @@ pub struct TimesheetForm {
     pub description: Option<String>,
     pub is_billable: bool,
     pub hourly_rate: f64,
-    pub total_cost: f64,
 }
 
 /// Marks a recent timesheet billable or not.
@@ -2127,7 +2118,6 @@ impl Resource for ExpenseLineResource {
         let c = ExpenseLineForm::controls();
         ResourceDef::new()
             .icon(crate::icons::EXPENSE_LINES)
-            // Reached through its owner's tab, so it has no sidebar entry.
             .navigation_hidden()
             .policy(roles::policy(Domain::Hr))
             .without_global_search()
@@ -2159,12 +2149,12 @@ impl Resource for ExpenseLineResource {
                             .label(tablo::text!("label-expense")),
                         c.description,
                         c.quantity,
-                        c.unit_price,
-                        c.amount,
+                        c.unit_price.prefix("$"),
                         c.date,
                     )),
                 ),
             ))
+            .create_column(lens!(ExpenseLine.amount))
     }
 
     /// Stores the amount the quantity and the unit price come to.
@@ -2239,6 +2229,5 @@ pub struct ExpenseLineForm {
     pub description: String,
     pub quantity: i64,
     pub unit_price: f64,
-    pub amount: f64,
     pub date: jiff::civil::Date,
 }
