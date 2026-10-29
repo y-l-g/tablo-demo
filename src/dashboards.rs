@@ -14,11 +14,7 @@ use tablo::{
     Chart, Color, Currency, FormScalar, Page, PageDef, RecordTable, Resource, Series, Stat, Text,
     Trend, Widget, WidgetDef, can_list, db::db, scoped_query,
 };
-use topcoat::{
-    Result,
-    context::Cx,
-    view::{BoxView, View, ViewExt, view},
-};
+use topcoat::{Result, context::Cx, view::View};
 
 use crate::{
     blog::PostResource,
@@ -204,7 +200,7 @@ impl Widget for RevenueWidget {
                 tablo::text!("series-revenue"),
                 weeks.iter().map(|week| week.revenue),
             ));
-        Ok(contained(cx, tablo::chart(cx, chart)))
+        Ok(tablo::chart(cx, chart))
     }
 }
 
@@ -229,7 +225,7 @@ impl Widget for OrdersWidget {
                 )
                 .color(Color::Primary),
             );
-        Ok(contained(cx, tablo::chart(cx, chart)))
+        Ok(tablo::chart(cx, chart))
     }
 }
 
@@ -625,7 +621,7 @@ impl Widget for HoursWidget {
             .description(tablo::text!("chart-weeks"))
             .series(Series::new(tablo::text!("series-billable"), billable).color(Color::Primary))
             .series(Series::new(tablo::text!("series-not-billable"), other).color(Color::Gray));
-        Ok(contained(cx, tablo::chart(cx, chart)))
+        Ok(tablo::chart(cx, chart))
     }
 }
 
@@ -667,7 +663,7 @@ impl Widget for HeadcountWidget {
             .description(tablo::text!("chart-headcount-description"))
             .series(Series::new(tablo::text!("series-staffed"), staffed).color(Color::Primary))
             .series(Series::new(tablo::text!("series-seats"), seats).color(Color::Gray));
-        Ok(contained(cx, tablo::chart(cx, chart)))
+        Ok(tablo::chart(cx, chart))
     }
 }
 
@@ -878,19 +874,6 @@ async fn record_tile<R: Resource>(
             .map(|record| (days_since(now, created(record)), 1.0)),
     );
     Ok(Some(stat.chart(weeks)))
-}
-
-/// `chart`, clipped to its own cell. A chart labels its values for screen readers with an
-/// `sr-only` table, which positions itself against the nearest positioned ancestor; without this
-/// one it lands past the page's edge and scrolls the page sideways.
-fn contained<'a>(cx: &'a Cx, chart: BoxView<'a>) -> BoxView<'a> {
-    view! {
-        cx =>
-        <div class="relative overflow-hidden rounded-xl">
-            (chart)
-        </div>
-    }
-    .boxed()
 }
 
 /// The orders the sales figures read, each as a [`Sale`].
