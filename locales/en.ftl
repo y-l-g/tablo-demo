@@ -112,6 +112,10 @@ tab-employment = Employment
 tab-overview = Overview
 tab-budget = Budget
 
+## List tabs
+
+list-tab-all = All
+
 ## Sections
 
 section-address = Address
@@ -149,6 +153,7 @@ section-timesheet-entry = Timesheet entry
 
 ## Labels
 
+label-gallery = Gallery
 label-active = Active
 label-approver = Approver
 label-assignee = Assignee

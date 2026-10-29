@@ -5,7 +5,8 @@ use tablo::{
     Action, ActionLayout, BooleanColumn, ColorColumn, ComputedColumn, CountColumn, Currency,
     DateColumn, DateFilter, Detail, FieldAccess, FileColumn, FormInput, GlobalSearch, Grid,
     Outcome, Places, RecordForm, Relation, RelationColumn, Resource, ResourceDef, Schema, Section,
-    SelectFilter, Tab, Table, Tabs, TernaryFilter, Text, TextColumn, WriteError, lens, relation,
+    SelectColumn, SelectFilter, Tab, Table, Tabs, TernaryFilter, Text, TextColumn, WriteError,
+    lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -20,6 +21,7 @@ use crate::models::{
 };
 use crate::panel::{RECEIPT_EXTENSIONS, RECEIPT_MAX_BYTES};
 use crate::roles::{self, Domain};
+use crate::tabs::OptionTabs;
 
 /// Departments.
 pub struct DepartmentResource;
@@ -341,8 +343,11 @@ fn employee_table() -> Table<Employee> {
     ))
     .default_sort(lens!(Employee.name))
     .action_layout(ActionLayout::Menu)
+    .option_tabs(
+        lens!(Employee.employment_type),
+        |employment_type: EmploymentType| Employee::fields().employment_type().eq(employment_type),
+    )
     .filters((
-        SelectFilter::of(lens!(Employee.employment_type)),
         SelectFilter::relationship::<DepartmentResource>(lens!(Employee.department_id))
             .label(tablo::text!("label-department")),
         TernaryFilter::new(lens!(Employee.is_active)),
@@ -539,7 +544,7 @@ impl Resource for LeaveRequestResource {
                     TextColumn::new(lens!(LeaveRequest.kind))
                         .badge()
                         .label(tablo::text!("label-type")),
-                    TextColumn::new(lens!(LeaveRequest.status)).badge(),
+                    SelectColumn::new(lens!(LeaveRequest.status)),
                     DateColumn::new(lens!(LeaveRequest.start_date)).sortable(),
                     DateColumn::new(lens!(LeaveRequest.end_date)).sortable(),
                     TextColumn::new(lens!(LeaveRequest.days_requested))
@@ -552,8 +557,10 @@ impl Resource for LeaveRequestResource {
                 ))
                 .default_sort_desc(lens!(LeaveRequest.start_date))
                 .action_layout(ActionLayout::Menu)
+                .option_tabs(lens!(LeaveRequest.status), |status: LeaveStatus| {
+                    LeaveRequest::fields().status().eq(status)
+                })
                 .filters((
-                    SelectFilter::of(lens!(LeaveRequest.status)),
                     SelectFilter::of(lens!(LeaveRequest.kind)).label(tablo::text!("label-type")),
                 )),
             )
@@ -1838,8 +1845,10 @@ impl Resource for ExpenseResource {
                         .toggleable(),
                 ))
                 .action_layout(ActionLayout::Menu)
+                .option_tabs(lens!(Expense.status), |status: ExpenseStatus| {
+                    Expense::fields().status().eq(status)
+                })
                 .filters((
-                    SelectFilter::of(lens!(Expense.status)),
                     SelectFilter::of(lens!(Expense.category)),
                     SelectFilter::relationship::<EmployeeResource>(lens!(Expense.employee_id))
                         .label(tablo::text!("label-employee")),
@@ -1895,9 +1904,9 @@ impl Resource for ExpenseResource {
                 ),
             )))
             .record_title(lens!(Expense.expense_number))
-            .relation(Relation::has_many::<ExpenseLineResource>(
-                ExpenseLine::fields().expense_id(),
-            ))
+            .relation(
+                Relation::has_many::<ExpenseLineResource>(ExpenseLine::fields().expense_id()).tab(),
+            )
             .action::<SubmitExpense>()
             .action::<ApproveExpense>()
             .action::<RejectExpense>()
@@ -2118,8 +2127,8 @@ impl Resource for ExpenseLineResource {
         let c = ExpenseLineForm::controls();
         ResourceDef::new()
             .icon(crate::icons::EXPENSE_LINES)
-            .navigation_group(tablo::text!("navigation-hr"))
-            .navigation_order(4)
+            // Reached through its owner's tab, so it has no sidebar entry.
+            .navigation_hidden()
             .policy(roles::policy(Domain::Hr))
             .without_global_search()
             .table(Table::new((

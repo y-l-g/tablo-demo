@@ -173,8 +173,13 @@ section-task-details = Détails de la tâche
 section-timesheet = Feuille de temps
 section-timesheet-entry = Saisie de temps
 
+## Onglets des listes
+
+list-tab-all = Tous
+
 ## Libellés
 
+label-gallery = Galerie
 label-active = Actif
 label-approver = Approbateur
 label-assignee = Assigné à

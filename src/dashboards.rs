@@ -271,7 +271,7 @@ impl Widget for PipelineWidget {
             linked(
                 tile,
                 url.as_ref()
-                    .map(|url| format!("{url}?f.status={}", status.value())),
+                    .map(|url| format!("{url}?tab={}", status.value())),
             )
         })
         .collect();
@@ -689,7 +689,7 @@ impl Widget for ApprovalsWidget {
                     Stat::new(tablo::text!("stat-leave-to-review"), pending.to_string())
                         .detail(tablo::text!("stat-detail-pending-leave"))
                         .color(alert(pending, Color::Warning)),
-                    leave_url.map(|url| format!("{url}?f.status={}", LeaveStatus::Pending.value())),
+                    leave_url.map(|url| format!("{url}?tab={}", LeaveStatus::Pending.value())),
                 ),
                 linked(
                     Stat::new(
@@ -699,7 +699,7 @@ impl Widget for ApprovalsWidget {
                     .detail(tablo::text!("stat-detail-submitted"))
                     .color(alert(submitted, Color::Warning)),
                     expense_url
-                        .map(|url| format!("{url}?f.status={}", ExpenseStatus::Submitted.value())),
+                        .map(|url| format!("{url}?tab={}", ExpenseStatus::Submitted.value())),
                 ),
                 Stat::new(tablo::text!("stat-reimbursed"), dollars(paid)).detail(tablo::text!(
                     "stat-detail-reimbursed",
@@ -804,7 +804,7 @@ impl Widget for LeaveStatusWidget {
             linked(
                 tile,
                 url.as_ref()
-                    .map(|url| format!("{url}?f.status={}", status.value())),
+                    .map(|url| format!("{url}?tab={}", status.value())),
             )
         })
         .collect();

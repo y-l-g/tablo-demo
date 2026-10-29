@@ -14,4 +14,5 @@ pub mod panel;
 pub mod roles;
 pub mod seed;
 pub mod shop;
+pub mod tabs;
 pub mod welcome;

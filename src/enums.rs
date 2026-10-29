@@ -112,15 +112,15 @@ pub enum LeaveType {
 /// Where an order sits in its fulfilment flow.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, toasty::Embed, tablo::Options)]
 pub enum OrderStatus {
-    #[option(color = "info")]
+    #[option(color = "info", icon = crate::icons::ORDER_NEW)]
     New,
-    #[option(color = "warning")]
+    #[option(color = "warning", icon = crate::icons::ORDER_PROCESSING)]
     Processing,
-    #[option(color = "success")]
+    #[option(color = "success", icon = crate::icons::ORDER_SHIPPED)]
     Shipped,
-    #[option(color = "success")]
+    #[option(color = "success", icon = tablo::ui::icons::CIRCLE_CHECK)]
     Delivered,
-    #[option(color = "danger")]
+    #[option(color = "danger", icon = tablo::ui::icons::CIRCLE_X)]
     Cancelled,
 }
 

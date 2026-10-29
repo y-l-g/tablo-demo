@@ -1,10 +1,11 @@
 //! The shop resources: products, brands, categories, customers and orders.
 
 use tablo::{
-    Action, ActionLayout, BooleanColumn, Change, ColumnToggle, ColumnWidth, Currency, DateColumn,
-    DateFilter, Detail, FieldErrors, FormInput, GlobalSearch, Grid, ImageColumn, Outcome, Places,
-    Relation, RelationColumn, Resource, ResourceDef, RichTextColumn, Schema, Section, SelectFilter,
-    Table, TernaryFilter, Text, TextColumn, WriteError,
+    Action, ActionLayout, BooleanColumn, Change, Color, ColumnToggle, ColumnWidth, ComputedColumn,
+    Currency, DateColumn, DateFilter, Detail, FieldErrors, FormInput, GlobalSearch, Grid,
+    ImageColumn, Outcome, Places, Reads, Relation, RelationColumn, Resource, ResourceDef,
+    RichTextColumn, Schema, Section, SelectFilter, Table, TernaryFilter, Text, TextColumn,
+    ToggleColumn, WriteError,
     extend::{Column, Includes},
     lens, relation,
 };
@@ -20,6 +21,7 @@ use crate::models::{
 };
 use crate::panel::{IMAGE_EXTENSIONS, IMAGE_MAX_BYTES};
 use crate::roles::{self, Domain};
+use crate::tabs::OptionTabs;
 
 /// Products.
 pub struct ProductResource;
@@ -46,11 +48,17 @@ impl Resource for ProductResource {
                     Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
                     c.description.rich_text(),
                 )),
-                Section::new(tablo::text!("section-images")).schema(
+                Section::new(tablo::text!("section-images")).schema((
                     c.image
                         .extensions(IMAGE_EXTENSIONS)
                         .max_bytes(IMAGE_MAX_BYTES),
-                ),
+                    // Reordered by drag or its buttons, and four at most.
+                    c.gallery
+                        .extensions(IMAGE_EXTENSIONS)
+                        .max_bytes(IMAGE_MAX_BYTES)
+                        .max_files(4)
+                        .label(tablo::text!("label-gallery")),
+                )),
                 Section::new(tablo::text!("section-pricing")).schema(
                     Grid::new(2).schema((
                         c.price.prefix("$"),
@@ -92,6 +100,9 @@ impl Resource for ProductResource {
                     TextColumn::new(lens!(Product.name)),
                     TextColumn::new(lens!(Product.slug)),
                     ImageColumn::new(lens!(Product.image)),
+                    ComputedColumn::new(tablo::text!("label-gallery"), |product: &Product| {
+                        product.gallery.len().to_string()
+                    }),
                     RelationColumn::of::<BrandResource>(relation!(Product.brand))
                         .label(tablo::text!("label-brand")),
                     RelationColumn::list::<ProductCategoryResource>(relation!(Product.categories)),
@@ -112,9 +123,7 @@ impl Resource for ProductResource {
                     .detail(tablo::text!("label-sku"), lens!(Product.sku))
                     .detail(tablo::text!("label-price"), lens!(Product.price)),
             )
-            .relation(Relation::has_many::<CommentResource>(
-                Comment::fields().product_id(),
-            ))
+            .relation(Relation::has_many::<CommentResource>(Comment::fields().product_id()).tab())
             .action::<ToggleProductVisibility>()
             .action::<BulkSetProductVisibility>()
             .action::<AdjustProductPrice>()
@@ -132,7 +141,7 @@ fn product_table() -> Table<Product> {
         RelationColumn::of::<BrandResource>(relation!(Product.brand))
             .label(tablo::text!("label-brand"))
             .toggleable(),
-        BooleanColumn::new(lens!(Product.is_visible))
+        ToggleColumn::new(lens!(Product.is_visible))
             .label(tablo::text!("label-visibility"))
             .toggleable(),
         TextColumn::new(lens!(Product.price))
@@ -181,6 +190,8 @@ pub struct ProductForm {
     pub description: Option<String>,
     #[form(file, optional)]
     pub image: String,
+    #[form(file)]
+    pub gallery: Vec<String>,
     pub price: Option<f64>,
     pub old_price: Option<f64>,
     pub cost: Option<f64>,
@@ -367,7 +378,7 @@ impl Resource for BrandResource {
                         .searchable()
                         .sortable()
                         .toggleable(),
-                    BooleanColumn::new(lens!(Brand.is_visible))
+                    ToggleColumn::new(lens!(Brand.is_visible))
                         .label(tablo::text!("label-visibility")),
                     DateColumn::new(lens!(Brand.updated_at))
                         .label(tablo::text!("label-last-modified-at"))
@@ -403,9 +414,7 @@ impl Resource for BrandResource {
             .relation(Relation::has_many::<ProductResource>(
                 Product::fields().brand_id(),
             ))
-            .relation(Relation::has_many::<AddressResource>(
-                Address::fields().brand_id(),
-            ))
+            .relation(Relation::has_many::<AddressResource>(Address::fields().brand_id()).tab())
             .action::<ToggleBrandVisibility>()
     }
 
@@ -615,9 +624,7 @@ impl Resource for CustomerResource {
                     .detail(tablo::text!("label-email"), lens!(Customer.email))
                     .detail(tablo::text!("label-phone"), lens!(Customer.phone)),
             )
-            .relation(Relation::has_many::<AddressResource>(
-                Address::fields().customer_id(),
-            ))
+            .relation(Relation::has_many::<AddressResource>(Address::fields().customer_id()).tab())
             .action::<SendCustomerEmail>()
             .soft_delete(lens!(Customer.deleted_at))
     }
@@ -766,15 +773,11 @@ impl Resource for OrderResource {
                     .detail(tablo::text!("label-status"), lens!(Order.status))
                     .detail(tablo::text!("label-total"), lens!(Order.total_price)),
             )
-            .relation(Relation::has_many::<OrderItemResource>(
-                OrderItem::fields().order_id(),
-            ))
-            .relation(Relation::has_many::<OrderAddressResource>(
-                OrderAddress::fields().order_id(),
-            ))
-            .relation(Relation::has_many::<PaymentResource>(
-                Payment::fields().order_id(),
-            ))
+            .relation(Relation::has_many::<OrderItemResource>(OrderItem::fields().order_id()).tab())
+            .relation(
+                Relation::has_many::<OrderAddressResource>(OrderAddress::fields().order_id()).tab(),
+            )
+            .relation(Relation::has_many::<PaymentResource>(Payment::fields().order_id()).tab())
             .action::<ProcessOrder>()
             .action::<ShipOrder>()
             .action::<DeliverOrder>()
@@ -816,12 +819,14 @@ fn order_table() -> Table<Order> {
     ))
     .default_sort_desc(lens!(Order.created_at))
     .action_layout(ActionLayout::Menu)
-    .filters((
-        DateFilter::new(lens!(Order.created_at))
-            .label(tablo::text!("label-order-date"))
-            .range(),
-        SelectFilter::of(lens!(Order.status)),
-    ))
+    .row_color(|order: &Order| (order.status == OrderStatus::Cancelled).then_some(Color::Danger))
+    .row_color_reading(Reads::of(lens!(Order.status)))
+    .option_tabs(lens!(Order.status), |status: OrderStatus| {
+        Order::fields().status().eq(status)
+    })
+    .filters((DateFilter::new(lens!(Order.created_at))
+        .label(tablo::text!("label-order-date"))
+        .range(),))
 }
 
 /// The order's record form.
@@ -1023,8 +1028,8 @@ impl Resource for OrderItemResource {
         let c = OrderItemForm::controls();
         ResourceDef::new()
             .icon(crate::icons::ORDER_ITEMS)
-            .navigation_group(tablo::text!("navigation-shop"))
-            .navigation_order(10)
+            // Reached through its owner's tab, so it has no sidebar entry.
+            .navigation_hidden()
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(Table::new((
@@ -1091,8 +1096,8 @@ impl Resource for PaymentResource {
         let c = PaymentForm::controls();
         ResourceDef::new()
             .icon(crate::icons::PAYMENTS)
-            .navigation_group(tablo::text!("navigation-shop"))
-            .navigation_order(11)
+            // Reached through its owner's tab, so it has no sidebar entry.
+            .navigation_hidden()
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(Table::new((
@@ -1170,8 +1175,8 @@ impl Resource for AddressResource {
         let c = AddressForm::controls();
         ResourceDef::new()
             .icon(crate::icons::ADDRESSES)
-            .navigation_group(tablo::text!("navigation-shop"))
-            .navigation_order(12)
+            // Reached through its owner's tab, so it has no sidebar entry.
+            .navigation_hidden()
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(
@@ -1243,8 +1248,8 @@ impl Resource for OrderAddressResource {
         let c = OrderAddressForm::controls();
         ResourceDef::new()
             .icon(crate::icons::ORDER_ADDRESSES)
-            .navigation_group(tablo::text!("navigation-shop"))
-            .navigation_order(13)
+            // Reached through its owner's tab, so it has no sidebar entry.
+            .navigation_hidden()
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(Table::new((
