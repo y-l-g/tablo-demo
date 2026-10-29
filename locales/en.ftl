@@ -208,6 +208,8 @@ label-state-province = State / Province
 label-status = Status
 label-street-address = Street address
 label-tags = Tags
+label-skills = Skills
+label-labels = Labels
 label-task = Task
 label-team = Team
 label-total = Total
@@ -222,7 +224,6 @@ label-zip-postal-code = Zip / Postal code
 ## Hints, units and values
 
 hint-post-title = A title readers click
-hint-tags = Comma separated
 unit-hours = hours
 unit-minutes = minutes
 unit-per-hour = per hour

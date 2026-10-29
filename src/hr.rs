@@ -4,16 +4,16 @@ use jiff::{Span, Timestamp, Zoned};
 use tablo::{
     Action, ActionLayout, BooleanColumn, ColorColumn, ComputedColumn, CountColumn, Currency,
     DateColumn, DateFilter, Detail, FieldAccess, FileColumn, FormInput, GlobalSearch, Grid,
-    Outcome, Places, RecordForm, Relation, RelationColumn, Resource, ResourceDef, Schema, Section,
-    SelectColumn, SelectFilter, Tab, Table, Tabs, TernaryFilter, Text, TextColumn, WriteError,
-    lens, relation,
+    ListColumn, Outcome, Places, RecordForm, Relation, RelationColumn, Resource, ResourceDef,
+    Schema, Section, SelectColumn, SelectFilter, Tab, Table, Tabs, TernaryFilter, Text, TextColumn,
+    WriteError, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
 use crate::dashboards::LeaveStatusWidget;
 use crate::enums::{
-    EmploymentType, ExpenseCategory, ExpenseStatus, LeaveStatus, LeaveType, ProjectStatus,
-    TaskPriority, TaskStatus,
+    EmploymentType, ExpenseCategory, ExpenseStatus, LeaveStatus, LeaveType, ProjectStatus, Skills,
+    TaskLabels, TaskPriority, TaskStatus,
 };
 use crate::models::{
     Department, Employee, Expense, ExpenseLine, LeaveRequest, Project, Task, Timesheet,
@@ -259,6 +259,7 @@ impl Resource for EmployeeResource {
                         TextColumn::new(lens!(Employee.employment_type)).badge(),
                         DateColumn::new(lens!(Employee.hire_date)),
                         TextColumn::new(lens!(Employee.salary)).money(Currency::USD),
+                        ListColumn::new(lens!(Employee.skills)).label(tablo::text!("label-skills")),
                         BooleanColumn::new(lens!(Employee.is_active))
                             .label(tablo::text!("label-active")),
                     )),
@@ -280,6 +281,7 @@ impl Resource for EmployeeResource {
                         job_title,
                         c.employment_type.radio(),
                         c.hire_date,
+                        c.skills.label(tablo::text!("label-skills")),
                         salary,
                         hourly_rate,
                         c.is_active.switch().label(tablo::text!("label-active")),
@@ -369,6 +371,8 @@ pub struct EmployeeForm {
     pub hire_date: jiff::civil::Date,
     pub salary: Option<f64>,
     pub hourly_rate: Option<f64>,
+    #[form(tags, options = Skills)]
+    pub skills: Vec<String>,
     pub is_active: bool,
 }
 
@@ -1191,6 +1195,9 @@ impl Resource for TaskResource {
                         .toggleable(),
                     TextColumn::new(lens!(Task.status)).badge(),
                     TextColumn::new(lens!(Task.priority)).badge(),
+                    ListColumn::new(lens!(Task.labels))
+                        .label(tablo::text!("label-labels"))
+                        .toggleable(),
                     TextColumn::new(lens!(Task.estimated_hours))
                         .numeric(1)
                         .sortable()
@@ -1224,6 +1231,7 @@ impl Resource for TaskResource {
                         TextColumn::new(lens!(Task.actual_hours)),
                         DateColumn::new(lens!(Task.due_date)),
                         DateColumn::new(lens!(Task.completed_at)),
+                        ListColumn::new(lens!(Task.labels)).label(tablo::text!("label-labels")),
                     )),
                     TextColumn::new(lens!(Task.description)),
                 )),
@@ -1242,6 +1250,7 @@ impl Resource for TaskResource {
                         c.priority.radio(),
                         c.estimated_hours.suffix(tablo::text!("unit-hours")),
                         c.due_date,
+                        c.labels.label(tablo::text!("label-labels")),
                         c.description.multiline(4),
                         completed_at,
                     )),
@@ -1276,6 +1285,8 @@ pub struct TaskForm {
     pub priority: TaskPriority,
     pub estimated_hours: Option<f64>,
     pub due_date: Option<jiff::civil::Date>,
+    #[form(tags, options = TaskLabels)]
+    pub labels: Vec<String>,
     pub description: Option<String>,
     pub completed_at: Option<Timestamp>,
 }

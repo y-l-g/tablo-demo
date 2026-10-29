@@ -234,6 +234,8 @@ label-state-province = Région
 label-status = Statut
 label-street-address = Adresse
 label-tags = Étiquettes
+label-skills = Compétences
+label-labels = Libellés
 label-task = Tâche
 label-team = Équipe
 label-total = Total
@@ -248,7 +250,6 @@ label-zip-postal-code = Code postal
 ## Indications, unités et valeurs
 
 hint-post-title = Un titre qui donne envie de cliquer
-hint-tags = Séparés par des virgules
 unit-hours = heures
 unit-minutes = minutes
 unit-per-hour = par heure

@@ -444,7 +444,7 @@ async fn seed_blog(
                 slug: slug(&title),
                 content: from_text(template.content),
                 published_at: rng.boolean(80).then_some(today),
-                tags: tags.join(","),
+                tags,
                 seo_title: Some(title),
                 seo_description: Some(template.content.chars().take(120).collect()),
                 created_at,
@@ -1147,10 +1147,10 @@ const POST_CATEGORIES: &[&str] = &[
     "Testing",
 ];
 
-const TAGS: &[&str] = &[
-    "Laravel",
-    "PHP",
-    "JavaScript",
+/// The tags the seeded posts carry, and the post form suggests.
+pub const TAGS: &[&str] = &[
+    "Rust",
+    "Async",
     "CSS",
     "DevOps",
     "Testing",
@@ -1162,7 +1162,7 @@ const TAGS: &[&str] = &[
     "Database",
     "Accessibility",
     "Deployment",
-    "Design Patterns",
+    "Design",
 ];
 
 /// One blog post body the seeder draws from.
@@ -1254,17 +1254,18 @@ pub const JOB_TITLES: &[&str] = &[
     "DevOps Engineer",
 ];
 
-const SKILLS: &[&str] = &[
-    "PHP",
-    "Laravel",
-    "JavaScript",
+/// The skills the seeded employees claim, and the employee form suggests.
+pub const SKILLS: &[&str] = &[
+    "Rust",
     "TypeScript",
     "React",
-    "Vue.js",
     "Python",
     "SQL",
     "Docker",
+    "Kubernetes",
     "AWS",
+    "Figma",
+    "Go",
 ];
 
 const CERTIFICATIONS: &[&str] = &["AWS Certified", "PMP", "Scrum Master", "None"];
@@ -1327,7 +1328,8 @@ const TASK_DESCRIPTIONS: &[&str] = &[
     "Check the empty and error states before merging.",
 ];
 
-const TASK_LABELS: &[&str] = &[
+/// The labels the seeded tasks carry, and the task form suggests.
+pub const TASK_LABELS: &[&str] = &[
     "bug",
     "feature",
     "enhancement",
