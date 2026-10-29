@@ -5,8 +5,8 @@ use tablo::{
     Action, ActionLayout, BooleanColumn, Color, ColorColumn, ComputedColumn, CountColumn, Currency,
     DateColumn, DateFilter, Detail, FieldAccess, FileColumn, FormInput, GlobalSearch, Grid,
     Outcome, Places, Reads, RecordForm, Relation, RelationColumn, Resource, ResourceDef, Schema,
-    Section, SelectFilter, Tab, Table, Tabs, TernaryFilter, Text, TextColumn, WriteError, lens,
-    relation,
+    Section, SelectColumn, SelectFilter, Tab, Table, Tabs, TernaryFilter, Text, TextColumn,
+    WriteError, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -543,7 +543,7 @@ impl Resource for LeaveRequestResource {
                     TextColumn::new(lens!(LeaveRequest.kind))
                         .badge()
                         .label(tablo::text!("label-type")),
-                    TextColumn::new(lens!(LeaveRequest.status)).badge(),
+                    SelectColumn::new(lens!(LeaveRequest.status)),
                     DateColumn::new(lens!(LeaveRequest.start_date)).sortable(),
                     DateColumn::new(lens!(LeaveRequest.end_date)).sortable(),
                     TextColumn::new(lens!(LeaveRequest.days_requested))

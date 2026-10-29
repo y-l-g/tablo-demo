@@ -4,7 +4,8 @@ use tablo::{
     Action, ActionLayout, BooleanColumn, Change, Color, ColumnToggle, ColumnWidth, Currency,
     DateColumn, DateFilter, Detail, FieldErrors, FormInput, GlobalSearch, Grid, ImageColumn,
     Outcome, Places, Reads, Relation, RelationColumn, Resource, ResourceDef, RichTextColumn,
-    Schema, Section, SelectFilter, Table, TernaryFilter, Text, TextColumn, WriteError,
+    Schema, Section, SelectFilter, Table, TernaryFilter, Text, TextColumn, ToggleColumn,
+    WriteError,
     extend::{Column, Includes},
     lens, relation,
 };
@@ -133,7 +134,7 @@ fn product_table() -> Table<Product> {
         RelationColumn::of::<BrandResource>(relation!(Product.brand))
             .label(tablo::text!("label-brand"))
             .toggleable(),
-        BooleanColumn::new(lens!(Product.is_visible))
+        ToggleColumn::new(lens!(Product.is_visible))
             .label(tablo::text!("label-visibility"))
             .toggleable(),
         TextColumn::new(lens!(Product.price))
@@ -368,7 +369,7 @@ impl Resource for BrandResource {
                         .searchable()
                         .sortable()
                         .toggleable(),
-                    BooleanColumn::new(lens!(Brand.is_visible))
+                    ToggleColumn::new(lens!(Brand.is_visible))
                         .label(tablo::text!("label-visibility")),
                     DateColumn::new(lens!(Brand.updated_at))
                         .label(tablo::text!("label-last-modified-at"))
