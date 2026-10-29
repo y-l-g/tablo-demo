@@ -1,11 +1,11 @@
 //! The shop resources: products, brands, categories, customers and orders.
 
 use tablo::{
-    Action, ActionLayout, BooleanColumn, Change, Color, ColumnToggle, ColumnWidth, Currency,
-    DateColumn, DateFilter, Detail, FieldErrors, FormInput, GlobalSearch, Grid, ImageColumn,
-    Outcome, Places, Reads, Relation, RelationColumn, Resource, ResourceDef, RichTextColumn,
-    Schema, Section, SelectFilter, Table, TernaryFilter, Text, TextColumn, ToggleColumn,
-    WriteError,
+    Action, ActionLayout, BooleanColumn, Change, Color, ColumnToggle, ColumnWidth, ComputedColumn,
+    Currency, DateColumn, DateFilter, Detail, FieldErrors, FormInput, GlobalSearch, Grid,
+    ImageColumn, Outcome, Places, Reads, Relation, RelationColumn, Resource, ResourceDef,
+    RichTextColumn, Schema, Section, SelectFilter, Table, TernaryFilter, Text, TextColumn,
+    ToggleColumn, WriteError,
     extend::{Column, Includes},
     lens, relation,
 };
@@ -48,11 +48,17 @@ impl Resource for ProductResource {
                     Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
                     c.description.rich_text(),
                 )),
-                Section::new(tablo::text!("section-images")).schema(
+                Section::new(tablo::text!("section-images")).schema((
                     c.image
                         .extensions(IMAGE_EXTENSIONS)
                         .max_bytes(IMAGE_MAX_BYTES),
-                ),
+                    // Reordered by drag or its buttons, and four at most.
+                    c.gallery
+                        .extensions(IMAGE_EXTENSIONS)
+                        .max_bytes(IMAGE_MAX_BYTES)
+                        .max_files(4)
+                        .label(tablo::text!("label-gallery")),
+                )),
                 Section::new(tablo::text!("section-pricing")).schema(
                     Grid::new(2).schema((
                         c.price.prefix("$"),
@@ -94,6 +100,9 @@ impl Resource for ProductResource {
                     TextColumn::new(lens!(Product.name)),
                     TextColumn::new(lens!(Product.slug)),
                     ImageColumn::new(lens!(Product.image)),
+                    ComputedColumn::new(tablo::text!("label-gallery"), |product: &Product| {
+                        product.gallery.len().to_string()
+                    }),
                     RelationColumn::of::<BrandResource>(relation!(Product.brand))
                         .label(tablo::text!("label-brand")),
                     RelationColumn::list::<ProductCategoryResource>(relation!(Product.categories)),
@@ -181,6 +190,8 @@ pub struct ProductForm {
     pub description: Option<String>,
     #[form(file, optional)]
     pub image: String,
+    #[form(file)]
+    pub gallery: Vec<String>,
     pub price: Option<f64>,
     pub old_price: Option<f64>,
     pub cost: Option<f64>,

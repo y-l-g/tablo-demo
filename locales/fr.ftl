@@ -179,6 +179,7 @@ list-tab-all = Tous
 
 ## Libellés
 
+label-gallery = Galerie
 label-active = Actif
 label-approver = Approbateur
 label-assignee = Assigné à

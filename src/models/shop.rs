@@ -128,6 +128,9 @@ pub struct Product {
     /// The product's image, the path of the uploaded file.
     #[default(String::new())]
     pub image: String,
+    /// The product's further images, in the order the gallery shows them.
+    #[default(Vec::<String>::new())]
+    pub gallery: Vec<String>,
     #[default(Timestamp::now())]
     pub created_at: Timestamp,
     #[update(Timestamp::now())]

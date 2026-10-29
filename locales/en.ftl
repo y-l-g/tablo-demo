@@ -153,6 +153,7 @@ section-timesheet-entry = Timesheet entry
 
 ## Labels
 
+label-gallery = Gallery
 label-active = Active
 label-approver = Approver
 label-assignee = Assignee
