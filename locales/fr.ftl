@@ -583,6 +583,7 @@ flash-order-cancelled = Commande annulée
 
 ## Validation
 
+error-credentials-locked = Les comptes du personnel ne peuvent pas changer leur e-mail ou leur mot de passe
 error-email-taken = Cette adresse e-mail est déjà utilisée
 error-team-name-required = Saisissez un nom pour votre équipe
 error-quantity-negative = La quantité doit être égale ou supérieure à zéro

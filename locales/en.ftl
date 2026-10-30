@@ -435,6 +435,7 @@ flash-order-cancelled = Order cancelled
 
 ## Validation
 
+error-credentials-locked = Staff accounts cannot change their email or password
 error-email-taken = Email has already been taken
 error-team-name-required = Enter a name for your team
 error-quantity-negative = Quantity must be zero or more

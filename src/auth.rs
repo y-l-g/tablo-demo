@@ -363,6 +363,15 @@ impl ProfileEditor for DemoAuth {
         let user = &signed.user;
         let mut errors = profile.password_errors();
         let new_email = profile.email.trim() != user.email;
+        // Staff keep the sign-in details the seed gave them, which the admin panel signs in with.
+        if user.role.is_some() {
+            if new_email {
+                errors.add("email", tablo::text!("error-credentials-locked"));
+            }
+            if profile.password.is_some() {
+                errors.add("password", tablo::text!("error-credentials-locked"));
+            }
+        }
         if new_email || profile.password.is_some() {
             match &profile.current_password {
                 None => errors.add(
@@ -380,7 +389,7 @@ impl ProfileEditor for DemoAuth {
         }
         // Only the account's owner learns whether another account holds an
         // address: a stolen session without the password must not probe them.
-        if new_email && !errors.contains_key("current_password") {
+        if new_email && !errors.contains_key("current_password") && !errors.contains_key("email") {
             let taken = User::filter(User::fields().email().eq(profile.email.trim()))
                 .first()
                 .exec(ex)
