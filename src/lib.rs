@@ -3,6 +3,7 @@
 pub mod audit;
 pub mod auth;
 pub mod blog;
+pub mod controls;
 pub mod dashboards;
 pub mod enums;
 pub mod hr;

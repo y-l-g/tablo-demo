@@ -1,6 +1,9 @@
 //! The demo data.
 
+use std::collections::HashMap;
+
 use jiff::{Span, Timestamp, Zoned, civil::Date};
+use rust_decimal::Decimal;
 use serde_json::json;
 use tablo::rich_text::from_text;
 use toasty::Db;
@@ -12,12 +15,13 @@ use crate::enums::{
     LeaveType, OrderStatus, PaymentMethod, ProductType, ProjectStatus, StaffRole, TaskPriority,
     TaskStatus,
 };
-use crate::models::round;
 use crate::models::{
     Address, Author, Brand, Comment, Customer, Department, Employee, Expense, ExpenseLine,
-    LeaveRequest, Order, OrderAddress, OrderItem, Payment, Post, PostCategory, Product,
-    ProductCategory, ProductCategoryLink, Project, Task, Team, TeamUser, Timesheet,
+    LeaveRequest, MetadataEntry, Order, OrderAddress, OrderItem, Payment, Post, PostCategory,
+    PostTag, Product, ProductCategory, ProductCategoryLink, Project, Tag, Task, Team, TeamUser,
+    Timesheet,
 };
+use crate::models::{cost, money, round};
 use crate::panel::{UPLOAD_URL_PREFIX, upload_dir};
 
 /// The demo administrator's name.
@@ -159,7 +163,7 @@ async fn seed_shop(
             description: Some(from_text(&format!("{name} makes everyday goods."))),
             position: index as u16,
             is_visible: true,
-            sort: Some(index as i64),
+            sort: index as i64,
             created_at: days_ago(now, rng.below(700) as i64),
         })
         .exec(db)
@@ -320,9 +324,9 @@ async fn create_product(
         security_stock: rng.below(20),
         featured: rng.boolean(20),
         is_visible,
-        old_price: Some(round(price * 1.2)),
-        price: Some(round(price)),
-        cost: Some(round(price * rng.float(0.3, 0.6))),
+        old_price: Some(money(price * 1.2)),
+        price: Some(money(price)),
+        cost: Some(money(price * rng.float(0.3, 0.6))),
         kind: Some(if rng.boolean(80) {
             ProductType::Deliverable
         } else {
@@ -355,6 +359,7 @@ async fn seed_orders(
     customers: &[Customer],
     products: &[Product],
 ) -> toasty::Result<()> {
+    let mut sold: HashMap<u64, u64> = HashMap::new();
     for index in 0..ORDERS {
         let age = growth_age(index, ORDERS) + rng.float(0.0, 1.0);
         let created_at = hours_ago(now, age * 24.0);
@@ -379,20 +384,21 @@ async fn seed_orders(
             } else {
                 rng.between(2, 3) as i64
             };
-            lines.push((product.id, qty, product.price.unwrap_or(25.0)));
+            lines.push((product.id, qty, product.price.unwrap_or(Decimal::from(25))));
         }
-        let subtotal: f64 = lines
+        let subtotal: Decimal = lines
             .iter()
-            .map(|(_, qty, price)| *qty as f64 * price)
+            .map(|(_, qty, price)| Decimal::from(*qty) * price)
             .sum();
-        let total = round(subtotal + shipping_price);
+        let shipping = money(shipping_price);
+        let total = subtotal + shipping;
 
         let order = toasty::create!(Order {
             customer_id: rng.boolean(95).then(|| rng.pick(customers).id),
             number: format!("OR-{:06}", index + 1),
             total_price: Some(total),
             status,
-            shipping_price: Some(shipping_price),
+            shipping_price: Some(shipping),
             shipping_method: Some(shipping_method.to_string()),
             created_at,
             updated_at: created_at,
@@ -402,6 +408,12 @@ async fn seed_orders(
 
         let address = AddressFields::draw(rng);
         address.create_for_order(db, order.id).await?;
+
+        if matches!(status, OrderStatus::Shipped | OrderStatus::Delivered) {
+            for (product_id, qty, _) in &lines {
+                *sold.entry(*product_id).or_default() += *qty as u64;
+            }
+        }
 
         for (sort, (product_id, qty, unit_price)) in lines.into_iter().enumerate() {
             toasty::create!(OrderItem {
@@ -446,6 +458,13 @@ async fn seed_orders(
         .exec(db)
         .await?;
     }
+    for (product_id, units) in sold {
+        Product::filter(Product::fields().id().eq(product_id))
+            .update()
+            .units_sold(units)
+            .exec(db)
+            .await?;
+    }
     Ok(())
 }
 
@@ -468,6 +487,17 @@ async fn seed_blog(
                 seo_title: Some(name.to_string()),
                 seo_description: Some(format!("{name} articles from the demo blog.")),
                 created_at: days_ago(now, rng.below(700) as i64),
+            })
+            .exec(db)
+            .await?,
+        );
+    }
+
+    let mut tags = Vec::new();
+    for name in TAGS {
+        tags.push(
+            toasty::create!(Tag {
+                name: name.to_string(),
             })
             .exec(db)
             .await?,
@@ -508,6 +538,7 @@ async fn seed_blog(
             .find(|category| category.name == draft.category)
             .unwrap_or(&categories[0]);
         let tag_count = rng.between(2, 4);
+        let picked = rng.pick_distinct(TAGS, tag_count);
         let post = toasty::create!(Post {
             author_id: Some(rng.pick(&authors).id),
             post_category_id: Some(category.id),
@@ -516,7 +547,6 @@ async fn seed_blog(
             content: from_text(draft.content),
             published_at,
             image: covers[index % covers.len()].clone(),
-            tags: rng.pick_distinct(TAGS, tag_count),
             seo_title: Some(draft.title.to_string()),
             seo_description: Some(draft.content.chars().take(120).collect()),
             created_at,
@@ -524,6 +554,19 @@ async fn seed_blog(
         })
         .exec(db)
         .await?;
+
+        for name in picked {
+            let tag = tags
+                .iter()
+                .find(|tag| tag.name == name)
+                .expect("every seeded tag is created");
+            toasty::create!(PostTag {
+                post_id: post.id,
+                tag_id: tag.id,
+            })
+            .exec(db)
+            .await?;
+        }
 
         for _ in 0..rng.between(1, 4) {
             toasty::create!(Comment {
@@ -550,7 +593,7 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
                 name: name.to_string(),
                 slug: slug(name),
                 description: Some(format!("The {name} team.")),
-                budget: round(rng.float(50_000.0, 500_000.0)),
+                budget: money(rng.float(50_000.0, 500_000.0)),
                 headcount_limit: rng.between(5, 40) as i64,
                 color: Some(hex_color(rng)),
                 is_active: true,
@@ -570,7 +613,7 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
                 name: name.to_string(),
                 slug: format!("{parent_slug}-{}", slug(name)),
                 description: Some(format!("{name} at {parent_name}.")),
-                budget: round(rng.float(20_000.0, 200_000.0)),
+                budget: money(rng.float(20_000.0, 200_000.0)),
                 headcount_limit: rng.between(2, 15) as i64,
                 color: Some(hex_color(rng)),
                 is_active: rng.boolean(90),
@@ -648,7 +691,7 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
 
     let mut projects = Vec::new();
     for name in PROJECT_NAMES {
-        let budget = round(rng.float(10_000.0, 500_000.0));
+        let budget = rng.float(10_000.0, 500_000.0);
         let estimated_hours = round(rng.float(100.0, 2000.0));
         let start_date = today_back(rng.below(180) as i64);
         projects.push(
@@ -671,8 +714,8 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
                     TaskPriority::High,
                     TaskPriority::Critical,
                 ]),
-                budget,
-                spent: round(rng.float(0.0, budget * 1.2)),
+                budget: money(budget),
+                spent: money(rng.float(0.0, budget * 1.2)),
                 estimated_hours,
                 actual_hours: round(rng.float(0.0, estimated_hours * 1.3)),
                 start_date,
@@ -705,8 +748,8 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
                 slug: slug(name),
                 status: ProjectStatus::Active,
                 priority: TaskPriority::High,
-                budget,
-                spent,
+                budget: money(budget),
+                spent: money(spent),
                 estimated_hours: 500.0,
                 actual_hours: 250.0,
                 start_date: today,
@@ -760,7 +803,7 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
         let (employee_id, hourly_rate) = (employee.id, employee.hourly_rate);
         let project_id = rng.pick(&projects).id;
         let hours = round(rng.float(0.5, 9.0) * 2.0) / 2.0;
-        let hourly_rate = hourly_rate.unwrap_or_else(|| round(rng.float(50.0, 200.0)));
+        let hourly_rate = hourly_rate.unwrap_or_else(|| money(rng.float(50.0, 200.0)));
         toasty::create!(Timesheet {
             employee_id,
             task_id: tasks
@@ -774,7 +817,7 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
             description: Some(rng.pick(TIMESHEET_NOTES).to_string()),
             is_billable: rng.boolean(80),
             hourly_rate,
-            total_cost: round(hours * hourly_rate),
+            total_cost: cost(hours, hourly_rate),
             created_at: days_ago(now, rng.below(90) as i64),
         })
         .exec(db)
@@ -805,7 +848,7 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
                 ExpenseCategory::Other,
             ]),
             description: rng.pick(EXPENSE_DESCRIPTIONS).to_string(),
-            total_amount: 0.0,
+            total_amount: Decimal::ZERO,
             currency: "USD".to_string(),
             submitted_at: (status != ExpenseStatus::Draft).then(Timestamp::now),
             approved_at: matches!(status, ExpenseStatus::Approved | ExpenseStatus::Reimbursed)
@@ -818,11 +861,11 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
         .exec(db)
         .await?;
 
-        let mut total = 0.0;
+        let mut total = Decimal::ZERO;
         for _ in 0..rng.between(1, 5) {
             let quantity = rng.between(1, 6) as i64;
-            let unit_price = round(rng.float(5.0, 400.0));
-            let amount = round(quantity as f64 * unit_price);
+            let unit_price = money(rng.float(5.0, 400.0));
+            let amount = Decimal::from(quantity) * unit_price;
             total += amount;
             toasty::create!(ExpenseLine {
                 expense_id: expense.id,
@@ -839,7 +882,7 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
         }
         Expense::filter(Expense::fields().id().eq(expense.id))
             .update()
-            .total_amount(round(total))
+            .total_amount(total)
             .exec(db)
             .await?;
     }
@@ -874,25 +917,28 @@ async fn create_employee(
         hire_date: today_back(rng.below(1800) as i64),
         job_title: rng.pick(JOB_TITLES).to_string(),
         employment_type,
-        salary: salary.or_else(|| match employment_type {
-            EmploymentType::FullTime => Some(round(rng.float(40_000.0, 180_000.0))),
-            EmploymentType::PartTime => Some(round(rng.float(20_000.0, 90_000.0))),
+        salary: salary.map(money).or_else(|| match employment_type {
+            EmploymentType::FullTime => Some(money(rng.float(40_000.0, 180_000.0))),
+            EmploymentType::PartTime => Some(money(rng.float(20_000.0, 90_000.0))),
             _ => None,
         }),
         hourly_rate: match employment_type {
-            EmploymentType::Contractor => Some(round(rng.float(50.0, 200.0))),
-            EmploymentType::Intern => Some(round(rng.float(15.0, 30.0))),
+            EmploymentType::Contractor => Some(money(rng.float(50.0, 200.0))),
+            EmploymentType::Intern => Some(money(rng.float(15.0, 30.0))),
             _ => None,
         },
         team_color: Some(hex_color(rng)),
         skills,
-        metadata: Some(
-            json!({
-                "certification": rng.pick(CERTIFICATIONS),
-                "office": rng.pick(OFFICES),
-            })
-            .into(),
-        ),
+        metadata: vec![
+            MetadataEntry {
+                key: "certification".to_string(),
+                value: rng.pick(CERTIFICATIONS).to_string(),
+            },
+            MetadataEntry {
+                key: "office".to_string(),
+                value: rng.pick(OFFICES).to_string(),
+            },
+        ],
         is_active: rng.boolean(90),
         created_at: days_ago(&Zoned::now(), rng.below(700) as i64),
     })
@@ -1251,7 +1297,7 @@ const POST_CATEGORIES: &[&str] = &[
     "Testing",
 ];
 
-/// The tags the seeded posts carry, and the post form suggests.
+/// The tags the seeded posts carry.
 pub const TAGS: &[&str] = &[
     "Rust",
     "Async",

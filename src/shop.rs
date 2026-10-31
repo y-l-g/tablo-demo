@@ -1,5 +1,6 @@
 //! The shop resources: products, brands, categories, customers and orders.
 
+use rust_decimal::Decimal;
 use tablo::{
     Action, ActionLayout, BooleanColumn, Change, Color, ColumnToggle, ColumnWidth, ComputedColumn,
     Currency, DateColumn, DateFilter, Detail, FieldErrors, FormInput, GlobalSearch, Grid,
@@ -7,7 +8,7 @@ use tablo::{
     RichTextColumn, Schema, Section, SelectFilter, Table, TernaryFilter, Text, TextColumn,
     ToggleColumn, WriteError,
     extend::{Column, Includes},
-    lens, relation,
+    lens, relation, write_create,
 };
 use topcoat::{Result, context::Cx};
 
@@ -143,9 +144,7 @@ fn product_table() -> Table<Product> {
         ToggleColumn::new(lens!(Product.is_visible))
             .label(tablo::text!("label-visibility"))
             .toggleable(),
-        TextColumn::new(lens!(Product.price))
-            .money(Currency::USD)
-            .sortable(),
+        TextColumn::new(lens!(Product.price)).money(Currency::USD),
         TextColumn::new(lens!(Product.sku))
             .label(tablo::text!("label-sku"))
             .searchable()
@@ -161,6 +160,10 @@ fn product_table() -> Table<Product> {
             .sortable()
             .toggleable()
             .hidden_by_default(),
+        TextColumn::new(lens!(Product.units_sold))
+            .numeric(0)
+            .label(tablo::text!("label-units-sold"))
+            .sortable(),
         DateColumn::new(lens!(Product.published_at))
             .label(tablo::text!("label-publishing-date"))
             .sortable()
@@ -191,9 +194,9 @@ pub struct ProductForm {
     pub image: String,
     #[form(file)]
     pub gallery: Vec<String>,
-    pub price: Option<f64>,
-    pub old_price: Option<f64>,
-    pub cost: Option<f64>,
+    pub price: Option<Decimal>,
+    pub old_price: Option<Decimal>,
+    pub cost: Option<Decimal>,
     pub sku: Option<String>,
     pub barcode: Option<String>,
     pub qty: u64,
@@ -221,7 +224,7 @@ impl Action<ProductResource> for ToggleProductVisibility {
         products: &[Product],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for product in products {
             Product::filter(Product::fields().id().eq(product.id))
                 .update()
@@ -265,7 +268,7 @@ impl Action<ProductResource> for BulkSetProductVisibility {
         products: &[Product],
         choice: VisibilityChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<VisibilityChoiceField>> {
         for product in products {
             Product::filter(Product::fields().id().eq(product.id))
                 .update()
@@ -284,8 +287,8 @@ impl Action<ProductResource> for BulkSetProductVisibility {
 /// What `AdjustProductPrice` asks for.
 #[derive(FormInput)]
 pub struct PriceChange {
-    pub price: f64,
-    pub old_price: Option<f64>,
+    pub price: Decimal,
+    pub old_price: Option<Decimal>,
 }
 
 /// Sets a product's price and its compare-at price.
@@ -301,7 +304,7 @@ impl Action<ProductResource> for AdjustProductPrice {
         products: &[Product],
         change: PriceChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<PriceChangeField>> {
         for product in products {
             Product::filter(Product::fields().id().eq(product.id))
                 .update()
@@ -344,7 +347,7 @@ impl Action<ProductResource> for AdjustProductStock {
         products: &[Product],
         change: StockChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<StockChangeField>> {
         for product in products {
             Product::filter(Product::fields().id().eq(product.id))
                 .update()
@@ -385,6 +388,7 @@ impl Resource for BrandResource {
                         .toggleable()
                         .hidden_by_default(),
                 ))
+                .default_sort(lens!(Brand.sort))
                 .action_layout(ActionLayout::Menu),
             )
             .detail(Detail::new(
@@ -415,6 +419,29 @@ impl Resource for BrandResource {
             ))
             .relation(Relation::has_many::<AddressResource>(Address::fields().brand_id()).tab())
             .action::<ToggleBrandVisibility>()
+            .action::<MoveBrandUp>()
+            .action::<MoveBrandDown>()
+    }
+
+    /// A new brand goes last in the manual order.
+    async fn create_record(
+        cx: &Cx,
+        form: BrandForm,
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<Brand, WriteError<BrandFormField>> {
+        let mut brand = write_create::<Self>(cx, form, ex).await?;
+        let last = Brand::all()
+            .order_by(Brand::fields().sort().desc())
+            .first()
+            .exec(&mut *ex)
+            .await?;
+        brand.sort = last.map_or(0, |last| last.sort + 1);
+        Brand::filter(Brand::fields().id().eq(brand.id))
+            .update()
+            .sort(brand.sort)
+            .exec(&mut *ex)
+            .await?;
+        Ok(brand)
     }
 
     crate::audit!();
@@ -444,7 +471,7 @@ impl Action<BrandResource> for ToggleBrandVisibility {
         brands: &[Brand],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for brand in brands {
             Brand::filter(Brand::fields().id().eq(brand.id))
                 .update()
@@ -454,6 +481,102 @@ impl Action<BrandResource> for ToggleBrandVisibility {
         }
         Ok(Outcome::done())
     }
+}
+
+/// Moves a brand one place up the manual order, swapping with the brand above it.
+pub struct MoveBrandUp;
+
+impl Action<BrandResource> for MoveBrandUp {
+    type Input = ();
+    const NAME: &'static str = "move-up";
+    const PLACES: Places = Places::ROW;
+
+    async fn run(
+        _cx: &Cx,
+        brands: &[Brand],
+        (): (),
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+        for brand in brands {
+            swap_place(brand, Direction::Up, ex).await?;
+        }
+        Ok(Outcome::done())
+    }
+
+    fn label() -> Text {
+        tablo::text!("action-move-up")
+    }
+}
+
+/// Moves a brand one place down the manual order, swapping with the brand below it.
+pub struct MoveBrandDown;
+
+impl Action<BrandResource> for MoveBrandDown {
+    type Input = ();
+    const NAME: &'static str = "move-down";
+    const PLACES: Places = Places::ROW;
+
+    async fn run(
+        _cx: &Cx,
+        brands: &[Brand],
+        (): (),
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+        for brand in brands {
+            swap_place(brand, Direction::Down, ex).await?;
+        }
+        Ok(Outcome::done())
+    }
+
+    fn label() -> Text {
+        tablo::text!("action-move-down")
+    }
+}
+
+/// Which neighbour in the manual order a move swaps with.
+#[derive(Clone, Copy)]
+enum Direction {
+    Up,
+    Down,
+}
+
+/// Swaps `brand`'s place in the manual order with its neighbour's, when it has one.
+async fn swap_place(
+    brand: &Brand,
+    direction: Direction,
+    ex: &mut dyn toasty::Executor,
+) -> toasty::Result<()> {
+    let sort = Brand::fields().sort();
+    let neighbour = match direction {
+        Direction::Up => {
+            Brand::filter(sort.lt(brand.sort))
+                .order_by(Brand::fields().sort().desc())
+                .first()
+                .exec(&mut *ex)
+                .await?
+        }
+        Direction::Down => {
+            Brand::filter(sort.gt(brand.sort))
+                .order_by(Brand::fields().sort().asc())
+                .first()
+                .exec(&mut *ex)
+                .await?
+        }
+    };
+    let Some(neighbour) = neighbour else {
+        return Ok(());
+    };
+    Brand::filter(Brand::fields().id().eq(brand.id))
+        .update()
+        .sort(neighbour.sort)
+        .exec(&mut *ex)
+        .await?;
+    Brand::filter(Brand::fields().id().eq(neighbour.id))
+        .update()
+        .sort(brand.sort)
+        .exec(&mut *ex)
+        .await?;
+    Ok(())
 }
 
 /// Product categories.
@@ -552,7 +675,7 @@ impl Action<ProductCategoryResource> for ToggleCategoryVisibility {
         categories: &[ProductCategory],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for category in categories {
             ProductCategory::filter(ProductCategory::fields().id().eq(category.id))
                 .update()
@@ -712,7 +835,7 @@ impl Action<CustomerResource> for SendCustomerEmail {
         _customers: &[Customer],
         _draft: EmailDraft,
         _ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<EmailDraftField>> {
         Ok(Outcome::done())
     }
 
@@ -750,6 +873,8 @@ impl Resource for OrderResource {
                             .label(tablo::text!("label-shipping-cost")),
                         DateColumn::new(lens!(Order.created_at))
                             .label(tablo::text!("label-order-date")),
+                        RelationColumn::of::<OrderAddressResource>(relation!(Order.address))
+                            .label(tablo::text!("label-shipping-address")),
                     )),
                     RichTextColumn::new(lens!(Order.notes)),
                 )),
@@ -760,6 +885,7 @@ impl Resource for OrderResource {
                         c.number.label(tablo::text!("label-number")),
                         c.customer_id
                             .searchable()
+                            .creatable()
                             .label(tablo::text!("label-customer")),
                         c.status.buttons(),
                         c.notes.rich_text(),
@@ -773,9 +899,9 @@ impl Resource for OrderResource {
                     .detail(tablo::text!("label-total"), lens!(Order.total_price)),
             )
             .relation(Relation::has_many::<OrderItemResource>(OrderItem::fields().order_id()).tab())
-            .relation(
-                Relation::has_many::<OrderAddressResource>(OrderAddress::fields().order_id()).tab(),
-            )
+            .relation(Relation::has_one::<OrderAddressResource>(
+                OrderAddress::fields().order_id(),
+            ))
             .relation(Relation::has_many::<PaymentResource>(Payment::fields().order_id()).tab())
             .action::<ProcessOrder>()
             .action::<ShipOrder>()
@@ -784,6 +910,28 @@ impl Resource for OrderResource {
             .action::<CancelOrder>()
             .soft_delete(lens!(Order.deleted_at))
             .list_widget::<PipelineWidget>()
+    }
+
+    /// A paid order stays: a delete declines while it holds payments, and the message flashes.
+    async fn delete_record(
+        _cx: &Cx,
+        order: &Order,
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<(), WriteError> {
+        let payments = Payment::filter(Payment::fields().order_id().eq(order.id))
+            .exec(&mut *ex)
+            .await?;
+        if !payments.is_empty() {
+            return Err(WriteError::declined(tablo::text!(
+                "error-order-has-payments"
+            )));
+        }
+        Order::filter(Order::fields().id().eq(order.id))
+            .update()
+            .deleted_at(Some(jiff::Timestamp::now()))
+            .exec(&mut *ex)
+            .await?;
+        Ok(())
     }
 
     /// Tells the signed-in user about a new order, once the write committed.
@@ -856,7 +1004,7 @@ impl Action<OrderResource> for ProcessOrder {
         orders: &[Order],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         set_status(orders, OrderStatus::Processing, ex).await
     }
 
@@ -889,7 +1037,7 @@ impl Action<OrderResource> for ShipOrder {
         orders: &[Order],
         shipping: ShippingNotes,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<ShippingNotesField>> {
         for order in orders {
             Order::filter(Order::fields().id().eq(order.id))
                 .update()
@@ -898,6 +1046,7 @@ impl Action<OrderResource> for ShipOrder {
                 .exec(&mut *ex)
                 .await?;
         }
+        count_sold(orders, ex).await?;
         Ok(Outcome::done())
     }
 
@@ -924,7 +1073,7 @@ impl Action<OrderResource> for DeliverOrder {
         orders: &[Order],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         set_status(orders, OrderStatus::Delivered, ex).await
     }
 
@@ -947,7 +1096,7 @@ impl Action<OrderResource> for ReplicateOrder {
         orders: &[Order],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         let date = jiff::Zoned::now().strftime("%Y%m%d").to_string();
         for order in orders {
             toasty::create!(Order {
@@ -990,7 +1139,7 @@ impl Action<OrderResource> for CancelOrder {
         orders: &[Order],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         set_status(orders, OrderStatus::Cancelled, ex).await
     }
 
@@ -1000,11 +1149,11 @@ impl Action<OrderResource> for CancelOrder {
 }
 
 /// Moves every order of `orders` to `status`.
-async fn set_status(
+async fn set_status<K>(
     orders: &[Order],
     status: OrderStatus,
     ex: &mut dyn toasty::Executor,
-) -> Result<Outcome, WriteError> {
+) -> Result<Outcome, WriteError<K>> {
     for order in orders {
         Order::filter(Order::fields().id().eq(order.id))
             .update()
@@ -1013,6 +1162,33 @@ async fn set_status(
             .await?;
     }
     Ok(Outcome::done())
+}
+
+/// Adds each line of the shipped `orders` to its product's units sold.
+async fn count_sold(orders: &[Order], ex: &mut dyn toasty::Executor) -> toasty::Result<()> {
+    for order in orders {
+        let items = OrderItem::filter(OrderItem::fields().order_id().eq(Some(order.id)))
+            .exec(&mut *ex)
+            .await?;
+        for item in items {
+            let Some(product_id) = item.product_id else {
+                continue;
+            };
+            let product = Product::filter(Product::fields().id().eq(product_id))
+                .first()
+                .exec(&mut *ex)
+                .await?;
+            let Some(product) = product else {
+                continue;
+            };
+            Product::filter(Product::fields().id().eq(product_id))
+                .update()
+                .units_sold(product.units_sold + item.qty.max(0) as u64)
+                .exec(&mut *ex)
+                .await?;
+        }
+    }
+    Ok(())
 }
 
 /// One line of an order, which the order page lists.
@@ -1026,7 +1202,7 @@ impl Resource for OrderItemResource {
         let c = OrderItemForm::controls();
         ResourceDef::new()
             .icon(crate::icons::ORDER_ITEMS)
-            .navigation_hidden()
+            .without_navigation()
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(Table::new((
@@ -1079,7 +1255,7 @@ pub struct OrderItemForm {
     #[form(relationship = ProductResource)]
     pub product_id: Option<u64>,
     pub qty: i64,
-    pub unit_price: f64,
+    pub unit_price: Decimal,
 }
 
 /// Payments.
@@ -1093,16 +1269,14 @@ impl Resource for PaymentResource {
         let c = PaymentForm::controls();
         ResourceDef::new()
             .icon(crate::icons::PAYMENTS)
-            .navigation_hidden()
+            .without_navigation()
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(Table::new((
                 RelationColumn::of::<OrderResource>(relation!(Payment.order))
                     .label(tablo::text!("label-order")),
                 TextColumn::new(lens!(Payment.reference)).searchable(),
-                TextColumn::new(lens!(Payment.amount))
-                    .money(Currency::USD)
-                    .sortable(),
+                TextColumn::new(lens!(Payment.amount)).money(Currency::USD),
                 TextColumn::new(lens!(Payment.provider)).sortable(),
                 TextColumn::new(lens!(Payment.method)).sortable(),
             )))
@@ -1139,7 +1313,7 @@ pub struct PaymentForm {
     #[form(relationship = OrderResource)]
     pub order_id: u64,
     pub reference: String,
-    pub amount: f64,
+    pub amount: Decimal,
     #[form(options)]
     pub currency: crate::enums::CurrencyCode,
     #[form(options = Providers)]
@@ -1171,7 +1345,7 @@ impl Resource for AddressResource {
         let c = AddressForm::controls();
         ResourceDef::new()
             .icon(crate::icons::ADDRESSES)
-            .navigation_hidden()
+            .without_navigation()
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(
@@ -1229,10 +1403,7 @@ pub struct AddressForm {
     pub zip: Option<String>,
 }
 
-/// Where an order ships, which the order page lists.
-///
-/// Tablo has no nested relationship form, so these fields are a resource of
-/// their own rather than part of the order form.
+/// Where an order ships: the order's own form edits it, as its one child.
 pub struct OrderAddressResource;
 
 impl Resource for OrderAddressResource {
@@ -1243,7 +1414,7 @@ impl Resource for OrderAddressResource {
         let c = OrderAddressForm::controls();
         ResourceDef::new()
             .icon(crate::icons::ORDER_ADDRESSES)
-            .navigation_hidden()
+            .without_navigation()
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(Table::new((
@@ -1267,8 +1438,7 @@ impl Resource for OrderAddressResource {
             ))
             .form(Schema::new(
                 Section::new(tablo::text!("section-order-address")).schema((
-                    c.order_id.searchable().label(tablo::text!("label-order")),
-                    c.country.searchable(),
+                    c.country,
                     c.street.label(tablo::text!("label-street-address")),
                     Grid::new(3).schema((
                         c.city.suggestions(crate::seed::CITIES.iter().copied()),

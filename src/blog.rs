@@ -1,8 +1,8 @@
 //! The blog resources: posts, categories and authors.
 
 use tablo::{
-    Action, ActionLayout, BooleanColumn, Change, DateColumn, DateFilter, Detail, Grid, ImageColumn,
-    ListColumn, Outcome, Places, Relation, RelationColumn, Resource, ResourceDef, RichTextColumn,
+    Action, ActionLayout, BooleanColumn, Change, CountColumn, DateColumn, DateFilter, Detail, Grid,
+    ImageColumn, Outcome, Places, Relation, RelationColumn, Resource, ResourceDef, RichTextColumn,
     Schema, Section, Table, Text, TextColumn, WriteError,
     extend::{Column, Includes},
     lens, relation,
@@ -10,8 +10,7 @@ use tablo::{
 use topcoat::{Result, context::Cx};
 
 use crate::dashboards::PostStatusWidget;
-use crate::enums::PostTags;
-use crate::models::{Author, Comment, Post, PostCategory};
+use crate::models::{Author, Comment, Post, PostCategory, Tag};
 use crate::panel::{IMAGE_EXTENSIONS, IMAGE_MAX_BYTES};
 use crate::roles::{self, Domain};
 
@@ -42,7 +41,7 @@ impl Resource for PostResource {
                             .searchable()
                             .label(tablo::text!("label-category")),
                         c.published_at.label(tablo::text!("label-publishing-date")),
-                        c.tags.label(tablo::text!("label-tags")),
+                        c.tags.searchable().label(tablo::text!("label-tags")),
                     )),
                 ),
                 Section::new(tablo::text!("section-image")).schema(
@@ -99,7 +98,7 @@ fn post_table() -> Table<Post> {
             .label(tablo::text!("label-author"))
             .toggleable(),
         PostStatusColumn,
-        ListColumn::new(lens!(Post.tags))
+        RelationColumn::list::<TagResource>(relation!(Post.tags))
             .label(tablo::text!("label-tags"))
             .toggleable(),
         RelationColumn::of::<PostCategoryResource>(relation!(Post.post_category))
@@ -130,7 +129,8 @@ fn post_detail() -> Detail<Post> {
                     .label(tablo::text!("label-author")),
                 RelationColumn::of::<PostCategoryResource>(relation!(Post.post_category))
                     .label(tablo::text!("label-category")),
-                ListColumn::new(lens!(Post.tags)).label(tablo::text!("label-tags")),
+                RelationColumn::list::<TagResource>(relation!(Post.tags))
+                    .label(tablo::text!("label-tags")),
             )),
             ImageColumn::new(lens!(Post.image)),
         )),
@@ -151,8 +151,8 @@ pub struct PostForm {
     #[form(relationship = PostCategoryResource)]
     pub post_category_id: Option<u64>,
     pub published_at: Option<jiff::civil::Date>,
-    #[form(tags, options = PostTags)]
-    pub tags: Vec<String>,
+    #[form(relationship = TagResource)]
+    pub tags: Vec<u64>,
     #[form(file, optional)]
     pub image: String,
 }
@@ -170,7 +170,7 @@ impl Action<PostResource> for TogglePostPublish {
         posts: &[Post],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for post in posts {
             let published_at = if post.is_published() {
                 None
@@ -185,6 +185,52 @@ impl Action<PostResource> for TogglePostPublish {
         }
         Ok(Outcome::done())
     }
+}
+
+/// Tags, which posts share.
+pub struct TagResource;
+
+impl Resource for TagResource {
+    type Model = Tag;
+    type Form = TagForm;
+
+    fn declare() -> ResourceDef<Self> {
+        let c = TagForm::controls();
+        ResourceDef::new()
+            .icon(crate::icons::TAGS)
+            .navigation_group(tablo::text!("navigation-blog"))
+            .navigation_order(3)
+            .policy(roles::policy(Domain::Blog))
+            .table(
+                Table::new((
+                    TextColumn::new(lens!(Tag.name)).searchable().sortable(),
+                    CountColumn::of::<PostResource>(relation!(Tag.posts))
+                        .label(tablo::text!("label-posts")),
+                ))
+                .default_sort(lens!(Tag.name))
+                .action_layout(ActionLayout::Menu),
+            )
+            .detail(Detail::new(
+                Section::new(tablo::text!("section-tag"))
+                    .columns((TextColumn::new(lens!(Tag.name)),)),
+            ))
+            .form(Schema::new(
+                Section::new(tablo::text!("section-tag")).schema(c.name.unique()),
+            ))
+            .record_title(lens!(Tag.name))
+            .relation(Relation::belongs_to_many::<PostResource>(
+                Tag::fields().posts(),
+            ))
+    }
+
+    crate::audit!();
+}
+
+/// The tag's record form.
+#[derive(tablo::RecordForm)]
+#[form(model = Tag)]
+pub struct TagForm {
+    pub name: String,
 }
 
 /// Post categories.
@@ -273,7 +319,7 @@ impl Action<PostCategoryResource> for ToggleCategoryVisibility {
         categories: &[PostCategory],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for category in categories {
             PostCategory::filter(PostCategory::fields().id().eq(category.id))
                 .update()
@@ -367,7 +413,7 @@ impl Resource for CommentResource {
         let c = CommentForm::controls();
         ResourceDef::new()
             .icon(crate::icons::COMMENTS)
-            .navigation_hidden()
+            .without_navigation()
             .policy(roles::policy(Domain::Shop))
             .table(Table::new((
                 TextColumn::new(lens!(Comment.title))

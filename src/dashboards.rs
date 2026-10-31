@@ -23,7 +23,7 @@ use crate::{
         DepartmentResource, EmployeeResource, ExpenseResource, LeaveRequestResource,
         ProjectResource, TimesheetResource,
     },
-    models::{Customer, Employee, Expense, LeaveRequest, Order, Post, Product, Timesheet},
+    models::{Customer, Employee, Expense, LeaveRequest, Order, Post, Product, Timesheet, float},
     roles::{self, Domain},
     shop::{CustomerResource, OrderItemResource, OrderResource, ProductResource},
 };
@@ -123,6 +123,7 @@ impl Page for ShopDashboard {
             .widget::<OrdersWidget>()
             .widget::<PipelineWidget>()
             .widget::<LatestOrdersWidget>()
+            .widget::<TopProductsWidget>()
             .widget::<CustomersWidget>()
     }
 }
@@ -320,6 +321,25 @@ impl Widget for LatestOrdersWidget {
     }
 }
 
+/// The products that sold most, by the units shipped, each linking to its record.
+pub struct TopProductsWidget;
+
+impl Widget for TopProductsWidget {
+    fn declare() -> WidgetDef {
+        WidgetDef::new().access(can_list::<ProductResource>)
+    }
+
+    async fn render(cx: &Cx) -> Result<impl View> {
+        let table = RecordTable::new()
+            .heading(tablo::text!("widget-top-products"))
+            .column(Product::fields().name())
+            .column(Product::fields().units_sold())
+            .order_by(Product::fields().units_sold().desc())
+            .limit(5);
+        tablo::record_table::<ProductResource>(cx, table).await
+    }
+}
+
 /// The customers the shop has, how many came back, and what each one is worth.
 pub struct CustomersWidget;
 
@@ -353,7 +373,7 @@ impl Widget for CustomersWidget {
         let revenue: f64 = orders
             .iter()
             .filter(|order| order.status != OrderStatus::Cancelled)
-            .filter_map(|order| order.total_price)
+            .filter_map(|order| order.total_price.map(float))
             .sum();
         let revenue_per_customer = if customers.is_empty() {
             0.0
@@ -559,8 +579,8 @@ impl Widget for TimeWidget {
         let projects = scoped_query::<ProjectResource>(cx)?
             .exec(&mut db(cx)?)
             .await?;
-        let budget: f64 = projects.iter().map(|project| project.budget).sum();
-        let spent: f64 = projects.iter().map(|project| project.spent).sum();
+        let budget: f64 = projects.iter().map(|project| float(project.budget)).sum();
+        let spent: f64 = projects.iter().map(|project| float(project.spent)).sum();
         let used = share(spent, budget);
         let budget_tile = Stat::new(tablo::text!("stat-project-budget"), percent(used))
             .detail(tablo::text!(
@@ -697,7 +717,7 @@ impl Widget for ApprovalsWidget {
             .iter()
             .filter(|expense| expense.status == ExpenseStatus::Reimbursed)
             .fold((0, 0.0), |(count, total), expense| {
-                (count + 1, total + expense.total_amount)
+                (count + 1, total + float(expense.total_amount))
             });
 
         let leave_url = tablo::url::resource::<LeaveRequestResource>(cx);
@@ -923,7 +943,7 @@ impl Sale {
     fn of(now: Timestamp, order: &Order) -> Self {
         Self {
             age: days_since(now, order.created_at),
-            revenue: order.total_price.unwrap_or(0.0),
+            revenue: order.total_price.map_or(0.0, float),
             cancelled: order.status == OrderStatus::Cancelled,
         }
     }

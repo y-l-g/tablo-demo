@@ -22,7 +22,7 @@ use topcoat::{
 
 use crate::{
     auth::{DemoAuth, DemoResetter, DemoTenantRegistrar, DemoVerifier, SignedIn},
-    blog::{AuthorResource, CommentResource, PostCategoryResource, PostResource},
+    blog::{AuthorResource, CommentResource, PostCategoryResource, PostResource, TagResource},
     dashboards::{Dashboard, HrDashboard, ShopDashboard},
     mailbox::Postbox,
     seed,
@@ -80,6 +80,7 @@ pub fn admin_panel() -> Panel {
         .resource::<crate::hr::TaskResource>()
         .resource::<crate::hr::TimesheetResource>()
         .resource::<PostCategoryResource>()
+        .resource::<TagResource>()
         .resource::<AuthorResource>()
         .resource::<CommentResource>()
         .uploads_dir(UPLOAD_URL_PREFIX, upload_dir())

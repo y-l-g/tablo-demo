@@ -1,6 +1,7 @@
 //! The shop: brands, categories, products, customers, orders and payments.
 
 use jiff::{Timestamp, civil::Date};
+use rust_decimal::Decimal;
 use toasty::Deferred;
 
 use super::{Address, Comment};
@@ -23,8 +24,9 @@ pub struct Brand {
     pub is_visible: bool,
     pub seo_title: Option<String>,
     pub seo_description: Option<String>,
-    /// The brand's place in the list's manual order, which nothing reorders.
-    pub sort: Option<i64>,
+    /// The brand's place in the list's manual order, which the move actions swap.
+    #[default(0)]
+    pub sort: i64,
     #[default(Timestamp::now())]
     pub created_at: Timestamp,
     #[update(Timestamp::now())]
@@ -89,13 +91,16 @@ pub struct Product {
     pub qty: u64,
     #[default(0)]
     pub security_stock: u64,
+    /// The units shipped so far, which the top-products widget ranks.
+    #[default(0)]
+    pub units_sold: u64,
     #[default(false)]
     pub featured: bool,
     #[default(false)]
     pub is_visible: bool,
-    pub old_price: Option<f64>,
-    pub price: Option<f64>,
-    pub cost: Option<f64>,
+    pub old_price: Option<Decimal>,
+    pub price: Option<Decimal>,
+    pub cost: Option<Decimal>,
     #[column("type")]
     pub kind: Option<ProductType>,
     #[default(false)]
@@ -201,7 +206,7 @@ pub struct OrderItem {
     #[belongs_to(key = product_id, references = id)]
     pub product: Deferred<Option<Product>>,
     pub qty: i64,
-    pub unit_price: f64,
+    pub unit_price: Decimal,
     #[default(Timestamp::now())]
     pub created_at: Timestamp,
     #[update(Timestamp::now())]
@@ -241,10 +246,10 @@ pub struct Order {
     pub customer: Deferred<Option<Customer>>,
     #[unique]
     pub number: String,
-    pub total_price: Option<f64>,
+    pub total_price: Option<Decimal>,
     #[default(OrderStatus::New)]
     pub status: OrderStatus,
-    pub shipping_price: Option<f64>,
+    pub shipping_price: Option<Decimal>,
     pub shipping_method: Option<String>,
     pub notes: Option<String>,
     /// Set by a delete, which hides the row instead of removing it.
@@ -274,7 +279,7 @@ pub struct Payment {
     pub reference: String,
     pub provider: String,
     pub method: PaymentMethod,
-    pub amount: f64,
+    pub amount: Decimal,
     pub currency: CurrencyCode,
     #[default(Timestamp::now())]
     pub created_at: Timestamp,

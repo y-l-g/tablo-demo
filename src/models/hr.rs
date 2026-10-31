@@ -5,6 +5,7 @@ use jiff::{
     Timestamp,
     civil::{Date, Time},
 };
+use rust_decimal::Decimal;
 use serde_json::Value;
 use toasty::{Deferred, Json};
 
@@ -27,8 +28,8 @@ pub struct Department {
     #[unique]
     pub slug: String,
     pub description: Option<String>,
-    #[default(0.0)]
-    pub budget: f64,
+    #[default(Decimal::ZERO)]
+    pub budget: Decimal,
     #[default(0)]
     pub headcount_limit: i64,
     pub color: Option<String>,
@@ -44,6 +45,13 @@ pub struct Department {
     pub employees: Deferred<Vec<Employee>>,
     #[has_many]
     pub projects: Deferred<Vec<Project>>,
+}
+
+/// One key and value of an employee's metadata.
+#[derive(Debug, Clone, toasty::Embed, tablo::FormInput)]
+pub struct MetadataEntry {
+    pub key: String,
+    pub value: String,
 }
 
 /// Someone the company employs.
@@ -65,14 +73,16 @@ pub struct Employee {
     pub job_title: String,
     #[default(EmploymentType::FullTime)]
     pub employment_type: EmploymentType,
-    pub salary: Option<f64>,
-    pub hourly_rate: Option<f64>,
+    pub salary: Option<Decimal>,
+    pub hourly_rate: Option<Decimal>,
     pub team_color: Option<String>,
     /// The skills the employee claims.
     #[default(Vec::<String>::new())]
     pub skills: Vec<String>,
-    #[column(type = text)]
-    pub metadata: Option<Json<Value>>,
+    /// The employee's key-value details, such as a certification or an office.
+    #[document]
+    #[default(Vec::<MetadataEntry>::new())]
+    pub metadata: Vec<MetadataEntry>,
     pub is_active: bool,
     /// Set by a delete, which hides the row instead of removing it.
     pub deleted_at: Option<Timestamp>,
@@ -143,10 +153,10 @@ pub struct Project {
     pub status: ProjectStatus,
     #[default(TaskPriority::Medium)]
     pub priority: TaskPriority,
-    #[default(0.0)]
-    pub budget: f64,
-    #[default(0.0)]
-    pub spent: f64,
+    #[default(Decimal::ZERO)]
+    pub budget: Decimal,
+    #[default(Decimal::ZERO)]
+    pub spent: Decimal,
     #[default(0.0)]
     pub estimated_hours: f64,
     #[default(0.0)]
@@ -233,9 +243,9 @@ pub struct Timesheet {
     pub description: Option<String>,
     #[default(true)]
     pub is_billable: bool,
-    #[default(0.0)]
-    pub hourly_rate: f64,
-    pub total_cost: f64,
+    #[default(Decimal::ZERO)]
+    pub hourly_rate: Decimal,
+    pub total_cost: Decimal,
     #[default(Timestamp::now())]
     pub created_at: Timestamp,
     #[update(Timestamp::now())]
@@ -253,10 +263,10 @@ pub struct ExpenseLine {
     #[belongs_to(key = expense_id, references = id)]
     pub expense: Deferred<Expense>,
     pub description: String,
-    pub amount: f64,
+    pub amount: Decimal,
     #[default(1)]
     pub quantity: i64,
-    pub unit_price: f64,
+    pub unit_price: Decimal,
     pub date: Date,
     #[default(Timestamp::now())]
     pub created_at: Timestamp,
@@ -284,7 +294,7 @@ pub struct Expense {
     pub status: ExpenseStatus,
     pub category: ExpenseCategory,
     pub description: String,
-    pub total_amount: f64,
+    pub total_amount: Decimal,
     #[default("USD".to_string())]
     pub currency: String,
     pub submitted_at: Option<Timestamp>,

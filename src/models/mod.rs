@@ -7,13 +7,17 @@ pub mod shop;
 pub mod staff;
 
 use jiff::Timestamp;
+use rust_decimal::{Decimal, prelude::ToPrimitive};
 use toasty::Deferred;
 
 use crate::enums::CountryCode;
 
 pub use audit::AuditEntry;
-pub use blog::{Author, Post, PostCategory};
-pub use hr::{Department, Employee, Expense, ExpenseLine, LeaveRequest, Project, Task, Timesheet};
+pub use blog::{Author, Post, PostCategory, PostTag, Tag};
+pub use hr::{
+    Department, Employee, Expense, ExpenseLine, LeaveRequest, MetadataEntry, Project, Task,
+    Timesheet,
+};
 pub use shop::{
     Brand, Customer, Order, OrderAddress, OrderItem, Payment, Product, ProductCategory,
     ProductCategoryLink,
@@ -79,9 +83,26 @@ pub struct Comment {
     pub updated_at: Timestamp,
 }
 
-/// A money amount, rounded to the two decimals the columns hold.
+/// A measure rounded to the two decimals a value of its kind holds.
 pub fn round(amount: f64) -> f64 {
     (amount * 100.0).round() / 100.0
+}
+
+/// A money amount from a float, rounded to the two decimals a price holds.
+pub fn money(amount: f64) -> Decimal {
+    Decimal::from_f64_retain(amount)
+        .unwrap_or_default()
+        .round_dp(2)
+}
+
+/// A money amount as a float, for the dashboards' figures and charts.
+pub fn float(amount: Decimal) -> f64 {
+    amount.to_f64().unwrap_or_default()
+}
+
+/// What `hours` of work at `rate` an hour cost, rounded to the cent.
+pub fn cost(hours: f64, rate: Decimal) -> Decimal {
+    (Decimal::from_f64_retain(hours).unwrap_or_default() * rate).round_dp(2)
 }
 
 /// Five characters that tell a replica's slug or number apart from its original's.
