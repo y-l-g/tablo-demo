@@ -1,5 +1,4 @@
-//! The closed value sets the demo's columns store, one `Options` enum each, and the open ones its
-//! tags fields suggest.
+//! The closed value sets the demo's columns store, one `Options` enum each.
 //!
 //! Toasty stores a variant under its `snake_case` name.
 //!
@@ -199,15 +198,6 @@ pub enum StaffRole {
     HrManager,
     #[option(color = "gray")]
     Viewer,
-}
-
-/// The tags the post form suggests.
-pub struct PostTags;
-
-impl tablo::Options for PostTags {
-    fn options() -> Vec<(String, tablo::Text)> {
-        suggestions(crate::seed::TAGS)
-    }
 }
 
 /// The skills the employee form suggests.

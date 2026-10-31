@@ -1,23 +1,25 @@
 //! The HR and project resources.
 
 use jiff::{Span, Timestamp, Zoned};
+use rust_decimal::Decimal;
 use tablo::{
     Action, ActionLayout, BooleanColumn, ColorColumn, ComputedColumn, CountColumn, Currency,
     DateColumn, DateFilter, Detail, FieldAccess, FileColumn, FormInput, GlobalSearch, Grid,
-    ListColumn, Outcome, Places, RecordForm, Relation, RelationColumn, Resource, ResourceDef,
-    Schema, Section, SelectColumn, SelectFilter, Tab, Table, Tabs, TernaryFilter, Text, TextColumn,
-    WriteError, lens, relation,
+    ListColumn, Outcome, Places, RecordForm, Relation, RelationColumn, RepeaterColumn, Resource,
+    ResourceDef, Schema, Section, SelectColumn, SelectFilter, Tab, Table, Tabs, TernaryFilter,
+    Text, TextColumn, WriteError, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
+use crate::controls::ColorInput;
 use crate::dashboards::LeaveStatusWidget;
 use crate::enums::{
     EmploymentType, ExpenseCategory, ExpenseStatus, LeaveStatus, LeaveType, ProjectStatus, Skills,
     TaskLabels, TaskPriority, TaskStatus,
 };
 use crate::models::{
-    Department, Employee, Expense, ExpenseLine, LeaveRequest, Project, Task, Timesheet,
-    replica_suffix, round,
+    Department, Employee, Expense, ExpenseLine, LeaveRequest, MetadataEntry, Project, Task,
+    Timesheet, cost, replica_suffix,
 };
 use crate::panel::{RECEIPT_EXTENSIONS, RECEIPT_MAX_BYTES};
 use crate::roles::{self, Domain};
@@ -47,9 +49,7 @@ impl Resource for DepartmentResource {
                         .toggleable(),
                     CountColumn::of::<EmployeeResource>(relation!(Department.employees))
                         .label(tablo::text!("label-headcount")),
-                    TextColumn::new(lens!(Department.budget))
-                        .money(Currency::USD)
-                        .sortable(),
+                    TextColumn::new(lens!(Department.budget)).money(Currency::USD),
                     ColorColumn::new(lens!(Department.color)).toggleable(),
                     BooleanColumn::new(lens!(Department.is_active))
                         .label(tablo::text!("label-active")),
@@ -77,7 +77,7 @@ impl Resource for DepartmentResource {
                     c.parent_id.label(tablo::text!("label-parent-department")),
                     c.description.multiline(3),
                     Grid::new(2).schema((c.budget.prefix("$"), c.headcount_limit)),
-                    c.color,
+                    c.color.custom(ColorInput),
                     c.is_active.switch().label(tablo::text!("label-active")),
                 )),
             ))
@@ -102,7 +102,7 @@ pub struct DepartmentForm {
     #[form(relationship = DepartmentResource)]
     pub parent_id: Option<u64>,
     pub description: Option<String>,
-    pub budget: f64,
+    pub budget: Decimal,
     pub headcount_limit: i64,
     pub color: Option<String>,
     pub is_active: bool,
@@ -111,7 +111,7 @@ pub struct DepartmentForm {
 /// What `AdjustDepartmentBudget` asks for.
 #[derive(FormInput)]
 pub struct BudgetChange {
-    pub budget: f64,
+    pub budget: Decimal,
 }
 
 /// Sets a department's budget.
@@ -127,7 +127,7 @@ impl Action<DepartmentResource> for AdjustDepartmentBudget {
         departments: &[Department],
         change: BudgetChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<BudgetChangeField>> {
         for department in departments {
             Department::filter(Department::fields().id().eq(department.id))
                 .update()
@@ -157,7 +157,7 @@ impl Action<DepartmentResource> for ReplicateDepartment {
         departments: &[Department],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for department in departments {
             toasty::create!(Department {
                 parent_id: department.parent_id,
@@ -193,7 +193,7 @@ impl Action<DepartmentResource> for ToggleDepartmentActive {
         departments: &[Department],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for department in departments {
             Department::filter(Department::fields().id().eq(department.id))
                 .update()
@@ -260,6 +260,8 @@ impl Resource for EmployeeResource {
                         DateColumn::new(lens!(Employee.hire_date)),
                         TextColumn::new(lens!(Employee.salary)).money(Currency::USD),
                         ListColumn::new(lens!(Employee.skills)).label(tablo::text!("label-skills")),
+                        RepeaterColumn::new(lens!(Employee.metadata))
+                            .label(tablo::text!("label-metadata")),
                         BooleanColumn::new(lens!(Employee.is_active))
                             .label(tablo::text!("label-active")),
                     )),
@@ -271,9 +273,9 @@ impl Resource for EmployeeResource {
                     c.email.email().unique(),
                     c.phone.tel(),
                     c.date_of_birth,
-                    c.team_color,
+                    c.team_color.custom(ColorInput),
                 ))),
-                Tab::new(tablo::text!("tab-employment")).schema(
+                Tab::new(tablo::text!("tab-employment")).schema((
                     Grid::new(2).schema((
                         c.department_id
                             .searchable()
@@ -286,7 +288,10 @@ impl Resource for EmployeeResource {
                         hourly_rate,
                         c.is_active.switch().label(tablo::text!("label-active")),
                     )),
-                ),
+                    c.metadata
+                        .label(tablo::text!("label-metadata"))
+                        .add_label(tablo::text!("action-add-metadata")),
+                )),
             ])))
             .record_title(lens!(Employee.name))
             .global_search(
@@ -329,7 +334,6 @@ fn employee_table() -> Table<Employee> {
         TextColumn::new(lens!(Employee.employment_type)).badge(),
         TextColumn::new(lens!(Employee.salary))
             .money(Currency::USD)
-            .sortable()
             .toggleable(),
         ColorColumn::new(lens!(Employee.team_color))
             .toggleable()
@@ -369,10 +373,12 @@ pub struct EmployeeForm {
     #[form(options)]
     pub employment_type: EmploymentType,
     pub hire_date: jiff::civil::Date,
-    pub salary: Option<f64>,
-    pub hourly_rate: Option<f64>,
+    pub salary: Option<Decimal>,
+    pub hourly_rate: Option<Decimal>,
     #[form(tags, options = Skills)]
     pub skills: Vec<String>,
+    #[form(repeat)]
+    pub metadata: Vec<MetadataEntry>,
     pub is_active: bool,
 }
 
@@ -390,7 +396,7 @@ impl Action<EmployeeResource> for ToggleEmployeeActive {
         employees: &[Employee],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for employee in employees {
             Employee::filter(Employee::fields().id().eq(employee.id))
                 .update()
@@ -421,7 +427,7 @@ impl Action<EmployeeResource> for ChangeEmployeeDepartment {
         employees: &[Employee],
         choice: DepartmentChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<DepartmentChoiceField>> {
         move_department(employees, choice.department_id, ex).await
     }
 }
@@ -443,7 +449,7 @@ impl Action<EmployeeResource> for BulkChangeEmployeeDepartment {
         employees: &[Employee],
         choice: DepartmentChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<DepartmentChoiceField>> {
         move_department(employees, choice.department_id, ex).await
     }
 
@@ -457,7 +463,7 @@ async fn move_department(
     employees: &[Employee],
     department_id: Option<u64>,
     ex: &mut dyn toasty::Executor,
-) -> Result<Outcome, WriteError> {
+) -> Result<Outcome, WriteError<DepartmentChoiceField>> {
     for employee in employees {
         Employee::filter(Employee::fields().id().eq(employee.id))
             .update()
@@ -504,7 +510,7 @@ impl Action<EmployeeResource> for BulkSetEmployeeActive {
         employees: &[Employee],
         choice: ActiveChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<ActiveChoiceField>> {
         for employee in employees {
             Employee::filter(Employee::fields().id().eq(employee.id))
                 .update()
@@ -754,7 +760,7 @@ impl Action<LeaveRequestResource> for ApproveLeaveRequest {
         requests: &[LeaveRequest],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         review(requests, LeaveStatus::Approved, None, ex).await
     }
 
@@ -780,7 +786,7 @@ impl Action<LeaveRequestResource> for RejectLeaveRequest {
         requests: &[LeaveRequest],
         rejection: Rejection,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<RejectionField>> {
         review(
             requests,
             LeaveStatus::Rejected,
@@ -817,7 +823,7 @@ impl Action<LeaveRequestResource> for BulkApproveLeaveRequests {
         requests: &[LeaveRequest],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         review(requests, LeaveStatus::Approved, None, ex).await
     }
 
@@ -847,7 +853,7 @@ impl Action<LeaveRequestResource> for BulkRejectLeaveRequests {
         requests: &[LeaveRequest],
         rejection: Rejection,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<RejectionField>> {
         review(
             requests,
             LeaveStatus::Rejected,
@@ -863,12 +869,12 @@ impl Action<LeaveRequestResource> for BulkRejectLeaveRequests {
 }
 
 /// Records `status` and the review time on every pending request, with the reviewer's notes.
-async fn review(
+async fn review<K>(
     requests: &[LeaveRequest],
     status: LeaveStatus,
     notes: Option<String>,
     ex: &mut dyn toasty::Executor,
-) -> Result<Outcome, WriteError> {
+) -> Result<Outcome, WriteError<K>> {
     for request in requests {
         let mut update = LeaveRequest::filter(LeaveRequest::fields().id().eq(request.id)).update();
         update = update.status(status).reviewed_at(Some(Timestamp::now()));
@@ -906,12 +912,8 @@ impl Resource for ProjectResource {
                     RelationColumn::of::<DepartmentResource>(relation!(Project.department))
                         .label(tablo::text!("label-department"))
                         .toggleable(),
-                    TextColumn::new(lens!(Project.budget))
-                        .money(Currency::USD)
-                        .sortable(),
-                    TextColumn::new(lens!(Project.spent))
-                        .money(Currency::USD)
-                        .sortable(),
+                    TextColumn::new(lens!(Project.budget)).money(Currency::USD),
+                    TextColumn::new(lens!(Project.spent)).money(Currency::USD),
                     ComputedColumn::new(tablo::text!("label-progress"), |project: &Project| {
                         progress(project)
                     }),
@@ -970,7 +972,7 @@ impl Resource for ProjectResource {
                             .label(tablo::text!("label-department")),
                         c.status.buttons(),
                         c.priority.radio(),
-                        c.color,
+                        c.color.custom(ColorInput),
                         start_date,
                         end_date,
                     )),
@@ -1025,8 +1027,8 @@ pub struct ProjectForm {
     pub status: ProjectStatus,
     #[form(options)]
     pub priority: TaskPriority,
-    pub budget: f64,
-    pub spent: f64,
+    pub budget: Decimal,
+    pub spent: Decimal,
     pub estimated_hours: f64,
     pub actual_hours: f64,
     pub start_date: jiff::civil::Date,
@@ -1053,7 +1055,7 @@ impl Action<ProjectResource> for ChangeProjectStatus {
         projects: &[Project],
         change: StatusChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<StatusChangeField>> {
         set_project_status(projects, change.status, ex).await
     }
 
@@ -1080,7 +1082,7 @@ impl Action<ProjectResource> for HoldProject {
         projects: &[Project],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         set_project_status(projects, ProjectStatus::OnHold, ex).await
     }
 
@@ -1106,7 +1108,7 @@ impl Action<ProjectResource> for ResumeProject {
         projects: &[Project],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         set_project_status(projects, ProjectStatus::Active, ex).await
     }
 
@@ -1136,7 +1138,7 @@ impl Action<ProjectResource> for CompleteProject {
         projects: &[Project],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for project in projects {
             Project::filter(Project::fields().id().eq(project.id))
                 .update()
@@ -1154,11 +1156,11 @@ impl Action<ProjectResource> for CompleteProject {
 }
 
 /// Moves every project of `projects` to `status`.
-async fn set_project_status(
+async fn set_project_status<K>(
     projects: &[Project],
     status: ProjectStatus,
     ex: &mut dyn toasty::Executor,
-) -> Result<Outcome, WriteError> {
+) -> Result<Outcome, WriteError<K>> {
     for project in projects {
         Project::filter(Project::fields().id().eq(project.id))
             .update()
@@ -1308,7 +1310,7 @@ impl Action<TaskResource> for StartTask {
         tasks: &[Task],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         set_task_status(tasks, TaskStatus::InProgress, ex).await
     }
 
@@ -1334,7 +1336,7 @@ impl Action<TaskResource> for SendTaskToReview {
         tasks: &[Task],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         set_task_status(tasks, TaskStatus::InReview, ex).await
     }
 
@@ -1366,7 +1368,7 @@ impl Action<TaskResource> for CompleteTask {
         tasks: &[Task],
         completion: TaskCompletion,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<TaskCompletionField>> {
         for task in tasks {
             Task::filter(Task::fields().id().eq(task.id))
                 .update()
@@ -1403,7 +1405,7 @@ impl Action<TaskResource> for AssignTask {
         tasks: &[Task],
         choice: AssigneeChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<AssigneeChoiceField>> {
         assign(tasks, choice.assigned_to, ex).await
     }
 }
@@ -1425,7 +1427,7 @@ impl Action<TaskResource> for BulkAssignTask {
         tasks: &[Task],
         choice: AssigneeChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<AssigneeChoiceField>> {
         assign(tasks, choice.assigned_to, ex).await
     }
 
@@ -1439,7 +1441,7 @@ async fn assign(
     tasks: &[Task],
     assigned_to: Option<u64>,
     ex: &mut dyn toasty::Executor,
-) -> Result<Outcome, WriteError> {
+) -> Result<Outcome, WriteError<AssigneeChoiceField>> {
     for task in tasks {
         Task::filter(Task::fields().id().eq(task.id))
             .update()
@@ -1470,7 +1472,7 @@ impl Action<TaskResource> for SetTaskPriority {
         tasks: &[Task],
         change: PriorityChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<PriorityChangeField>> {
         for task in tasks {
             Task::filter(Task::fields().id().eq(task.id))
                 .update()
@@ -1506,7 +1508,7 @@ impl Action<TaskResource> for BulkSetTaskStatus {
         tasks: &[Task],
         change: TaskStatusChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<TaskStatusChangeField>> {
         set_task_status(tasks, change.status, ex).await
     }
 
@@ -1529,7 +1531,7 @@ impl Action<TaskResource> for ReplicateTask {
         tasks: &[Task],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for task in tasks {
             toasty::create!(Task {
                 project_id: task.project_id,
@@ -1554,11 +1556,11 @@ impl Action<TaskResource> for ReplicateTask {
 }
 
 /// Moves every task of `tasks` to `status`.
-async fn set_task_status(
+async fn set_task_status<K>(
     tasks: &[Task],
     status: TaskStatus,
     ex: &mut dyn toasty::Executor,
-) -> Result<Outcome, WriteError> {
+) -> Result<Outcome, WriteError<K>> {
     for task in tasks {
         Task::filter(Task::fields().id().eq(task.id))
             .update()
@@ -1606,11 +1608,8 @@ impl Resource for TimesheetResource {
                         .toggleable(),
                     TextColumn::new(lens!(Timesheet.hourly_rate))
                         .money(Currency::USD)
-                        .sortable()
                         .toggleable(),
-                    TextColumn::new(lens!(Timesheet.total_cost))
-                        .money(Currency::USD)
-                        .sortable(),
+                    TextColumn::new(lens!(Timesheet.total_cost)).money(Currency::USD),
                 ))
                 .default_sort_desc(lens!(Timesheet.date))
                 .action_layout(ActionLayout::Menu)
@@ -1675,8 +1674,8 @@ impl Resource for TimesheetResource {
         form: TimesheetForm,
         ex: &mut dyn toasty::Executor,
     ) -> Result<Timesheet, WriteError<TimesheetFormField>> {
-        let cost = form.hours * form.hourly_rate;
-        Ok(form.into_create().total_cost(cost).exec(ex).await?)
+        let total_cost = cost(form.hours, form.hourly_rate);
+        Ok(form.into_create().total_cost(total_cost).exec(ex).await?)
     }
 
     /// Recomputes the cost from the stored hours and rate.
@@ -1687,10 +1686,14 @@ impl Resource for TimesheetResource {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Timesheet, WriteError<TimesheetFormField>> {
         let mut record = tablo::write_update::<Self>(cx, record, posted, ex).await?;
-        let cost = record.hours * record.hourly_rate;
-        if record.total_cost != cost {
-            record.update().total_cost(cost).exec(&mut *ex).await?;
-            record.total_cost = cost;
+        let total_cost = cost(record.hours, record.hourly_rate);
+        if record.total_cost != total_cost {
+            record
+                .update()
+                .total_cost(total_cost)
+                .exec(&mut *ex)
+                .await?;
+            record.total_cost = total_cost;
         }
         Ok(record)
     }
@@ -1713,7 +1716,16 @@ pub struct TimesheetForm {
     pub minutes: i64,
     pub description: Option<String>,
     pub is_billable: bool,
-    pub hourly_rate: f64,
+    pub hourly_rate: Decimal,
+}
+
+/// Whether a timesheet is older than the last week, so it can no longer change.
+fn locked(timesheet: &Timesheet) -> bool {
+    let week_ago = Zoned::now()
+        .date()
+        .checked_sub(Span::new().days(7))
+        .unwrap_or(timesheet.date);
+    timesheet.date < week_ago
 }
 
 /// Marks a recent timesheet billable or not.
@@ -1724,13 +1736,13 @@ impl Action<TimesheetResource> for ToggleTimesheetBillable {
     const NAME: &'static str = "toggle-billable";
     const PLACES: Places = Places::ROW;
 
-    /// Only the last week's entries may change, which the demo's button disables.
+    /// Only the last week's entries may change; an older one shows the button disabled.
     fn can_run(_cx: &Cx, timesheet: &Timesheet) -> bool {
-        let week_ago = Zoned::now()
-            .date()
-            .checked_sub(Span::new().days(7))
-            .unwrap_or(timesheet.date);
-        timesheet.date >= week_ago
+        !locked(timesheet)
+    }
+
+    fn disabled_reason(_cx: &Cx, timesheet: &Timesheet) -> Option<Text> {
+        locked(timesheet).then(|| tablo::text!("reason-timesheet-locked"))
     }
 
     async fn run(
@@ -1738,7 +1750,7 @@ impl Action<TimesheetResource> for ToggleTimesheetBillable {
         timesheets: &[Timesheet],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for timesheet in timesheets {
             Timesheet::filter(Timesheet::fields().id().eq(timesheet.id))
                 .update()
@@ -1764,7 +1776,7 @@ impl Action<TimesheetResource> for BulkMarkBillable {
         timesheets: &[Timesheet],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         set_billable(timesheets, true, ex).await
     }
 
@@ -1787,7 +1799,7 @@ impl Action<TimesheetResource> for BulkMarkNonBillable {
         timesheets: &[Timesheet],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         set_billable(timesheets, false, ex).await
     }
 
@@ -1801,7 +1813,7 @@ async fn set_billable(
     timesheets: &[Timesheet],
     billable: bool,
     ex: &mut dyn toasty::Executor,
-) -> Result<Outcome, WriteError> {
+) -> Result<Outcome, WriteError<std::convert::Infallible>> {
     for timesheet in timesheets {
         Timesheet::filter(Timesheet::fields().id().eq(timesheet.id))
             .update()
@@ -1836,9 +1848,7 @@ impl Resource for ExpenseResource {
                         .label(tablo::text!("label-employee")),
                     TextColumn::new(lens!(Expense.category)).badge(),
                     TextColumn::new(lens!(Expense.status)).badge(),
-                    TextColumn::new(lens!(Expense.total_amount))
-                        .money(Currency::USD)
-                        .sortable(),
+                    TextColumn::new(lens!(Expense.total_amount)).money(Currency::USD),
                     RelationColumn::of::<ProjectResource>(relation!(Expense.project))
                         .label(tablo::text!("label-project"))
                         .toggleable(),
@@ -1933,7 +1943,7 @@ pub struct ExpenseForm {
     #[form(options)]
     pub status: ExpenseStatus,
     pub description: String,
-    pub total_amount: f64,
+    pub total_amount: Decimal,
     pub currency: String,
     #[form(file, optional)]
     pub receipt_path: String,
@@ -1958,9 +1968,9 @@ impl Action<ExpenseResource> for SubmitExpense {
         expenses: &[Expense],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for expense in expenses {
-            if expense.total_amount <= 0.0 {
+            if expense.total_amount <= Decimal::ZERO {
                 return Err(topcoat::Error::msg("Cannot submit an expense with no amount").into());
             }
             Expense::filter(Expense::fields().id().eq(expense.id))
@@ -1996,7 +2006,7 @@ impl Action<ExpenseResource> for ApproveExpense {
         expenses: &[Expense],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for expense in expenses {
             Expense::filter(Expense::fields().id().eq(expense.id))
                 .update()
@@ -2037,7 +2047,7 @@ impl Action<ExpenseResource> for RejectExpense {
         expenses: &[Expense],
         rejection: RejectionReason,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<RejectionReasonField>> {
         for expense in expenses {
             Expense::filter(Expense::fields().id().eq(expense.id))
                 .update()
@@ -2072,7 +2082,7 @@ impl Action<ExpenseResource> for ReimburseExpense {
         expenses: &[Expense],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for expense in expenses {
             Expense::filter(Expense::fields().id().eq(expense.id))
                 .update()
@@ -2101,7 +2111,7 @@ impl Action<ExpenseResource> for FlagExpense {
         expenses: &[Expense],
         flag: RejectionReason,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError> {
+    ) -> Result<Outcome, WriteError<RejectionReasonField>> {
         for expense in expenses {
             Expense::filter(Expense::fields().id().eq(expense.id))
                 .update()
@@ -2129,7 +2139,7 @@ impl Resource for ExpenseLineResource {
         let c = ExpenseLineForm::controls();
         ResourceDef::new()
             .icon(crate::icons::EXPENSE_LINES)
-            .navigation_hidden()
+            .without_navigation()
             .policy(roles::policy(Domain::Hr))
             .without_global_search()
             .table(Table::new((
@@ -2174,7 +2184,7 @@ impl Resource for ExpenseLineResource {
         form: ExpenseLineForm,
         ex: &mut dyn toasty::Executor,
     ) -> Result<ExpenseLine, WriteError<ExpenseLineFormField>> {
-        let amount = round(form.quantity as f64 * form.unit_price);
+        let amount = (Decimal::from(form.quantity) * form.unit_price).round_dp(2);
         let line = form.into_create().amount(amount).exec(&mut *ex).await?;
         refresh_expense_total(line.expense_id, ex).await?;
         Ok(line)
@@ -2189,7 +2199,7 @@ impl Resource for ExpenseLineResource {
     ) -> Result<ExpenseLine, WriteError<ExpenseLineFormField>> {
         let previous = record.expense_id;
         let mut record = tablo::write_update::<Self>(cx, record, posted, ex).await?;
-        let amount = round(record.quantity as f64 * record.unit_price);
+        let amount = (Decimal::from(record.quantity) * record.unit_price).round_dp(2);
         if record.amount != amount {
             record.update().amount(amount).exec(&mut *ex).await?;
             record.amount = amount;
@@ -2206,12 +2216,12 @@ impl Resource for ExpenseLineResource {
         _cx: &Cx,
         record: &ExpenseLine,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<()> {
+    ) -> Result<(), WriteError> {
         ExpenseLine::filter(ExpenseLine::fields().id().eq(record.id))
             .delete()
             .exec(&mut *ex)
             .await?;
-        refresh_expense_total(record.expense_id, ex).await
+        Ok(refresh_expense_total(record.expense_id, ex).await?)
     }
 
     crate::audit!();
@@ -2222,10 +2232,10 @@ async fn refresh_expense_total(expense_id: u64, ex: &mut dyn toasty::Executor) -
     let lines = ExpenseLine::filter(ExpenseLine::fields().expense_id().eq(expense_id))
         .exec(&mut *ex)
         .await?;
-    let total: f64 = lines.iter().map(|line| line.amount).sum();
+    let total: Decimal = lines.iter().map(|line| line.amount).sum();
     Expense::filter(Expense::fields().id().eq(expense_id))
         .update()
-        .total_amount(round(total))
+        .total_amount(total)
         .exec(&mut *ex)
         .await?;
     Ok(())
@@ -2239,6 +2249,6 @@ pub struct ExpenseLineForm {
     pub expense_id: u64,
     pub description: String,
     pub quantity: i64,
-    pub unit_price: f64,
+    pub unit_price: Decimal,
     pub date: jiff::civil::Date,
 }

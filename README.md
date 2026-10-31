@@ -100,9 +100,11 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   cells: a product's or a brand's visibility, a leave request's status. Cancelled
   orders are tinted.
 - **Forms** with choice enums, relationship choices, dependent choices,
-  conditional fields, tabs, embedded values, `has_many` and `belongs_to` writes,
-  tags edited as lists with suggestions (a post's tags, an employee's skills, a
-  task's labels), and file uploads, a product's gallery of up to four images among them,
+  conditional fields, tabs, embedded values, `has_many` and `belongs_to` writes, a
+  shipping address as a has-one form inside the order, a customer created in place
+  from the order, many-to-many tags a post shares with other posts, key-value rows
+  (an employee's metadata), colour inputs, skills and a task's labels as lists with
+  suggestions, and file uploads, a product's gallery of up to four images among them,
   checked by extension and size before they are stored and
   served only at signed links that expire.
 - **Actions**, record and bulk, with input dialogs, confirmation and success

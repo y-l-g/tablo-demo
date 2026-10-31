@@ -29,6 +29,7 @@ pub const TIMESHEETS: IconData = iconify_icon!("lucide:clock");
 
 pub const POSTS: IconData = iconify_icon!("lucide:file-text");
 pub const POST_CATEGORIES: IconData = iconify_icon!("lucide:tags");
+pub const TAGS: IconData = iconify_icon!("lucide:tag");
 pub const AUTHORS: IconData = iconify_icon!("lucide:pen-line");
 
 pub const EMPLOYEES: IconData = iconify_icon!("lucide:id-card");

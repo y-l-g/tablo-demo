@@ -16,6 +16,8 @@ async fn main() {
             tablo_demo::models::Author,
             tablo_demo::models::Post,
             tablo_demo::models::PostCategory,
+            tablo_demo::models::Tag,
+            tablo_demo::models::PostTag,
             tablo_demo::models::Brand,
             tablo_demo::models::Product,
             tablo_demo::models::ProductCategory,
