@@ -651,7 +651,10 @@ impl Resource for ProductCategoryResource {
             .form(Schema::new(
                 Section::new(tablo::text!("section-category")).schema((
                     Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
-                    c.parent_id.label(tablo::text!("label-parent-category")),
+                    // Categories nest one level deep: only a top-level category may be a parent.
+                    c.parent_id
+                        .label(tablo::text!("label-parent-category"))
+                        .options_where(|_cx| ProductCategory::fields().parent_id().is_none()),
                     c.is_visible
                         .switch()
                         .label(tablo::text!("label-visibility")),
