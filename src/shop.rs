@@ -191,6 +191,7 @@ fn product_table() -> Table<Product> {
 #[form(model = Product)]
 pub struct ProductForm {
     pub name: String,
+    #[form(required)]
     pub slug: Option<String>,
     pub description: Option<String>,
     #[form(file, optional)]
@@ -200,7 +201,9 @@ pub struct ProductForm {
     pub price: Option<Decimal>,
     pub old_price: Option<Decimal>,
     pub cost: Option<Decimal>,
+    #[form(required)]
     pub sku: Option<String>,
+    #[form(required)]
     pub barcode: Option<String>,
     pub qty: u64,
     pub security_stock: u64,
