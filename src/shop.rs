@@ -175,6 +175,8 @@ fn product_table() -> Table<Product> {
     ))
     .default_sort(lens!(Product.name))
     .action_layout(ActionLayout::Menu)
+    // Six filters: a reader sets several, then reruns the list once.
+    .deferred_filters()
     .filters((
         SelectFilter::relationship::<BrandResource>(lens!(Product.brand_id))
             .label(tablo::text!("label-brand")),
