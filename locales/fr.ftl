@@ -659,6 +659,7 @@ action-toggle-active = Activer/désactiver
 action-toggle-billable = Basculer la facturation
 action-toggle-publish = Publier/dépublier
 action-toggle-visibility = Afficher/masquer
+action-visit-website = Visiter le site
 
 ## Page d'accueil
 

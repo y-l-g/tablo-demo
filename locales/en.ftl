@@ -511,6 +511,7 @@ action-toggle-active = Toggle active
 action-toggle-billable = Toggle billable
 action-toggle-publish = Toggle publish
 action-toggle-visibility = Toggle visibility
+action-visit-website = Visit website
 
 ## Welcome page
 

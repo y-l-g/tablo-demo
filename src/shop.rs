@@ -5,7 +5,7 @@ use tablo::{
     Action, ActionLayout, BooleanColumn, Change, Color, ColumnToggle, ColumnWidth, ComputedColumn,
     Currency, DateColumn, DateFilter, Detail, FieldErrors, FontWeight, FormInput, GlobalSearch,
     Grid, ImageColumn, Outcome, Places, Reads, Relation, RelationColumn, Resource, ResourceDef,
-    RichTextColumn, Schema, Section, SelectFilter, Table, TernaryFilter, Text, TextColumn,
+    RichTextColumn, RowLink, Schema, Section, SelectFilter, Table, TernaryFilter, Text, TextColumn,
     ToggleColumn, WriteError,
     extend::{Column, Includes},
     lens, relation, write_create,
@@ -398,7 +398,14 @@ impl Resource for BrandResource {
                         .hidden_by_default(),
                 ))
                 .default_sort(lens!(Brand.sort))
-                .action_layout(ActionLayout::Menu),
+                .action_layout(ActionLayout::Menu)
+                .row_link(
+                    RowLink::new(tablo::text!("action-visit-website"), |brand: &Brand| {
+                        brand.website.clone()
+                    })
+                    .new_tab()
+                    .reading(Reads::of(lens!(Brand.website))),
+                ),
             )
             .detail(Detail::new(
                 Section::new(tablo::text!("section-brand")).columns((
