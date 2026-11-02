@@ -123,6 +123,13 @@ tab-budget = Budget
 
 list-tab-all = All
 
+## List summaries
+
+summary-orders = Orders
+summary-cancelled = Cancelled
+summary-products = Products
+summary-low-stock = Under 10 in stock
+
 ## Sections
 
 section-address = Address

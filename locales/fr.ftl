@@ -145,6 +145,13 @@ tab-employment = Emploi
 tab-overview = Aperçu
 tab-budget = Budget
 
+## List summaries
+
+summary-orders = Commandes
+summary-cancelled = Annulées
+summary-products = Produits
+summary-low-stock = Moins de 10 en stock
+
 ## Sections
 
 section-address = Adresse

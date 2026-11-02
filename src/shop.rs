@@ -5,8 +5,8 @@ use tablo::{
     Action, ActionLayout, BooleanColumn, Change, Color, ColumnToggle, ColumnWidth, ComputedColumn,
     Currency, DateColumn, DateFilter, Detail, FieldErrors, FontWeight, FormInput, GlobalSearch,
     Grid, ImageColumn, Outcome, Places, Reads, Relation, RelationColumn, Resource, ResourceDef,
-    RichTextColumn, RowLink, Schema, Section, SelectFilter, Table, TernaryFilter, Text, TextColumn,
-    ToggleColumn, WriteError,
+    RichTextColumn, RowLink, Schema, Section, SelectFilter, Summary, Table, TernaryFilter, Text,
+    TextColumn, ToggleColumn, WriteError,
     extend::{Column, Includes},
     lens, relation, write_create,
 };
@@ -186,6 +186,12 @@ fn product_table() -> Table<Product> {
         TernaryFilter::new(lens!(Product.requires_shipping)),
         DateFilter::new(lens!(Product.published_at)).label(tablo::text!("label-publishing-date")),
     ))
+    .summary(Summary::count(tablo::text!("summary-products")))
+    .summary(
+        Summary::count(tablo::text!("summary-low-stock"))
+            .query(Product::fields().qty().lt(10))
+            .reading(Reads::of(lens!(Product.qty))),
+    )
 }
 
 /// The product's record form.
@@ -997,6 +1003,13 @@ fn order_table() -> Table<Order> {
     .filters((DateFilter::new(lens!(Order.created_at))
         .label(tablo::text!("label-order-date"))
         .range(),))
+    // Counted under the current tab, search and filters, across every page.
+    .summary(Summary::count(tablo::text!("summary-orders")))
+    .summary(
+        Summary::count(tablo::text!("summary-cancelled"))
+            .query(Order::fields().status().eq(OrderStatus::Cancelled))
+            .reading(Reads::of(lens!(Order.status))),
+    )
 }
 
 /// The order's record form.
