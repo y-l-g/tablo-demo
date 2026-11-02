@@ -3,8 +3,8 @@
 use rust_decimal::Decimal;
 use tablo::{
     Action, ActionLayout, BooleanColumn, Change, Color, ColumnToggle, ColumnWidth, ComputedColumn,
-    Currency, DateColumn, DateFilter, Detail, FieldErrors, FormInput, GlobalSearch, Grid,
-    ImageColumn, Outcome, Places, Reads, Relation, RelationColumn, Resource, ResourceDef,
+    Currency, DateColumn, DateFilter, Detail, FieldErrors, FontWeight, FormInput, GlobalSearch,
+    Grid, ImageColumn, Outcome, Places, Reads, Relation, RelationColumn, Resource, ResourceDef,
     RichTextColumn, Schema, Section, SelectFilter, Table, TernaryFilter, Text, TextColumn,
     ToggleColumn, WriteError,
     extend::{Column, Includes},
@@ -137,7 +137,10 @@ impl Resource for ProductResource {
 fn product_table() -> Table<Product> {
     Table::new((
         ImageColumn::new(lens!(Product.image)),
-        TextColumn::new(lens!(Product.name)).searchable().sortable(),
+        TextColumn::new(lens!(Product.name))
+            .weight(FontWeight::Medium)
+            .searchable()
+            .sortable(),
         RelationColumn::of::<BrandResource>(relation!(Product.brand))
             .label(tablo::text!("label-brand"))
             .toggleable(),
@@ -375,7 +378,10 @@ impl Resource for BrandResource {
             .policy(roles::policy(Domain::Shop))
             .table(
                 Table::new((
-                    TextColumn::new(lens!(Brand.name)).searchable().sortable(),
+                    TextColumn::new(lens!(Brand.name))
+                        .weight(FontWeight::Medium)
+                        .searchable()
+                        .sortable(),
                     TextColumn::new(lens!(Brand.website))
                         .searchable()
                         .sortable()
@@ -948,7 +954,10 @@ impl Resource for OrderResource {
 /// The order list.
 fn order_table() -> Table<Order> {
     Table::new((
-        TextColumn::new(lens!(Order.number)).searchable().sortable(),
+        TextColumn::new(lens!(Order.number))
+            .weight(FontWeight::Medium)
+            .searchable()
+            .sortable(),
         RelationColumn::of::<CustomerResource>(relation!(Order.customer))
             .label(tablo::text!("label-customer"))
             .toggleable(),
