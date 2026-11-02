@@ -98,8 +98,11 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
 - **Tables** with search, sort, filters, grouping, pagination and CSV export,
   status tabs with their counts, and switches and selects that save in their
   cells: a product's or a brand's visibility, a leave request's status. Cancelled
-  orders are tinted.
-- **Forms** with choice enums, relationship choices, dependent choices,
+  orders, pending and rejected leave, and submitted and rejected expenses are
+  tinted. The order and product lists count their records under the rows, the
+  product filters wait for an Apply button, and each brand links to its website.
+- **Forms** with choice enums, relationship choices, a parent category chosen
+  among the top-level ones only, required nullable fields, dependent choices,
   conditional fields, tabs, embedded values, `has_many` and `belongs_to` writes, a
   shipping address as a has-one form inside the order, a customer created in place
   from the order, many-to-many tags a post shares with other posts, key-value rows
@@ -109,7 +112,8 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   served only at signed links that expire.
 - **Actions**, record and bulk, with input dialogs, confirmation and success
   notifications.
-- **Dashboards** built from Tablo's widgets, each page a grid of them: figures
+- **Dashboards** built from Tablo's widgets, each page a grid of them, the shop's
+  under a period filter its sales follow: figures
   as stat tiles with trends and sparklines, linked to the lists they count and
   to their filtered lists; line and bar charts over the last twelve weeks, of
   revenue, orders placed and hours booked, billable and not, and of each
@@ -120,7 +124,8 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   order pipeline, the leave requests by status, and the articles by publishing
   state. The order and leave figures link to their list tabs.
 - **Theming** through Tablo's tokens: [`styles.css`](styles.css) gives both
-  panels an indigo brand, in light and dark.
+  panels an indigo brand, in light and dark, with a logo that turns light on a
+  dark page.
 - **Navigation** that swaps the page in place, and an icon of its own for every
   sidebar entry, from a Lucide subset the build stages.
 - **Auth** on the `app` panel: sign-up, password reset, email verification, a

@@ -3,11 +3,11 @@
 use jiff::{Span, Timestamp, Zoned};
 use rust_decimal::Decimal;
 use tablo::{
-    Action, ActionLayout, BooleanColumn, ColorColumn, ComputedColumn, CountColumn, Currency,
+    Action, ActionLayout, BooleanColumn, Color, ColorColumn, ComputedColumn, CountColumn, Currency,
     DateColumn, DateFilter, Detail, FieldAccess, FileColumn, FormInput, GlobalSearch, Grid,
-    ListColumn, Outcome, Places, RecordForm, Relation, RelationColumn, RepeaterColumn, Resource,
-    ResourceDef, Schema, Section, SelectColumn, SelectFilter, Tab, Table, Tabs, TernaryFilter,
-    Text, TextColumn, WriteError, lens, relation,
+    ListColumn, Outcome, Places, Reads, RecordForm, Relation, RelationColumn, RepeaterColumn,
+    Resource, ResourceDef, Schema, Section, SelectColumn, SelectFilter, Tab, Table, Tabs,
+    TernaryFilter, Text, TextColumn, WriteError, lens, relation,
 };
 use topcoat::{Result, context::Cx};
 
@@ -563,6 +563,14 @@ impl Resource for LeaveRequestResource {
                 ))
                 .default_sort_desc(lens!(LeaveRequest.start_date))
                 .action_layout(ActionLayout::Menu)
+                // The colour reads only the request's status, so it reads a copy without the
+                // employee the first column loads, and their pay stays out of its reach.
+                .row_color(|leave: &LeaveRequest| match leave.status {
+                    LeaveStatus::Pending => Some(Color::Warning),
+                    LeaveStatus::Rejected => Some(Color::Danger),
+                    _ => None,
+                })
+                .row_color_reading(Reads::of(lens!(LeaveRequest.status)))
                 .option_tabs(lens!(LeaveRequest.status), |status: LeaveStatus| {
                     LeaveRequest::fields().status().eq(status)
                 })
@@ -1857,6 +1865,12 @@ impl Resource for ExpenseResource {
                         .toggleable(),
                 ))
                 .action_layout(ActionLayout::Menu)
+                .row_color(|expense: &Expense| match expense.status {
+                    ExpenseStatus::Submitted => Some(Color::Warning),
+                    ExpenseStatus::Rejected => Some(Color::Danger),
+                    _ => None,
+                })
+                .row_color_reading(Reads::of(lens!(Expense.status)))
                 .option_tabs(lens!(Expense.status), |status: ExpenseStatus| {
                     Expense::fields().status().eq(status)
                 })

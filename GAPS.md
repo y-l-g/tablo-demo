@@ -15,13 +15,10 @@ cannot, and what blocks it.
 
 | Gap | Blocker |
 | --- | --- |
-| Summaries (`Sum`, `Average`, `Count`, `Range`) | no summarizer in Tablo |
+| Summaries other than a count (`Sum`, `Average`, `Range`) | Toasty has no other aggregate, so `Table::summary` only counts |
 | Product `QueryBuilder` | no query builder; fixed filters instead |
-| Row colours on leave requests and expenses (`recordClasses`) | a row colour refuses a page whose columns load employees, whose salary is restricted |
-| Link action ("open product") | an action is a mutation, not a link |
-| `weight` (font weight on a column) | no equivalent |
 | `poll` | Topcoat has no interval primitive; Tablo has no polling |
-| `deferFilters`, collapsible filters, `stackedOnMobile` | no equivalent |
+| Collapsible filters, `stackedOnMobile` | no equivalent |
 
 ## Forms
 
@@ -32,8 +29,6 @@ cannot, and what blocks it.
 | Wizards (create order, create expense) | no wizard |
 | Project plan (`Builder`) | no block builder field |
 | Masked phone and hours | no mask control; a custom `Control` is needed |
-| `required()` on nullable columns (product slug, SKU, barcode; shipping price) | an `Option` field always has a blank answer |
-| "Only a top-level category may be a parent" | a dependent choice narrows by a field value, not a predicate |
 
 ## Resources and actions
 
@@ -46,8 +41,6 @@ cannot, and what blocks it.
 
 | Gap | Blocker |
 | --- | --- |
-| Widgets that follow the list's table state or the dashboard's filters | a widget reads no request state: a list's widgets rerun with its table but show the same figures under any filter, and a page has no filters to follow |
-| Brand wordmark logo with a dark-mode variant | `Brand::logo` takes one image |
+| Widgets that follow the list's table state | a list's widgets rerun with its table but read none of its filters, so they show the same figures under any filter |
 | `topbar(false)`, Vite theme | the shell is Tablo's |
-| `command+k` for global search | no keyboard shortcut in Tablo; no command palette or shortcut primitive in Topcoat |
 | Importer column mapping | an import reads the create form's columns |

@@ -3,10 +3,10 @@
 use rust_decimal::Decimal;
 use tablo::{
     Action, ActionLayout, BooleanColumn, Change, Color, ColumnToggle, ColumnWidth, ComputedColumn,
-    Currency, DateColumn, DateFilter, Detail, FieldErrors, FormInput, GlobalSearch, Grid,
-    ImageColumn, Outcome, Places, Reads, Relation, RelationColumn, Resource, ResourceDef,
-    RichTextColumn, Schema, Section, SelectFilter, Table, TernaryFilter, Text, TextColumn,
-    ToggleColumn, WriteError,
+    Currency, DateColumn, DateFilter, Detail, FieldErrors, FontWeight, FormInput, GlobalSearch,
+    Grid, ImageColumn, Outcome, Places, Reads, Relation, RelationColumn, Resource, ResourceDef,
+    RichTextColumn, RowLink, Schema, Section, SelectFilter, Summary, Table, TernaryFilter, Text,
+    TextColumn, ToggleColumn, WriteError,
     extend::{Column, Includes},
     lens, relation, write_create,
 };
@@ -137,7 +137,10 @@ impl Resource for ProductResource {
 fn product_table() -> Table<Product> {
     Table::new((
         ImageColumn::new(lens!(Product.image)),
-        TextColumn::new(lens!(Product.name)).searchable().sortable(),
+        TextColumn::new(lens!(Product.name))
+            .weight(FontWeight::Medium)
+            .searchable()
+            .sortable(),
         RelationColumn::of::<BrandResource>(relation!(Product.brand))
             .label(tablo::text!("label-brand"))
             .toggleable(),
@@ -172,6 +175,8 @@ fn product_table() -> Table<Product> {
     ))
     .default_sort(lens!(Product.name))
     .action_layout(ActionLayout::Menu)
+    // Six filters: a reader sets several, then reruns the list once.
+    .deferred_filters()
     .filters((
         SelectFilter::relationship::<BrandResource>(lens!(Product.brand_id))
             .label(tablo::text!("label-brand")),
@@ -181,6 +186,12 @@ fn product_table() -> Table<Product> {
         TernaryFilter::new(lens!(Product.requires_shipping)),
         DateFilter::new(lens!(Product.published_at)).label(tablo::text!("label-publishing-date")),
     ))
+    .summary(Summary::count(tablo::text!("summary-products")))
+    .summary(
+        Summary::count(tablo::text!("summary-low-stock"))
+            .query(Product::fields().qty().lt(10))
+            .reading(Reads::of(lens!(Product.qty))),
+    )
 }
 
 /// The product's record form.
@@ -188,6 +199,7 @@ fn product_table() -> Table<Product> {
 #[form(model = Product)]
 pub struct ProductForm {
     pub name: String,
+    #[form(required)]
     pub slug: Option<String>,
     pub description: Option<String>,
     #[form(file, optional)]
@@ -197,7 +209,9 @@ pub struct ProductForm {
     pub price: Option<Decimal>,
     pub old_price: Option<Decimal>,
     pub cost: Option<Decimal>,
+    #[form(required)]
     pub sku: Option<String>,
+    #[form(required)]
     pub barcode: Option<String>,
     pub qty: u64,
     pub security_stock: u64,
@@ -375,7 +389,10 @@ impl Resource for BrandResource {
             .policy(roles::policy(Domain::Shop))
             .table(
                 Table::new((
-                    TextColumn::new(lens!(Brand.name)).searchable().sortable(),
+                    TextColumn::new(lens!(Brand.name))
+                        .weight(FontWeight::Medium)
+                        .searchable()
+                        .sortable(),
                     TextColumn::new(lens!(Brand.website))
                         .searchable()
                         .sortable()
@@ -389,7 +406,14 @@ impl Resource for BrandResource {
                         .hidden_by_default(),
                 ))
                 .default_sort(lens!(Brand.sort))
-                .action_layout(ActionLayout::Menu),
+                .action_layout(ActionLayout::Menu)
+                .row_link(
+                    RowLink::new(tablo::text!("action-visit-website"), |brand: &Brand| {
+                        brand.website.clone()
+                    })
+                    .new_tab()
+                    .reading(Reads::of(lens!(Brand.website))),
+                ),
             )
             .detail(Detail::new(
                 Section::new(tablo::text!("section-brand")).columns((
@@ -633,7 +657,10 @@ impl Resource for ProductCategoryResource {
             .form(Schema::new(
                 Section::new(tablo::text!("section-category")).schema((
                     Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
-                    c.parent_id.label(tablo::text!("label-parent-category")),
+                    // Categories nest one level deep: only a top-level category may be a parent.
+                    c.parent_id
+                        .label(tablo::text!("label-parent-category"))
+                        .options_where(|_cx| ProductCategory::fields().parent_id().is_none()),
                     c.is_visible
                         .switch()
                         .label(tablo::text!("label-visibility")),
@@ -948,7 +975,10 @@ impl Resource for OrderResource {
 /// The order list.
 fn order_table() -> Table<Order> {
     Table::new((
-        TextColumn::new(lens!(Order.number)).searchable().sortable(),
+        TextColumn::new(lens!(Order.number))
+            .weight(FontWeight::Medium)
+            .searchable()
+            .sortable(),
         RelationColumn::of::<CustomerResource>(relation!(Order.customer))
             .label(tablo::text!("label-customer"))
             .toggleable(),
@@ -973,6 +1003,13 @@ fn order_table() -> Table<Order> {
     .filters((DateFilter::new(lens!(Order.created_at))
         .label(tablo::text!("label-order-date"))
         .range(),))
+    // Counted under the current tab, search and filters, across every page.
+    .summary(Summary::count(tablo::text!("summary-orders")))
+    .summary(
+        Summary::count(tablo::text!("summary-cancelled"))
+            .query(Order::fields().status().eq(OrderStatus::Cancelled))
+            .reading(Reads::of(lens!(Order.status))),
+    )
 }
 
 /// The order's record form.
