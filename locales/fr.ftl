@@ -18,8 +18,9 @@ page-hr-dashboard = Tableau de bord RH
 page-settings = Paramètres
 page-audit-trail = Journal d'audit
 
-dashboard-shop-description = L'état de la boutique, sur tous les clients et toutes les commandes.
+dashboard-shop-description = L'état de la boutique, sur tous les clients et toutes les commandes. Une période compare ses ventes à autant de jours avant elle, et termine les graphiques sur son dernier jour.
 dashboard-hr-description = Les effectifs, leurs congés, leurs projets et leur coût.
+dashboard-filter-period = Période
 
 copy-audit-description = Chaque écriture du panneau, enregistrée dans la transaction de l'écriture elle-même.
 copy-no-team = Aucune équipe sélectionnée.
@@ -73,12 +74,12 @@ resource-expense-line = Ligne de frais
 
 ## Indicateurs du tableau de bord
 
-stat-revenue = Chiffre d'affaires, 30 derniers jours
-stat-orders-placed = Commandes, 30 derniers jours
-stat-average-order = Panier moyen, 30 derniers jours
-stat-cancellation-rate = Taux d'annulation, 30 derniers jours
-stat-detail-change = { $change } par rapport aux 30 jours précédents
-stat-detail-points = { $change } points par rapport aux 30 jours précédents
+stat-revenue = Chiffre d'affaires, { $days } derniers jours
+stat-orders-placed = Commandes, { $days } derniers jours
+stat-average-order = Panier moyen, { $days } derniers jours
+stat-cancellation-rate = Taux d'annulation, { $days } derniers jours
+stat-detail-change = { $change } par rapport aux { $days } jours précédents
+stat-detail-points = { $change } points par rapport aux { $days } jours précédents
 stat-detail-share = { $share } des commandes
 stat-detail-share-requests = { $share } des demandes
 stat-detail-share-articles = { $share } des articles

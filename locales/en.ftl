@@ -18,8 +18,9 @@ page-hr-dashboard = HR dashboard
 page-settings = Settings
 page-audit-trail = Audit trail
 
-dashboard-shop-description = How the shop is doing, over every customer and order.
+dashboard-shop-description = How the shop is doing, over every customer and order. A period compares its sales with as many days before it, and ends the charts on its last day.
 dashboard-hr-description = The workforce, its leave, its projects and what they cost.
+dashboard-filter-period = Period
 
 copy-audit-description = Every write the panel made, recorded in the write's own transaction.
 copy-no-team = No team selected.
@@ -47,12 +48,12 @@ resource-expense = Expense
 
 ## Dashboard figures
 
-stat-revenue = Revenue, last 30 days
-stat-orders-placed = Orders, last 30 days
-stat-average-order = Average order, last 30 days
-stat-cancellation-rate = Cancellation rate, last 30 days
-stat-detail-change = { $change } on the 30 days before
-stat-detail-points = { $change } points on the 30 days before
+stat-revenue = Revenue, last { $days } days
+stat-orders-placed = Orders, last { $days } days
+stat-average-order = Average order, last { $days } days
+stat-cancellation-rate = Cancellation rate, last { $days } days
+stat-detail-change = { $change } on the { $days } days before
+stat-detail-points = { $change } points on the { $days } days before
 stat-detail-share = { $share } of orders
 stat-detail-share-requests = { $share } of requests
 stat-detail-share-articles = { $share } of articles

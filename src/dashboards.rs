@@ -9,10 +9,10 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
-use jiff::{Timestamp, Zoned, civil::Date};
+use jiff::{Timestamp, Zoned, civil::Date, tz::TimeZone};
 use tablo::{
-    Chart, Color, Currency, FormScalar, Page, PageDef, RecordTable, Resource, Series, Stat, Text,
-    Trend, Widget, WidgetDef, can_list, db::db, scoped_query,
+    Chart, Color, Currency, FormScalar, Page, PageDef, PageFilter, RecordTable, Resource, Series,
+    Stat, Text, Trend, Widget, WidgetDef, can_list, db::db, page_filters, scoped_query,
 };
 use topcoat::{Result, context::Cx, view::View};
 
@@ -33,6 +33,8 @@ const MONTH: i64 = 30;
 /// The sparklines draw this many weeks, oldest first.
 const WEEK: i64 = 7;
 const WEEKS: usize = 12;
+/// The shop dashboard's period filter, which the sales tiles and charts end on.
+const PERIOD: &str = "period";
 /// How long an order waits before the pipeline flags it: three days as new, seven as processing.
 const NEW_FLAG_DAYS: i64 = 3;
 const PROCESSING_FLAG_DAYS: i64 = 7;
@@ -118,6 +120,10 @@ impl Page for ShopDashboard {
             .navigation_order(2)
             // The widgets read the shop's rows directly, so the page asks the role first.
             .access(|cx| roles::reaches(cx, Domain::Shop))
+            .filter(PageFilter::date_range(
+                PERIOD,
+                tablo::text!("dashboard-filter-period"),
+            ))
             .widget::<SalesWidget>()
             .widget::<RevenueWidget>()
             .widget::<OrdersWidget>()
@@ -137,39 +143,49 @@ impl Widget for SalesWidget {
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
-        let sales = load_sales(cx).await?;
-        let last = Totals::window(&sales, 0, MONTH);
-        let before = Totals::window(&sales, MONTH, MONTH);
+        let (period, sales) = load_sales(cx).await?;
+        let days = period.days;
+        let last = Totals::window(&sales, 0, days);
+        let before = Totals::window(&sales, days, days);
         let weeks = weeks_of(&sales);
 
         let revenue = trended(
-            Stat::new(tablo::text!("stat-revenue"), dollars(last.revenue))
-                .chart(weeks.iter().map(|week| week.revenue)),
+            Stat::new(
+                tablo::text!("stat-revenue", days = days.to_string()),
+                dollars(last.revenue),
+            )
+            .chart(weeks.iter().map(|week| week.revenue)),
             last.revenue,
             before.revenue,
             true,
         )
-        .detail(percent_change(last.revenue, before.revenue));
+        .detail(percent_change(last.revenue, before.revenue, days));
         let placed = trended(
-            Stat::new(tablo::text!("stat-orders-placed"), last.placed.to_string())
-                .chart(weeks.iter().map(|week| week.placed)),
+            Stat::new(
+                tablo::text!("stat-orders-placed", days = days.to_string()),
+                last.placed.to_string(),
+            )
+            .chart(weeks.iter().map(|week| week.placed)),
             last.placed,
             before.placed,
             true,
         )
-        .detail(percent_change(last.placed, before.placed));
+        .detail(percent_change(last.placed, before.placed, days));
         let average = trended(
-            Stat::new(tablo::text!("stat-average-order"), money(last.average()))
-                .chart(weeks.iter().map(Totals::average)),
+            Stat::new(
+                tablo::text!("stat-average-order", days = days.to_string()),
+                money(last.average()),
+            )
+            .chart(weeks.iter().map(Totals::average)),
             last.average(),
             before.average(),
             true,
         )
-        .detail(percent_change(last.average(), before.average()));
+        .detail(percent_change(last.average(), before.average(), days));
         // A cancellation rate is good when it falls.
         let cancellation = trended(
             Stat::new(
-                tablo::text!("stat-cancellation-rate"),
+                tablo::text!("stat-cancellation-rate", days = days.to_string()),
                 percent(last.cancellation()),
             )
             .chart(weeks.iter().map(Totals::cancellation)),
@@ -177,7 +193,11 @@ impl Widget for SalesWidget {
             before.cancellation(),
             false,
         )
-        .detail(points_change(last.cancellation(), before.cancellation()));
+        .detail(points_change(
+            last.cancellation(),
+            before.cancellation(),
+            days,
+        ));
 
         Ok(tablo::stats(cx, [revenue, placed, average, cancellation]))
     }
@@ -193,8 +213,9 @@ impl Widget for RevenueWidget {
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
-        let weeks = weeks_of(&load_sales(cx).await?);
-        let chart = Chart::line(week_labels(Zoned::now().date()))
+        let (period, sales) = load_sales(cx).await?;
+        let weeks = weeks_of(&sales);
+        let chart = Chart::line(week_labels(period.today))
             .heading(tablo::text!("chart-revenue"))
             .description(tablo::text!("chart-weeks"))
             .series(Series::new(
@@ -215,8 +236,9 @@ impl Widget for OrdersWidget {
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
-        let weeks = weeks_of(&load_sales(cx).await?);
-        let chart = Chart::bar(week_labels(Zoned::now().date()))
+        let (period, sales) = load_sales(cx).await?;
+        let weeks = weeks_of(&sales);
+        let chart = Chart::bar(week_labels(period.today))
             .heading(tablo::text!("chart-orders"))
             .description(tablo::text!("chart-weeks"))
             .series(
@@ -563,7 +585,7 @@ impl Widget for TimeWidget {
             previous,
             true,
         )
-        .detail(percent_change(hours, previous));
+        .detail(percent_change(hours, previous, MONTH));
         let billable_tile = Stat::new(
             tablo::text!("stat-billable-share"),
             percent(share(billable, hours)),
@@ -896,13 +918,51 @@ async fn record_tile<R: Resource>(
     Ok(Some(stat.chart(weeks)))
 }
 
-/// The orders the sales figures read, each as a [`Sale`].
-async fn load_sales(cx: &Cx) -> Result<Vec<Sale>> {
-    let now = Timestamp::now();
+/// The period the sales figures cover, and every order placed before its end, each as a
+/// [`Sale`] aged from it.
+async fn load_sales(cx: &Cx) -> Result<(Period, Vec<Sale>)> {
+    let period = Period::of(cx)?;
     let orders = scoped_query::<OrderResource>(cx)?
         .exec(&mut db(cx)?)
         .await?;
-    Ok(orders.iter().map(|order| Sale::of(now, order)).collect())
+    let sales = orders
+        .iter()
+        .filter(|order| order.created_at < period.until)
+        .map(|order| Sale::of(period.until, order))
+        .collect();
+    Ok((period, sales))
+}
+
+/// What the sales figures cover, from the [`PERIOD`] filter: the tiles its days against as many
+/// days before them, the charts the twelve weeks up to its last day. Without the filter, or with
+/// either end open, the tiles cover the last [`MONTH`] up to the last day, or up to now.
+struct Period {
+    /// How many days the tiles cover.
+    days: i64,
+    /// Just past the last day, or now when the period ends today, later, or never.
+    until: Timestamp,
+    /// The last day.
+    today: Date,
+}
+
+impl Period {
+    fn of(cx: &Cx) -> Result<Self> {
+        let (first, last) = page_filters(cx).date_range(PERIOD);
+        let now = Zoned::now();
+        // A period ending today or later ends now: no order is placed in the future.
+        let (until, today) = match last {
+            Some(last) => match last.tomorrow()?.to_zoned(TimeZone::system())?.timestamp() {
+                until if until < now.timestamp() => (until, last),
+                _ => (now.timestamp(), now.date()),
+            },
+            None => (now.timestamp(), now.date()),
+        };
+        let days = match first {
+            Some(first) => (days_before(today, first) + 1).max(1),
+            None => MONTH,
+        };
+        Ok(Self { days, until, today })
+    }
 }
 
 /// What the sales placed in each of the last [`WEEKS`] weeks came to, oldest week first.
@@ -1040,20 +1100,25 @@ fn trended(stat: Stat, now: f64, before: f64, rising_is_good: bool) -> Stat {
 }
 
 /// The line under a figure that moved from `before` to `now`: its change as a percentage.
-fn percent_change(now: f64, before: f64) -> Text {
+fn percent_change(now: f64, before: f64, days: i64) -> Text {
     let change = if before == 0.0 {
         0.0
     } else {
         (now - before) / before * 100.0
     };
-    tablo::text!("stat-detail-change", change = format!("{change:+.1}%"))
+    tablo::text!(
+        "stat-detail-change",
+        change = format!("{change:+.1}%"),
+        days = days.to_string()
+    )
 }
 
 /// The line under a percentage that moved from `before` to `now`: its change in points.
-fn points_change(now: f64, before: f64) -> Text {
+fn points_change(now: f64, before: f64, days: i64) -> Text {
     tablo::text!(
         "stat-detail-points",
-        change = format!("{:+.1}", now - before)
+        change = format!("{:+.1}", now - before),
+        days = days.to_string()
     )
 }
 
