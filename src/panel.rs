@@ -52,7 +52,7 @@ pub fn login_hint() -> String {
 pub fn admin_panel() -> Panel {
     localized(Panel::new("admin"))
         .auth(Auth::custom(DemoAuth))
-        .brand(Brand::new("Tablo Demo"))
+        .brand(brand())
         .login_hint(login_hint())
         .notifications()
         .home::<Dashboard>()
@@ -86,11 +86,19 @@ pub fn admin_panel() -> Panel {
         .uploads_dir(UPLOAD_URL_PREFIX, upload_dir())
 }
 
+/// The demo's brand on both panels: its name, and a mark that turns light on a dark page.
+fn brand() -> Brand {
+    Brand::new("Tablo Demo")
+        .logo(crate::brand::LOGO_URL)
+        .dark_logo(crate::brand::DARK_LOGO_URL)
+        .favicon(crate::brand::LOGO_URL)
+}
+
 /// The tenant panel: sign-up, a tenant switcher and the settings page.
 pub fn app_panel() -> Panel {
     localized(Panel::new("app"))
         .auth(app_auth())
-        .brand(Brand::new("Tablo Demo"))
+        .brand(brand())
         .login_hint(login_hint())
         .home::<Dashboard>()
         .page::<Settings>()
