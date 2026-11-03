@@ -354,7 +354,9 @@ impl Resource for CommentResource {
         ResourceDef::new()
             .icon(crate::icons::COMMENTS)
             .without_navigation()
-            .policy(roles::policy(Domain::Shop))
+            // A comment is read under a post or a product, so it follows the blog's access, which
+            // every role that reaches the shop holds as well.
+            .policy(roles::policy(Domain::Blog))
             .table(Table::new((
                 TextColumn::new(lens!(Comment.title))
                     .searchable()
