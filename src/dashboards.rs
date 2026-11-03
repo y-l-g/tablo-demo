@@ -100,8 +100,7 @@ impl Widget for LatestPostsWidget {
         let table = RecordTable::new()
             .heading(tablo::text!("widget-latest-posts"))
             .column(Post::fields().title())
-            // A relation column is named by its label's key, as the list names it.
-            .column_named("label-author")
+            .column(Post::fields().author())
             .column(Post::fields().published_at())
             .order_by(Post::fields().created_at().desc());
         tablo::record_table::<PostResource>(cx, table).await
@@ -277,7 +276,11 @@ impl Widget for PipelineWidget {
             OrderStatus::Delivered,
             OrderStatus::Cancelled,
         ] {
-            let count = db::count(cx, orders.clone().filter(Order::fields().status().eq(option))).await?;
+            let count = db::count(
+                cx,
+                orders.clone().filter(Order::fields().status().eq(option)),
+            )
+            .await?;
             let tile = Stat::new(option.label(), count.to_string())
                 .detail(tablo::text!(
                     "stat-detail-share",
@@ -333,7 +336,7 @@ impl Widget for LatestOrdersWidget {
         let table = RecordTable::new()
             .heading(tablo::text!("widget-latest-orders"))
             .column(Order::fields().number())
-            .column_named("label-customer")
+            .column(Order::fields().customer())
             .column(Order::fields().status())
             .column(Order::fields().total_price())
             .column(Order::fields().created_at())
@@ -784,7 +787,7 @@ impl Widget for LeaveQueueWidget {
         let table = RecordTable::new()
             .heading(tablo::text!("widget-leave-queue"))
             .description(tablo::text!("widget-queue-description"))
-            .column_named("label-employee")
+            .column(LeaveRequest::fields().employee())
             .column(LeaveRequest::fields().kind())
             .column(LeaveRequest::fields().start_date())
             .filter(LeaveRequest::fields().status().eq(LeaveStatus::Pending))
@@ -807,7 +810,7 @@ impl Widget for ExpenseQueueWidget {
             .heading(tablo::text!("widget-expense-queue"))
             .description(tablo::text!("widget-queue-description"))
             .column(Expense::fields().expense_number())
-            .column_named("label-employee")
+            .column(Expense::fields().employee())
             .column(Expense::fields().total_amount())
             .filter(Expense::fields().status().eq(ExpenseStatus::Submitted))
             .order_by(Expense::fields().submitted_at().asc());

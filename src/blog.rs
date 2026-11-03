@@ -31,19 +31,15 @@ impl Resource for PostResource {
             .table(post_table())
             .detail(post_detail())
             .form(Schema::new((
-                Section::new(tablo::text!("section-post")).schema(
-                    Grid::new(2).schema((
-                        c.title.placeholder(tablo::text!("hint-post-title")),
-                        c.slug.disabled_on_edit(),
-                        c.content.rich_text(),
-                        c.author_id.searchable().label(tablo::text!("label-author")),
-                        c.post_category_id
-                            .searchable()
-                            .label(tablo::text!("label-category")),
-                        c.published_at.label(tablo::text!("label-publishing-date")),
-                        c.tags.searchable().label(tablo::text!("label-tags")),
-                    )),
-                ),
+                Section::new(tablo::text!("section-post")).schema(Grid::new(2).schema((
+                    c.title.placeholder(tablo::text!("hint-post-title")),
+                    c.slug.disabled_on_edit(),
+                    c.content.rich_text(),
+                    c.author_id.searchable(),
+                    c.post_category_id.searchable(),
+                    c.published_at,
+                    c.tags.searchable(),
+                ))),
                 Section::new(tablo::text!("section-image")).schema(
                     c.image
                         .extensions(IMAGE_EXTENSIONS)
@@ -94,26 +90,17 @@ fn post_table() -> Table<Post> {
             .sortable()
             .toggleable()
             .hidden_by_default(),
-        RelationColumn::of::<AuthorResource>(relation!(Post.author))
-            .label(tablo::text!("label-author"))
-            .toggleable(),
+        RelationColumn::of::<AuthorResource>(relation!(Post.author)).toggleable(),
         PostStatusColumn,
-        RelationColumn::list::<TagResource>(relation!(Post.tags))
-            .label(tablo::text!("label-tags"))
-            .toggleable(),
+        RelationColumn::list::<TagResource>(relation!(Post.tags)).toggleable(),
         RelationColumn::of::<PostCategoryResource>(relation!(Post.post_category))
-            .label(tablo::text!("label-post-category"))
             .toggleable()
             .hidden_by_default(),
-        DateColumn::new(lens!(Post.published_at))
-            .label(tablo::text!("label-publishing-date"))
-            .sortable(),
+        DateColumn::new(lens!(Post.published_at)).sortable(),
     ))
     .default_sort_desc(lens!(Post.published_at))
     .action_layout(ActionLayout::Menu)
-    .filters((DateFilter::new(lens!(Post.published_at))
-        .label(tablo::text!("label-publishing-date"))
-        .range(),))
+    .filters((DateFilter::new(lens!(Post.published_at)).range(),))
 }
 
 /// The post's detail page.
@@ -123,14 +110,10 @@ fn post_detail() -> Detail<Post> {
             Grid::new(2).columns((
                 TextColumn::new(lens!(Post.title)),
                 TextColumn::new(lens!(Post.slug)),
-                DateColumn::new(lens!(Post.published_at))
-                    .label(tablo::text!("label-publishing-date")),
-                RelationColumn::of::<AuthorResource>(relation!(Post.author))
-                    .label(tablo::text!("label-author")),
-                RelationColumn::of::<PostCategoryResource>(relation!(Post.post_category))
-                    .label(tablo::text!("label-category")),
-                RelationColumn::list::<TagResource>(relation!(Post.tags))
-                    .label(tablo::text!("label-tags")),
+                DateColumn::new(lens!(Post.published_at)),
+                RelationColumn::of::<AuthorResource>(relation!(Post.author)),
+                RelationColumn::of::<PostCategoryResource>(relation!(Post.post_category)),
+                RelationColumn::list::<TagResource>(relation!(Post.tags)),
             )),
             ImageColumn::new(lens!(Post.image)),
         )),
@@ -204,8 +187,7 @@ impl Resource for TagResource {
             .table(
                 Table::new((
                     TextColumn::new(lens!(Tag.name)).searchable().sortable(),
-                    CountColumn::of::<PostResource>(relation!(Tag.posts))
-                        .label(tablo::text!("label-posts")),
+                    CountColumn::of::<PostResource>(relation!(Tag.posts)),
                 ))
                 .default_sort(lens!(Tag.name))
                 .action_layout(ActionLayout::Menu),
@@ -257,10 +239,8 @@ impl Resource for PostCategoryResource {
                         .searchable()
                         .sortable()
                         .toggleable(),
-                    BooleanColumn::new(lens!(PostCategory.is_visible))
-                        .label(tablo::text!("label-visibility")),
+                    BooleanColumn::new(lens!(PostCategory.is_visible)),
                     DateColumn::new(lens!(PostCategory.updated_at))
-                        .label(tablo::text!("label-last-modified-at"))
                         .sortable()
                         .toggleable()
                         .hidden_by_default(),
@@ -273,10 +253,8 @@ impl Resource for PostCategoryResource {
                     TextColumn::new(lens!(PostCategory.name)),
                     TextColumn::new(lens!(PostCategory.slug)),
                     TextColumn::new(lens!(PostCategory.description)),
-                    BooleanColumn::new(lens!(PostCategory.is_visible))
-                        .label(tablo::text!("label-visibility")),
-                    DateColumn::new(lens!(PostCategory.updated_at))
-                        .label(tablo::text!("label-last-modified-at")),
+                    BooleanColumn::new(lens!(PostCategory.is_visible)),
+                    DateColumn::new(lens!(PostCategory.updated_at)),
                 )),
             ))
             .form(Schema::new(
@@ -284,9 +262,7 @@ impl Resource for PostCategoryResource {
                     c.name,
                     c.slug.disabled_on_edit(),
                     c.description.multiline(3),
-                    c.is_visible
-                        .switch()
-                        .label(tablo::text!("label-visibility")),
+                    c.is_visible.switch(),
                 )),
             ))
             .record_title(lens!(PostCategory.name))
@@ -348,38 +324,28 @@ impl Resource for AuthorResource {
             .table(
                 Table::new((
                     TextColumn::new(lens!(Author.name)).searchable().sortable(),
-                    TextColumn::new(lens!(Author.email))
-                        .label(tablo::text!("label-email-address"))
-                        .searchable()
-                        .sortable(),
-                    TextColumn::new(lens!(Author.github_handle))
-                        .label(tablo::text!("label-github-handle")),
-                    TextColumn::new(lens!(Author.twitter_handle))
-                        .label(tablo::text!("label-twitter-handle")),
+                    TextColumn::new(lens!(Author.email)).searchable().sortable(),
+                    TextColumn::new(lens!(Author.github_handle)),
+                    TextColumn::new(lens!(Author.twitter_handle)),
                 ))
                 .default_sort(lens!(Author.name)),
             )
             .detail(Detail::new(
                 Section::new(tablo::text!("section-author")).columns((
                     TextColumn::new(lens!(Author.name)),
-                    TextColumn::new(lens!(Author.email)).label(tablo::text!("label-email-address")),
+                    TextColumn::new(lens!(Author.email)),
                     TextColumn::new(lens!(Author.bio)),
-                    TextColumn::new(lens!(Author.github_handle))
-                        .label(tablo::text!("label-github-handle")),
-                    TextColumn::new(lens!(Author.twitter_handle))
-                        .label(tablo::text!("label-twitter-handle")),
+                    TextColumn::new(lens!(Author.github_handle)),
+                    TextColumn::new(lens!(Author.twitter_handle)),
                 )),
             ))
             .form(Schema::new(
                 Section::new(tablo::text!("section-author")).schema((
                     c.name,
-                    c.email
-                        .email()
-                        .unique()
-                        .label(tablo::text!("label-email-address")),
+                    c.email.email().unique(),
                     c.bio.multiline(5),
-                    c.github_handle.label(tablo::text!("label-github-handle")),
-                    c.twitter_handle.label(tablo::text!("label-twitter-handle")),
+                    c.github_handle,
+                    c.twitter_handle,
                 )),
             ))
             .record_title(lens!(Author.name))
@@ -419,8 +385,7 @@ impl Resource for CommentResource {
                 TextColumn::new(lens!(Comment.title))
                     .searchable()
                     .sortable(),
-                RelationColumn::of::<crate::shop::CustomerResource>(relation!(Comment.customer))
-                    .label(tablo::text!("label-customer")),
+                RelationColumn::of::<crate::shop::CustomerResource>(relation!(Comment.customer)),
                 BooleanColumn::new(lens!(Comment.is_visible))
                     .label(tablo::text!("label-public-visibility")),
             )))
@@ -429,8 +394,7 @@ impl Resource for CommentResource {
                     TextColumn::new(lens!(Comment.title)),
                     RelationColumn::of::<crate::shop::CustomerResource>(relation!(
                         Comment.customer
-                    ))
-                    .label(tablo::text!("label-customer")),
+                    )),
                     BooleanColumn::new(lens!(Comment.is_visible))
                         .label(tablo::text!("label-public-visibility")),
                     RichTextColumn::new(lens!(Comment.content)),
@@ -439,13 +403,9 @@ impl Resource for CommentResource {
             .form(Schema::new(
                 Section::new(tablo::text!("section-comment")).schema((
                     c.title,
-                    c.customer_id
-                        .searchable()
-                        .label(tablo::text!("label-customer")),
-                    c.post_id.searchable().label(tablo::text!("label-post")),
-                    c.product_id
-                        .searchable()
-                        .label(tablo::text!("label-product")),
+                    c.customer_id.searchable(),
+                    c.post_id.searchable(),
+                    c.product_id.searchable(),
                     c.is_visible
                         .switch()
                         .label(tablo::text!("label-public-visibility")),

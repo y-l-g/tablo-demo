@@ -56,44 +56,26 @@ impl Resource for ProductResource {
                     c.gallery
                         .extensions(IMAGE_EXTENSIONS)
                         .max_bytes(IMAGE_MAX_BYTES)
-                        .max_files(4)
-                        .label(tablo::text!("label-gallery")),
+                        .max_files(4),
                 )),
-                Section::new(tablo::text!("section-pricing")).schema(
-                    Grid::new(2).schema((
-                        c.price.prefix("$"),
-                        c.old_price
-                            .prefix("$")
-                            .label(tablo::text!("label-compare-at-price")),
-                        c.cost
-                            .prefix("$")
-                            .label(tablo::text!("label-cost-per-item")),
-                    )),
-                ),
-                Section::new(tablo::text!("section-inventory")).schema(
-                    Grid::new(2).schema((
-                        c.sku.label(tablo::text!("label-sku-stock-keeping-unit")),
-                        c.barcode
-                            .label(tablo::text!("label-barcode-isbn-upc-gtin-etc")),
-                        c.qty.label(tablo::text!("label-quantity")),
-                        c.security_stock,
-                    )),
-                ),
+                Section::new(tablo::text!("section-pricing")).schema(Grid::new(2).schema((
+                    c.price.prefix("$"),
+                    c.old_price.prefix("$"),
+                    c.cost.prefix("$"),
+                ))),
+                Section::new(tablo::text!("section-inventory")).schema(Grid::new(2).schema((
+                    c.sku.label(tablo::text!("label-sku-stock-keeping-unit")),
+                    c.barcode,
+                    c.qty,
+                    c.security_stock,
+                ))),
                 Section::new(tablo::text!("section-shipping")).schema(
                     Grid::new(2).schema((c.backorder.switch(), c.requires_shipping.switch())),
                 ),
-                Section::new(tablo::text!("section-status")).schema(
-                    Grid::new(2).schema((
-                        c.is_visible
-                            .switch()
-                            .label(tablo::text!("label-visibility")),
-                        c.published_at,
-                    )),
-                ),
-                Section::new(tablo::text!("section-associations")).schema((
-                    c.brand_id.searchable().label(tablo::text!("label-brand")),
-                    c.categories.searchable(),
-                )),
+                Section::new(tablo::text!("section-status"))
+                    .schema(Grid::new(2).schema((c.is_visible.switch(), c.published_at))),
+                Section::new(tablo::text!("section-associations"))
+                    .schema((c.brand_id.searchable(), c.categories.searchable())),
             )))
             .detail(Detail::new((Section::new(tablo::text!("section-product"))
                 .columns((
@@ -103,18 +85,13 @@ impl Resource for ProductResource {
                     ComputedColumn::new(tablo::text!("label-gallery"), |product: &Product| {
                         product.gallery.len().to_string()
                     }),
-                    RelationColumn::of::<BrandResource>(relation!(Product.brand))
-                        .label(tablo::text!("label-brand")),
+                    RelationColumn::of::<BrandResource>(relation!(Product.brand)),
                     RelationColumn::list::<ProductCategoryResource>(relation!(Product.categories)),
-                    BooleanColumn::new(lens!(Product.is_visible))
-                        .label(tablo::text!("label-visibility")),
+                    BooleanColumn::new(lens!(Product.is_visible)),
                     TextColumn::new(lens!(Product.price)).money(Currency::USD),
-                    TextColumn::new(lens!(Product.sku)).label(tablo::text!("label-sku")),
-                    TextColumn::new(lens!(Product.qty))
-                        .numeric(0)
-                        .label(tablo::text!("label-quantity")),
-                    DateColumn::new(lens!(Product.published_at))
-                        .label(tablo::text!("label-publishing-date")),
+                    TextColumn::new(lens!(Product.sku)),
+                    TextColumn::new(lens!(Product.qty)).numeric(0),
+                    DateColumn::new(lens!(Product.published_at)),
                     RichTextColumn::new(lens!(Product.description)),
                 )),)))
             .record_title(lens!(Product.name))
@@ -141,21 +118,15 @@ fn product_table() -> Table<Product> {
             .weight(FontWeight::Medium)
             .searchable()
             .sortable(),
-        RelationColumn::of::<BrandResource>(relation!(Product.brand))
-            .label(tablo::text!("label-brand"))
-            .toggleable(),
-        ToggleColumn::new(lens!(Product.is_visible))
-            .label(tablo::text!("label-visibility"))
-            .toggleable(),
+        RelationColumn::of::<BrandResource>(relation!(Product.brand)).toggleable(),
+        ToggleColumn::new(lens!(Product.is_visible)).toggleable(),
         TextColumn::new(lens!(Product.price)).money(Currency::USD),
         TextColumn::new(lens!(Product.sku))
-            .label(tablo::text!("label-sku"))
             .searchable()
             .sortable()
             .toggleable(),
         TextColumn::new(lens!(Product.qty))
             .numeric(0)
-            .label(tablo::text!("label-quantity"))
             .sortable()
             .toggleable(),
         TextColumn::new(lens!(Product.security_stock))
@@ -165,10 +136,8 @@ fn product_table() -> Table<Product> {
             .hidden_by_default(),
         TextColumn::new(lens!(Product.units_sold))
             .numeric(0)
-            .label(tablo::text!("label-units-sold"))
             .sortable(),
         DateColumn::new(lens!(Product.published_at))
-            .label(tablo::text!("label-publishing-date"))
             .sortable()
             .toggleable()
             .hidden_by_default(),
@@ -178,13 +147,12 @@ fn product_table() -> Table<Product> {
     // Six filters: a reader sets several, then reruns the list once.
     .deferred_filters()
     .filters((
-        SelectFilter::relationship::<BrandResource>(lens!(Product.brand_id))
-            .label(tablo::text!("label-brand")),
-        TernaryFilter::new(lens!(Product.is_visible)).label(tablo::text!("label-visibility")),
+        SelectFilter::relationship::<BrandResource>(lens!(Product.brand_id)),
+        TernaryFilter::new(lens!(Product.is_visible)),
         TernaryFilter::new(lens!(Product.featured)),
         TernaryFilter::new(lens!(Product.backorder)),
         TernaryFilter::new(lens!(Product.requires_shipping)),
-        DateFilter::new(lens!(Product.published_at)).label(tablo::text!("label-publishing-date")),
+        DateFilter::new(lens!(Product.published_at)),
     ))
     .summary(Summary::count(tablo::text!("summary-products")))
     .summary(
@@ -397,10 +365,8 @@ impl Resource for BrandResource {
                         .searchable()
                         .sortable()
                         .toggleable(),
-                    ToggleColumn::new(lens!(Brand.is_visible))
-                        .label(tablo::text!("label-visibility")),
+                    ToggleColumn::new(lens!(Brand.is_visible)),
                     DateColumn::new(lens!(Brand.updated_at))
-                        .label(tablo::text!("label-last-modified-at"))
                         .sortable()
                         .toggleable()
                         .hidden_by_default(),
@@ -421,19 +387,15 @@ impl Resource for BrandResource {
                     TextColumn::new(lens!(Brand.slug)),
                     TextColumn::new(lens!(Brand.website)),
                     TextColumn::new(lens!(Brand.description)),
-                    BooleanColumn::new(lens!(Brand.is_visible))
-                        .label(tablo::text!("label-visibility")),
-                    DateColumn::new(lens!(Brand.updated_at))
-                        .label(tablo::text!("label-last-modified-at")),
+                    BooleanColumn::new(lens!(Brand.is_visible)),
+                    DateColumn::new(lens!(Brand.updated_at)),
                 )),
             ))
             .form(Schema::new(
                 Section::new(tablo::text!("section-brand")).schema((
                     Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
                     c.website.url(),
-                    c.is_visible
-                        .switch()
-                        .label(tablo::text!("label-visibility")),
+                    c.is_visible.switch(),
                     c.description.multiline(4),
                 )),
             ))
@@ -626,12 +588,9 @@ impl Resource for ProductCategoryResource {
                     RelationColumn::of::<ProductCategoryResource>(relation!(
                         ProductCategory.parent
                     ))
-                    .label(tablo::text!("label-parent"))
                     .toggleable(),
-                    BooleanColumn::new(lens!(ProductCategory.is_visible))
-                        .label(tablo::text!("label-visibility")),
+                    BooleanColumn::new(lens!(ProductCategory.is_visible)),
                     DateColumn::new(lens!(ProductCategory.updated_at))
-                        .label(tablo::text!("label-last-modified-at"))
                         .sortable()
                         .toggleable()
                         .hidden_by_default(),
@@ -645,13 +604,10 @@ impl Resource for ProductCategoryResource {
                     TextColumn::new(lens!(ProductCategory.slug)),
                     RelationColumn::of::<ProductCategoryResource>(relation!(
                         ProductCategory.parent
-                    ))
-                    .label(tablo::text!("label-parent")),
-                    BooleanColumn::new(lens!(ProductCategory.is_visible))
-                        .label(tablo::text!("label-visibility")),
+                    )),
+                    BooleanColumn::new(lens!(ProductCategory.is_visible)),
                     TextColumn::new(lens!(ProductCategory.description)),
-                    DateColumn::new(lens!(ProductCategory.updated_at))
-                        .label(tablo::text!("label-last-modified-at")),
+                    DateColumn::new(lens!(ProductCategory.updated_at)),
                 )),
             ))
             .form(Schema::new(
@@ -661,9 +617,7 @@ impl Resource for ProductCategoryResource {
                     c.parent_id
                         .label(tablo::text!("label-parent-category"))
                         .options_where(|_cx| ProductCategory::fields().parent_id().is_none()),
-                    c.is_visible
-                        .switch()
-                        .label(tablo::text!("label-visibility")),
+                    c.is_visible.switch(),
                     c.description.multiline(4),
                 )),
             ))
@@ -734,7 +688,6 @@ impl Resource for CustomerResource {
                         .searchable()
                         .sortable(),
                     TextColumn::new(lens!(Customer.email))
-                        .label(tablo::text!("label-email-address"))
                         .searchable()
                         .sortable(),
                     CustomerCountryColumn::new(),
@@ -749,21 +702,14 @@ impl Resource for CustomerResource {
             .detail(Detail::new(
                 Section::new(tablo::text!("section-customer")).columns((
                     TextColumn::new(lens!(Customer.name)),
-                    TextColumn::new(lens!(Customer.email))
-                        .label(tablo::text!("label-email-address")),
+                    TextColumn::new(lens!(Customer.email)),
                     TextColumn::new(lens!(Customer.phone)),
                     TextColumn::new(lens!(Customer.birthday)),
                 )),
             ))
             .form(Schema::new(
                 Section::new(tablo::text!("section-customer")).schema((
-                    Grid::new(2).schema((
-                        c.name,
-                        c.email
-                            .email()
-                            .unique()
-                            .label(tablo::text!("label-email-address")),
-                    )),
+                    Grid::new(2).schema((c.name, c.email.email().unique())),
                     Grid::new(2).schema((c.phone.tel(), c.birthday)),
                 )),
             ))
@@ -891,13 +837,10 @@ impl Resource for OrderResource {
                 Section::new(tablo::text!("section-order")).columns((
                     Grid::new(2).columns((
                         TextColumn::new(lens!(Order.number)),
-                        RelationColumn::of::<CustomerResource>(relation!(Order.customer))
-                            .label(tablo::text!("label-customer")),
+                        RelationColumn::of::<CustomerResource>(relation!(Order.customer)),
                         TextColumn::new(lens!(Order.status)).badge(),
                         TextColumn::new(lens!(Order.total_price)).money(Currency::USD),
-                        TextColumn::new(lens!(Order.shipping_price))
-                            .money(Currency::USD)
-                            .label(tablo::text!("label-shipping-cost")),
+                        TextColumn::new(lens!(Order.shipping_price)).money(Currency::USD),
                         DateColumn::new(lens!(Order.created_at))
                             .label(tablo::text!("label-order-date")),
                         RelationColumn::of::<OrderAddressResource>(relation!(Order.address))
@@ -907,17 +850,12 @@ impl Resource for OrderResource {
                 )),
             ))
             .form(Schema::new(
-                Section::new(tablo::text!("section-order")).schema(
-                    Grid::new(2).schema((
-                        c.number.label(tablo::text!("label-number")),
-                        c.customer_id
-                            .searchable()
-                            .creatable()
-                            .label(tablo::text!("label-customer")),
-                        c.status.buttons(),
-                        c.notes.rich_text(),
-                    )),
-                ),
+                Section::new(tablo::text!("section-order")).schema(Grid::new(2).schema((
+                    c.number,
+                    c.customer_id.searchable().creatable(),
+                    c.status.buttons(),
+                    c.notes.rich_text(),
+                ))),
             ))
             .record_title(lens!(Order.number))
             .global_search(
@@ -979,14 +917,11 @@ fn order_table() -> Table<Order> {
             .weight(FontWeight::Medium)
             .searchable()
             .sortable(),
-        RelationColumn::of::<CustomerResource>(relation!(Order.customer))
-            .label(tablo::text!("label-customer"))
-            .toggleable(),
+        RelationColumn::of::<CustomerResource>(relation!(Order.customer)).toggleable(),
         TextColumn::new(lens!(Order.status)).badge(),
         TextColumn::new(lens!(Order.total_price)).money(Currency::USD),
         TextColumn::new(lens!(Order.shipping_price))
             .money(Currency::USD)
-            .label(tablo::text!("label-shipping-cost"))
             .toggleable(),
         DateColumn::new(lens!(Order.created_at))
             .label(tablo::text!("label-order-date"))
@@ -1243,39 +1178,23 @@ impl Resource for OrderItemResource {
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(Table::new((
-                RelationColumn::of::<ProductResource>(relation!(OrderItem.product))
-                    .label(tablo::text!("label-product")),
-                TextColumn::new(lens!(OrderItem.qty))
-                    .numeric(0)
-                    .label(tablo::text!("label-quantity")),
-                TextColumn::new(lens!(OrderItem.unit_price))
-                    .money(Currency::USD)
-                    .label(tablo::text!("label-unit-price")),
+                RelationColumn::of::<ProductResource>(relation!(OrderItem.product)),
+                TextColumn::new(lens!(OrderItem.qty)).numeric(0),
+                TextColumn::new(lens!(OrderItem.unit_price)).money(Currency::USD),
             )))
             .detail(Detail::new(
                 Section::new(tablo::text!("section-order-item")).columns((
-                    RelationColumn::of::<OrderResource>(relation!(OrderItem.order))
-                        .label(tablo::text!("label-order")),
-                    RelationColumn::of::<ProductResource>(relation!(OrderItem.product))
-                        .label(tablo::text!("label-product")),
-                    TextColumn::new(lens!(OrderItem.qty))
-                        .numeric(0)
-                        .label(tablo::text!("label-quantity")),
-                    TextColumn::new(lens!(OrderItem.unit_price))
-                        .money(Currency::USD)
-                        .label(tablo::text!("label-unit-price")),
+                    RelationColumn::of::<OrderResource>(relation!(OrderItem.order)),
+                    RelationColumn::of::<ProductResource>(relation!(OrderItem.product)),
+                    TextColumn::new(lens!(OrderItem.qty)).numeric(0),
+                    TextColumn::new(lens!(OrderItem.unit_price)).money(Currency::USD),
                 )),
             ))
             .form(Schema::new(
                 Section::new(tablo::text!("section-order-item")).schema((
-                    c.order_id.searchable().label(tablo::text!("label-order")),
-                    c.product_id
-                        .searchable()
-                        .label(tablo::text!("label-product")),
-                    Grid::new(2).schema((
-                        c.qty.label(tablo::text!("label-quantity")),
-                        c.unit_price.label(tablo::text!("label-unit-price")),
-                    )),
+                    c.order_id.searchable(),
+                    c.product_id.searchable(),
+                    Grid::new(2).schema((c.qty, c.unit_price)),
                 )),
             ))
     }
@@ -1310,8 +1229,7 @@ impl Resource for PaymentResource {
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(Table::new((
-                RelationColumn::of::<OrderResource>(relation!(Payment.order))
-                    .label(tablo::text!("label-order")),
+                RelationColumn::of::<OrderResource>(relation!(Payment.order)),
                 TextColumn::new(lens!(Payment.reference)).searchable(),
                 TextColumn::new(lens!(Payment.amount)).money(Currency::USD),
                 TextColumn::new(lens!(Payment.provider)).sortable(),
@@ -1319,8 +1237,7 @@ impl Resource for PaymentResource {
             )))
             .detail(Detail::new(
                 Section::new(tablo::text!("section-payment")).columns((
-                    RelationColumn::of::<OrderResource>(relation!(Payment.order))
-                        .label(tablo::text!("label-order")),
+                    RelationColumn::of::<OrderResource>(relation!(Payment.order)),
                     TextColumn::new(lens!(Payment.reference)),
                     TextColumn::new(lens!(Payment.amount)).money(Currency::USD),
                     TextColumn::new(lens!(Payment.currency)),
@@ -1330,7 +1247,7 @@ impl Resource for PaymentResource {
             ))
             .form(Schema::new(
                 Section::new(tablo::text!("section-payment")).schema((
-                    c.order_id.searchable().label(tablo::text!("label-order")),
+                    c.order_id.searchable(),
                     c.reference,
                     Grid::new(2).schema((c.amount, c.currency.searchable())),
                     c.provider,
@@ -1405,16 +1322,14 @@ impl Resource for AddressResource {
             ))
             .form(Schema::new(
                 Section::new(tablo::text!("section-address")).schema((
-                    c.customer_id
-                        .searchable()
-                        .label(tablo::text!("label-customer")),
-                    c.brand_id.searchable().label(tablo::text!("label-brand")),
+                    c.customer_id.searchable(),
+                    c.brand_id.searchable(),
                     c.country.searchable(),
-                    c.street.label(tablo::text!("label-street-address")),
+                    c.street,
                     Grid::new(3).schema((
                         c.city.suggestions(crate::seed::CITIES.iter().copied()),
-                        c.state.label(tablo::text!("label-state-province")),
-                        c.zip.label(tablo::text!("label-zip-postal-code")),
+                        c.state,
+                        c.zip,
                     )),
                 )),
             ))
@@ -1455,8 +1370,7 @@ impl Resource for OrderAddressResource {
             .policy(roles::policy(Domain::Shop))
             .without_global_search()
             .table(Table::new((
-                RelationColumn::of::<OrderResource>(relation!(OrderAddress.order))
-                    .label(tablo::text!("label-order")),
+                RelationColumn::of::<OrderResource>(relation!(OrderAddress.order)),
                 TextColumn::new(lens!(OrderAddress.street)),
                 TextColumn::new(lens!(OrderAddress.city)),
                 TextColumn::new(lens!(OrderAddress.zip)),
@@ -1464,8 +1378,7 @@ impl Resource for OrderAddressResource {
             )))
             .detail(Detail::new(
                 Section::new(tablo::text!("section-order-address")).columns((
-                    RelationColumn::of::<OrderResource>(relation!(OrderAddress.order))
-                        .label(tablo::text!("label-order")),
+                    RelationColumn::of::<OrderResource>(relation!(OrderAddress.order)),
                     TextColumn::new(lens!(OrderAddress.street)),
                     TextColumn::new(lens!(OrderAddress.city)),
                     TextColumn::new(lens!(OrderAddress.state)),
@@ -1476,11 +1389,11 @@ impl Resource for OrderAddressResource {
             .form(Schema::new(
                 Section::new(tablo::text!("section-order-address")).schema((
                     c.country,
-                    c.street.label(tablo::text!("label-street-address")),
+                    c.street,
                     Grid::new(3).schema((
                         c.city.suggestions(crate::seed::CITIES.iter().copied()),
-                        c.state.label(tablo::text!("label-state-province")),
-                        c.zip.label(tablo::text!("label-zip-postal-code")),
+                        c.state,
+                        c.zip,
                     )),
                 )),
             ))
