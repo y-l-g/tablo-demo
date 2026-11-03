@@ -332,10 +332,9 @@ fn employee_table() -> Table<Employee> {
     ))
     .default_sort(lens!(Employee.name))
     .action_layout(ActionLayout::Menu)
-    .option_tabs(
-        lens!(Employee.employment_type),
-        |employment_type: EmploymentType| Employee::fields().employment_type().eq(employment_type),
-    )
+    .option_tabs(|employment_type: EmploymentType| {
+        Employee::fields().employment_type().eq(employment_type)
+    })
     .filters((
         SelectFilter::relationship::<DepartmentResource>(lens!(Employee.department_id)),
         TernaryFilter::new(lens!(Employee.is_active)),
@@ -520,9 +519,7 @@ impl Resource for LeaveRequestResource {
                     _ => None,
                 })
                 .row_color_reading(Reads::of(lens!(LeaveRequest.status)))
-                .option_tabs(lens!(LeaveRequest.status), |status: LeaveStatus| {
-                    LeaveRequest::fields().status().eq(status)
-                })
+                .option_tabs(|status: LeaveStatus| LeaveRequest::fields().status().eq(status))
                 .filters((SelectFilter::of(lens!(LeaveRequest.kind)),)),
             )
             .detail(Detail::new((
@@ -1649,9 +1646,7 @@ impl Resource for ExpenseResource {
                     _ => None,
                 })
                 .row_color_reading(Reads::of(lens!(Expense.status)))
-                .option_tabs(lens!(Expense.status), |status: ExpenseStatus| {
-                    Expense::fields().status().eq(status)
-                })
+                .option_tabs(|status: ExpenseStatus| Expense::fields().status().eq(status))
                 .filters((
                     SelectFilter::of(lens!(Expense.category)),
                     SelectFilter::relationship::<EmployeeResource>(lens!(Expense.employee_id)),

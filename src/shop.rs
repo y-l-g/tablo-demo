@@ -147,9 +147,7 @@ fn product_table() -> Table<Product> {
     ))
     .summary(Summary::count(tablo::text!("summary-products")))
     .summary(
-        Summary::count(tablo::text!("summary-low-stock"))
-            .query(Product::fields().qty().lt(10))
-            .reading(Reads::of(lens!(Product.qty))),
+        Summary::count(tablo::text!("summary-low-stock")).query(Product::fields().qty().lt(10)),
     )
 }
 
@@ -838,9 +836,7 @@ fn order_table() -> Table<Order> {
     .action_layout(ActionLayout::Menu)
     .row_color(|order: &Order| (order.status == OrderStatus::Cancelled).then_some(Color::Danger))
     .row_color_reading(Reads::of(lens!(Order.status)))
-    .option_tabs(lens!(Order.status), |status: OrderStatus| {
-        Order::fields().status().eq(status)
-    })
+    .option_tabs(|status: OrderStatus| Order::fields().status().eq(status))
     .filters((DateFilter::new(lens!(Order.created_at))
         .label(tablo::text!("label-order-date"))
         .range(),))
@@ -848,8 +844,7 @@ fn order_table() -> Table<Order> {
     .summary(Summary::count(tablo::text!("summary-orders")))
     .summary(
         Summary::count(tablo::text!("summary-cancelled"))
-            .query(Order::fields().status().eq(OrderStatus::Cancelled))
-            .reading(Reads::of(lens!(Order.status))),
+            .query(Order::fields().status().eq(OrderStatus::Cancelled)),
     )
 }
 
