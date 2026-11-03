@@ -101,7 +101,6 @@ impl Resource for ProductResource {
                     .detail(tablo::text!("label-price"), lens!(Product.price)),
             )
             .relation(Relation::has_many::<CommentResource>(Comment::fields().product_id()).tab())
-            .action::<ToggleProductVisibility>()
             .action::<BulkSetProductVisibility>()
             .action::<AdjustProductPrice>()
             .action::<AdjustProductStock>()
@@ -191,31 +190,6 @@ pub struct ProductForm {
     pub brand_id: Option<u64>,
     #[form(relationship = ProductCategoryResource)]
     pub categories: Vec<u64>,
-}
-
-/// Shows or hides a product.
-pub struct ToggleProductVisibility;
-
-impl Action<ProductResource> for ToggleProductVisibility {
-    type Input = ();
-    const NAME: &'static str = "toggle-visibility";
-    const PLACES: Places = Places::ROW;
-
-    async fn run(
-        _cx: &Cx,
-        products: &[Product],
-        (): (),
-        ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
-        for product in products {
-            Product::filter(Product::fields().id().eq(product.id))
-                .update()
-                .is_visible(!product.is_visible)
-                .exec(&mut *ex)
-                .await?;
-        }
-        Ok(Outcome::done())
-    }
 }
 
 /// What showing or hiding the selection asks for.
@@ -404,7 +378,6 @@ impl Resource for BrandResource {
                 Product::fields().brand_id(),
             ))
             .relation(Relation::has_many::<AddressResource>(Address::fields().brand_id()).tab())
-            .action::<ToggleBrandVisibility>()
             .action::<MoveBrandUp>()
             .action::<MoveBrandDown>()
     }
@@ -442,31 +415,6 @@ pub struct BrandForm {
     pub website: Option<String>,
     pub is_visible: bool,
     pub description: Option<String>,
-}
-
-/// Shows or hides a brand.
-pub struct ToggleBrandVisibility;
-
-impl Action<BrandResource> for ToggleBrandVisibility {
-    type Input = ();
-    const NAME: &'static str = "toggle-visibility";
-    const PLACES: Places = Places::ROW;
-
-    async fn run(
-        _cx: &Cx,
-        brands: &[Brand],
-        (): (),
-        ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
-        for brand in brands {
-            Brand::filter(Brand::fields().id().eq(brand.id))
-                .update()
-                .is_visible(!brand.is_visible)
-                .exec(&mut *ex)
-                .await?;
-        }
-        Ok(Outcome::done())
-    }
 }
 
 /// Moves a brand one place up the manual order, swapping with the brand above it.
@@ -589,7 +537,7 @@ impl Resource for ProductCategoryResource {
                         ProductCategory.parent
                     ))
                     .toggleable(),
-                    BooleanColumn::new(lens!(ProductCategory.is_visible)),
+                    ToggleColumn::new(lens!(ProductCategory.is_visible)),
                     DateColumn::new(lens!(ProductCategory.updated_at))
                         .sortable()
                         .toggleable()
@@ -625,7 +573,6 @@ impl Resource for ProductCategoryResource {
             .relation(Relation::belongs_to_many::<ProductResource>(
                 ProductCategory::fields().products(),
             ))
-            .action::<ToggleCategoryVisibility>()
     }
 
     crate::audit!();
@@ -641,31 +588,6 @@ pub struct ProductCategoryForm {
     pub parent_id: Option<u64>,
     pub is_visible: bool,
     pub description: Option<String>,
-}
-
-/// Shows or hides a category.
-pub struct ToggleCategoryVisibility;
-
-impl Action<ProductCategoryResource> for ToggleCategoryVisibility {
-    type Input = ();
-    const NAME: &'static str = "toggle-visibility";
-    const PLACES: Places = Places::ROW;
-
-    async fn run(
-        _cx: &Cx,
-        categories: &[ProductCategory],
-        (): (),
-        ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
-        for category in categories {
-            ProductCategory::filter(ProductCategory::fields().id().eq(category.id))
-                .update()
-                .is_visible(!category.is_visible)
-                .exec(&mut *ex)
-                .await?;
-        }
-        Ok(Outcome::done())
-    }
 }
 
 /// Customers.

@@ -3,7 +3,7 @@
 use tablo::{
     Action, ActionLayout, BooleanColumn, Change, CountColumn, DateColumn, DateFilter, Detail, Grid,
     ImageColumn, Outcome, Places, Relation, RelationColumn, Resource, ResourceDef, RichTextColumn,
-    Schema, Section, Table, Text, TextColumn, WriteError,
+    Schema, Section, Table, Text, TextColumn, ToggleColumn, WriteError,
     extend::{Column, Includes},
     lens, relation,
 };
@@ -239,7 +239,7 @@ impl Resource for PostCategoryResource {
                         .searchable()
                         .sortable()
                         .toggleable(),
-                    BooleanColumn::new(lens!(PostCategory.is_visible)),
+                    ToggleColumn::new(lens!(PostCategory.is_visible)),
                     DateColumn::new(lens!(PostCategory.updated_at))
                         .sortable()
                         .toggleable()
@@ -266,7 +266,6 @@ impl Resource for PostCategoryResource {
                 )),
             ))
             .record_title(lens!(PostCategory.name))
-            .action::<ToggleCategoryVisibility>()
     }
 
     crate::audit!();
@@ -280,31 +279,6 @@ pub struct PostCategoryForm {
     pub slug: String,
     pub description: Option<String>,
     pub is_visible: bool,
-}
-
-/// Shows or hides a category.
-pub struct ToggleCategoryVisibility;
-
-impl Action<PostCategoryResource> for ToggleCategoryVisibility {
-    type Input = ();
-    const NAME: &'static str = "toggle-visibility";
-    const PLACES: Places = Places::ROW;
-
-    async fn run(
-        _cx: &Cx,
-        categories: &[PostCategory],
-        (): (),
-        ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
-        for category in categories {
-            PostCategory::filter(PostCategory::fields().id().eq(category.id))
-                .update()
-                .is_visible(!category.is_visible)
-                .exec(&mut *ex)
-                .await?;
-        }
-        Ok(Outcome::done())
-    }
 }
 
 /// The people who write posts.
