@@ -30,56 +30,84 @@ impl Resource for ProductResource {
             )
             .policy(access::policy(Domain::Shop))
             .table(product_table())
-            .form(Schema::new((
-                Section::new(tablo::text!("section-product")).schema((
-                    Grid::new(2).schema((c.name, c.slug.disabled_on_edit())),
-                    c.description.rich_text(),
+            .form(Schema::new(
+                Grid::new(3).schema((
+                    Group::new().span(2).schema((
+                        Section::new(tablo::text!("section-product")).schema(Grid::new(2).schema(
+                            (
+                                c.name,
+                                c.slug.disabled_on_edit(),
+                                c.description.rich_text().span_full(),
+                            ),
+                        )),
+                        Section::new(tablo::text!("section-images")).schema((
+                            c.image
+                                .extensions(IMAGE_EXTENSIONS)
+                                .max_bytes(IMAGE_MAX_BYTES),
+                            c.gallery
+                                .extensions(IMAGE_EXTENSIONS)
+                                .max_bytes(IMAGE_MAX_BYTES)
+                                .max_files(4),
+                        )),
+                        Section::new(tablo::text!("section-pricing")).schema(Grid::new(2).schema(
+                            (
+                                c.price.prefix("$"),
+                                c.old_price.prefix("$"),
+                                c.cost.prefix("$"),
+                            ),
+                        )),
+                        Section::new(tablo::text!("section-inventory")).schema(
+                            Grid::new(2).schema((
+                                c.sku.label(tablo::text!("label-sku-stock-keeping-unit")),
+                                c.barcode,
+                                c.qty,
+                                c.security_stock,
+                            )),
+                        ),
+                        Section::new(tablo::text!("section-shipping")).schema(
+                            Grid::new(2)
+                                .schema((c.backorder.switch(), c.requires_shipping.switch())),
+                        ),
+                    )),
+                    Group::new().schema((
+                        Section::new(tablo::text!("section-status"))
+                            .schema((c.is_visible.switch(), c.published_at)),
+                        Section::new(tablo::text!("section-associations"))
+                            .schema((c.brand_id.searchable(), c.categories.searchable())),
+                    )),
                 )),
-                Section::new(tablo::text!("section-images")).schema((
-                    c.image
-                        .extensions(IMAGE_EXTENSIONS)
-                        .max_bytes(IMAGE_MAX_BYTES),
-                    c.gallery
-                        .extensions(IMAGE_EXTENSIONS)
-                        .max_bytes(IMAGE_MAX_BYTES)
-                        .max_files(4),
+            ))
+            .detail(Detail::new(
+                Grid::new(3).columns((
+                    Section::new(tablo::text!("section-product"))
+                        .span(2)
+                        .columns((
+                            TextColumn::new(lens!(Product.name)),
+                            TextColumn::new(lens!(Product.slug)),
+                            ImageColumn::new(lens!(Product.image)),
+                            ComputedColumn::new(
+                                tablo::text!("label-gallery"),
+                                |product: &Product| product.gallery.len().to_string(),
+                            ),
+                            TextColumn::new(lens!(Product.price)).money(Currency::USD),
+                            TextColumn::new(lens!(Product.sku)),
+                            TextColumn::new(lens!(Product.qty)).numeric(0),
+                            RichTextColumn::new(lens!(Product.description)),
+                        )),
+                    Group::new().columns((
+                        Section::new(tablo::text!("section-status")).columns((
+                            BooleanColumn::new(lens!(Product.is_visible)),
+                            DateColumn::new(lens!(Product.published_at)),
+                        )),
+                        Section::new(tablo::text!("section-associations")).columns((
+                            RelationColumn::of::<BrandResource>(relation!(Product.brand)),
+                            RelationColumn::list::<ProductCategoryResource>(relation!(
+                                Product.categories
+                            )),
+                        )),
+                    )),
                 )),
-                Section::new(tablo::text!("section-pricing")).schema(Grid::new(2).schema((
-                    c.price.prefix("$"),
-                    c.old_price.prefix("$"),
-                    c.cost.prefix("$"),
-                ))),
-                Section::new(tablo::text!("section-inventory")).schema(Grid::new(2).schema((
-                    c.sku.label(tablo::text!("label-sku-stock-keeping-unit")),
-                    c.barcode,
-                    c.qty,
-                    c.security_stock,
-                ))),
-                Section::new(tablo::text!("section-shipping")).schema(
-                    Grid::new(2).schema((c.backorder.switch(), c.requires_shipping.switch())),
-                ),
-                Section::new(tablo::text!("section-status"))
-                    .schema(Grid::new(2).schema((c.is_visible.switch(), c.published_at))),
-                Section::new(tablo::text!("section-associations"))
-                    .schema((c.brand_id.searchable(), c.categories.searchable())),
-            )))
-            .detail(Detail::new((Section::new(tablo::text!("section-product"))
-                .columns((
-                    TextColumn::new(lens!(Product.name)),
-                    TextColumn::new(lens!(Product.slug)),
-                    ImageColumn::new(lens!(Product.image)),
-                    ComputedColumn::new(tablo::text!("label-gallery"), |product: &Product| {
-                        product.gallery.len().to_string()
-                    }),
-                    RelationColumn::of::<BrandResource>(relation!(Product.brand)),
-                    RelationColumn::list::<ProductCategoryResource>(relation!(Product.categories)),
-                    BooleanColumn::new(lens!(Product.is_visible)),
-                    TextColumn::new(lens!(Product.price)).money(Currency::USD),
-                    TextColumn::new(lens!(Product.sku)),
-                    TextColumn::new(lens!(Product.qty)).numeric(0),
-                    DateColumn::new(lens!(Product.published_at)),
-                    RichTextColumn::new(lens!(Product.description)),
-                )),)))
+            ))
             .record_title(lens!(Product.name))
             .global_search(
                 GlobalSearch::new()
