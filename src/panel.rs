@@ -1,7 +1,5 @@
 //! The two panels and the router that serves them.
 
-use std::path::PathBuf;
-
 use tablo::{
     Auth, AuthMail, Brand, EmailVerification, Page, PageDef, Panel, PasswordReset,
     RouterBuilderPanelExt, TenantRegistration, TwoFactor, auth::membership,
@@ -11,10 +9,9 @@ use topcoat::{
     Result,
     asset::{AssetBundle, RouterBuilderAssetExt},
     context::Cx,
-    cookie::Key,
     font::{Font, fontsource::fontsource_font},
     l10n::locale,
-    mail::{MailConfig, Mailbox as Sender, RouterBuilderMailExt},
+    mail::{MailConfig, RouterBuilderMailExt},
     router::{Router, RouterBuilderDiscoverExt},
     tailwind,
     view::{View, view},
@@ -23,6 +20,7 @@ use topcoat::{
 use crate::{
     auth::{self, DemoAuth, DemoResetter, DemoTenantRegistrar, DemoVerifier, SignedIn},
     blog::{AuthorResource, CommentResource, PostCategoryResource, PostResource, TagResource},
+    config::Config,
     dashboards::{Dashboard, HrDashboard, ShopDashboard},
     mailbox::Postbox,
     welcome::{AdminPanel, AppPanel},
@@ -48,7 +46,7 @@ pub fn login_hint() -> String {
 }
 
 /// The admin panel: every resource of the demo.
-pub fn admin_panel() -> Panel {
+pub fn admin_panel(config: &Config) -> Panel {
     localized(Panel::new("admin"))
         .auth(Auth::custom(DemoAuth))
         .brand(brand())
@@ -82,7 +80,7 @@ pub fn admin_panel() -> Panel {
         .resource::<TagResource>()
         .resource::<AuthorResource>()
         .resource::<CommentResource>()
-        .uploads_dir(UPLOAD_URL_PREFIX, upload_dir())
+        .uploads_dir(UPLOAD_URL_PREFIX, config.upload_dir.clone())
 }
 
 /// The demo's brand on both panels: its name, and a mark that turns light on a dark page.
@@ -94,9 +92,9 @@ fn brand() -> Brand {
 }
 
 /// The tenant panel: sign-up, a tenant switcher and the settings page.
-pub fn app_panel() -> Panel {
+pub fn app_panel(config: &Config) -> Panel {
     localized(Panel::new("app"))
-        .auth(app_auth())
+        .auth(app_auth(config))
         .brand(brand())
         .login_hint(login_hint())
         .home::<Dashboard>()
@@ -106,10 +104,13 @@ pub fn app_panel() -> Panel {
 /// The app panel's auth: the demo's own sign-in, with sign-up, password reset,
 /// email verification, the profile, two-factor sign-in, and creating and editing
 /// a team.
-fn app_auth() -> Auth<SignedIn> {
+fn app_auth(config: &Config) -> Auth<SignedIn> {
     Auth::custom(DemoAuth)
         .registration(DemoAuth)
-        .mail(AuthMail::new(sender(), base_url()))
+        .mail(AuthMail::new(
+            config.sender.clone(),
+            config.base_url.clone(),
+        ))
         .password_reset(PasswordReset::new(DemoResetter))
         .email_verification(EmailVerification::new(DemoVerifier))
         .profile(DemoAuth)
@@ -119,14 +120,6 @@ fn app_auth() -> Auth<SignedIn> {
         .tenant_profile(DemoTenantRegistrar)
 }
 
-/// The address the app panel's mail comes from: `TABLO_DEMO_MAIL_FROM`, which
-/// a mail provider has verified, or a placeholder.
-fn sender() -> Sender {
-    let address = std::env::var("TABLO_DEMO_MAIL_FROM")
-        .unwrap_or_else(|_| "no-reply@demo.example.com".to_string());
-    Sender::named("Tablo Demo", &address).expect("TABLO_DEMO_MAIL_FROM is an email address")
-}
-
 /// Offers English and French, the browser's `Accept-Language` choosing, with
 /// the demo's own words from `locales/`.
 fn localized(panel: Panel) -> Panel {
@@ -134,11 +127,6 @@ fn localized(panel: Panel) -> Panel {
         .locales([locale!("en"), locale!("fr")])
         .translations(locale!("en"), include_str!("../locales/en.ftl"))
         .translations(locale!("fr"), include_str!("../locales/fr.ftl"))
-}
-
-/// The URL the app answers on, which every mailed link starts with.
-fn base_url() -> String {
-    std::env::var("TABLO_DEMO_BASE_URL").unwrap_or_else(|_| "http://127.0.0.1:3000".to_string())
 }
 
 /// The tenant panel's settings page, which shows only the team.
@@ -180,46 +168,23 @@ impl Page for Settings {
     }
 }
 
-/// The directory uploaded images are written to.
-pub fn upload_dir() -> PathBuf {
-    std::env::var_os("TABLO_DEMO_UPLOAD_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("target/demo-uploads"))
-}
-
-/// The router's cookie key, which signs the links to uploaded files. `TABLO_DEMO_COOKIE_KEY` holds
-/// its 64 bytes as 128 hex characters (`openssl rand -hex 64`); without it each start draws a
-/// key, so the upload links a page showed before a restart stop working after it.
-fn cookie_key() -> Key {
-    let Ok(secret) = std::env::var("TABLO_DEMO_COOKIE_KEY") else {
-        return Key::generate();
-    };
-    let bytes: Option<Vec<u8>> = (0..secret.len())
-        .step_by(2)
-        .map(|at| {
-            secret
-                .get(at..at + 2)
-                .and_then(|pair| u8::from_str_radix(pair, 16).ok())
-        })
-        .collect();
-    bytes
-        .and_then(|bytes| Key::try_from(bytes.as_slice()).ok())
-        .expect("TABLO_DEMO_COOKIE_KEY holds 128 hex characters")
-}
-
 /// Mounts both panels on a router, with the asset bundle the build script wrote, and keeps their
 /// handles for the welcome page at `/`.
-pub fn router(db: Db) -> Router {
+pub fn router(db: Db, config: &Config) -> Router {
     let bundle = AssetBundle::load().expect("load the asset bundle beside the executable");
     let builder = Router::builder()
         .discover()
         .with(db)
-        .with(cookie_key())
-        .mail(MailConfig::builder().transport(Postbox::from_env()).build())
+        .with(config.cookie_key.clone())
+        .mail(
+            MailConfig::builder()
+                .transport(Postbox::new(config.smtp.as_ref()))
+                .build(),
+        )
         .assets(bundle)
-        .panel(admin_panel().shell_assets(tailwind::stylesheet!(), ALBERT_SANS))
+        .panel(admin_panel(config).shell_assets(tailwind::stylesheet!(), ALBERT_SANS))
         .expect("the admin panel mounts")
-        .panel(app_panel().shell_assets(tailwind::stylesheet!(), ALBERT_SANS))
+        .panel(app_panel(config).shell_assets(tailwind::stylesheet!(), ALBERT_SANS))
         .expect("the app panel mounts");
     let admin = builder.panel_handle("admin").expect("mounted above");
     let app = builder.panel_handle("app").expect("mounted above");

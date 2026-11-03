@@ -4,6 +4,7 @@ pub mod audit;
 pub mod auth;
 pub mod blog;
 pub mod brand;
+pub mod config;
 pub mod controls;
 pub mod dashboards;
 pub mod enums;

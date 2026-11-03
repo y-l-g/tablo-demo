@@ -1,23 +1,23 @@
-//! The demo's mail transport. The app panel's mail goes to the SMTP server
-//! `TABLO_DEMO_SMTP_HOST` names. Without one each send fails, and the failure
-//! is logged: the demo keeps no copy of the mail it sends.
+//! The demo's mail transport. The app panel's mail goes to the SMTP server the
+//! [`Config`] names. Without one each send fails, and the failure is logged: the
+//! demo keeps no copy of the mail it sends.
 
+use crate::config::Smtp;
 use topcoat::{
     context::Cx,
     mail::{Mail, SmtpTransport, Transport, TransportFuture},
 };
 
-/// The demo's transport, which sends each mail through the SMTP server the
-/// environment names.
+/// The demo's transport, which sends each mail through the configured SMTP server.
 pub struct Postbox {
     smtp: Option<SmtpTransport>,
 }
 
 impl Postbox {
-    /// Sends through the server the environment names, if any.
-    pub fn from_env() -> Self {
+    /// Sends through `smtp`, or fails each send without one.
+    pub fn new(smtp: Option<&Smtp>) -> Self {
         Self {
-            smtp: smtp_from_env(),
+            smtp: smtp.map(transport),
         }
     }
 }
@@ -38,31 +38,18 @@ impl Transport for Postbox {
     }
 }
 
-/// The SMTP server `TABLO_DEMO_SMTP_HOST` names, or `None` when it is unset.
-/// Port 465 connects with implicit TLS, any other port with STARTTLS (587 by
-/// default); `TABLO_DEMO_SMTP_USERNAME` and `TABLO_DEMO_SMTP_PASSWORD` sign in.
-fn smtp_from_env() -> Option<SmtpTransport> {
-    let host = std::env::var("TABLO_DEMO_SMTP_HOST").ok()?;
-    let port = std::env::var("TABLO_DEMO_SMTP_PORT")
-        .ok()
-        .map(|port| {
-            port.parse::<u16>()
-                .expect("TABLO_DEMO_SMTP_PORT is a port number")
-        })
-        .unwrap_or(587);
-    let builder = if port == 465 {
-        SmtpTransport::relay(&host)
+/// A transport to `smtp`: implicit TLS on port 465, STARTTLS on any other.
+fn transport(smtp: &Smtp) -> SmtpTransport {
+    let builder = if smtp.port == 465 {
+        SmtpTransport::relay(&smtp.host)
     } else {
-        SmtpTransport::starttls(&host)
+        SmtpTransport::starttls(&smtp.host)
     }
     .expect("TABLO_DEMO_SMTP_HOST names an SMTP server")
-    .port(port);
-    let builder = match (
-        std::env::var("TABLO_DEMO_SMTP_USERNAME"),
-        std::env::var("TABLO_DEMO_SMTP_PASSWORD"),
-    ) {
-        (Ok(username), Ok(password)) => builder.credentials(username, password),
-        _ => builder,
-    };
-    Some(builder.build())
+    .port(smtp.port);
+    match &smtp.credentials {
+        Some((username, password)) => builder.credentials(username.clone(), password.clone()),
+        None => builder,
+    }
+    .build()
 }

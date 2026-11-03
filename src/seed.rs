@@ -1,6 +1,6 @@
 //! The demo data.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 use jiff::{Span, Timestamp, Zoned, civil::Date};
 use rust_decimal::Decimal;
@@ -23,11 +23,11 @@ use crate::models::{
     Timesheet,
 };
 use crate::models::{cost, money, round};
-use crate::panel::{UPLOAD_URL_PREFIX, upload_dir};
+use crate::panel::UPLOAD_URL_PREFIX;
 use crate::shop::CITIES;
 
 /// Fills an empty database with the demo's rows.
-pub async fn seed(db: &mut Db) -> toasty::Result<()> {
+pub async fn seed(db: &mut Db, upload_dir: &Path) -> toasty::Result<()> {
     let mut rng = Rng::new(0x5eed);
     let now = Zoned::now();
     let today = now.date();
@@ -54,8 +54,8 @@ pub async fn seed(db: &mut Db) -> toasty::Result<()> {
         );
     }
     let teams = seed_teams(db).await?;
-    let shots = upload_all(0, PRODUCT_SHOTS).await?;
-    let covers = upload_all(PRODUCT_SHOTS.len(), POST_COVERS).await?;
+    let shots = upload_all(upload_dir, 0, PRODUCT_SHOTS).await?;
+    let covers = upload_all(upload_dir, PRODUCT_SHOTS.len(), POST_COVERS).await?;
     let (brands, customers) = seed_shop(db, &mut rng, &now).await?;
     let products = seed_products(db, &mut rng, &brands, &customers, &shots).await?;
     seed_orders(db, &mut rng, &now, &customers, &products).await?;
@@ -84,12 +84,15 @@ pub async fn seed(db: &mut Db) -> toasty::Result<()> {
     Ok(())
 }
 
-/// Writes each of `images` to the upload directory and returns the paths the panel serves them
+/// Writes each of `images` to `dir`, the upload directory, and returns the paths the panel serves them
 /// at. A file's name is fixed by its place, from `first` on, so each start writes over the files
 /// the last one wrote.
-async fn upload_all(first: usize, images: &[(&str, &[u8])]) -> toasty::Result<Vec<String>> {
-    let dir = upload_dir();
-    tokio::fs::create_dir_all(&dir).await?;
+async fn upload_all(
+    dir: &Path,
+    first: usize,
+    images: &[(&str, &[u8])],
+) -> toasty::Result<Vec<String>> {
+    tokio::fs::create_dir_all(dir).await?;
     let mut paths = Vec::new();
     for (offset, (name, bytes)) in images.iter().enumerate() {
         let file = format!("{}-{name}", Uuid::from_u128((first + offset) as u128 + 1));

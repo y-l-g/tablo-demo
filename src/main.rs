@@ -9,6 +9,7 @@ async fn main() {
             EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
         )
         .init();
+    let config = tablo_demo::config::Config::from_env();
     let mut db = Db::builder()
         .models(tablo::models!(
             tablo_demo::models::Address,
@@ -44,9 +45,9 @@ async fn main() {
         .await
         .expect("connect");
     db.push_schema().await.expect("push schema");
-    tablo_demo::seed::seed(&mut db)
+    tablo_demo::seed::seed(&mut db, &config.upload_dir)
         .await
         .expect("seed the demo data");
-    let router = tablo_demo::panel::router(db);
+    let router = tablo_demo::panel::router(db, &config);
     topcoat::start(router).await.expect("serve");
 }
