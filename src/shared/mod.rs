@@ -1,15 +1,13 @@
-//! What the domains share: a form control, list tabs, dashboard figures, the bell, upload
+//! What the domains share: a form control, dashboard figures, the bell, upload
 //! limits, and two small helpers.
 
 mod controls;
 mod notify;
 pub mod stats;
-mod tabs;
 pub mod uploads;
 
 pub use controls::ColorInput;
 pub use notify::notify;
-pub use tabs::OptionTabs;
 
 use jiff::Timestamp;
 

@@ -241,14 +241,12 @@ impl Action<ProjectResource> for CompleteProject {
         (): (),
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
-        for project in projects {
-            Project::filter_by_id(project.id)
-                .update()
-                .status(ProjectStatus::Completed)
-                .end_date(Some(Zoned::now().date()))
-                .exec(&mut *ex)
-                .await?;
-        }
+        Project::filter(filter_keys(projects))
+            .update()
+            .status(ProjectStatus::Completed)
+            .end_date(Some(Zoned::now().date()))
+            .exec(ex)
+            .await?;
         Ok(Outcome::done())
     }
 
@@ -263,12 +261,10 @@ async fn set_project_status<K>(
     status: ProjectStatus,
     ex: &mut dyn toasty::Executor,
 ) -> Result<Outcome, WriteError<K>> {
-    for project in projects {
-        Project::filter_by_id(project.id)
-            .update()
-            .status(status)
-            .exec(&mut *ex)
-            .await?;
-    }
+    Project::filter(filter_keys(projects))
+        .update()
+        .status(status)
+        .exec(ex)
+        .await?;
     Ok(Outcome::done())
 }

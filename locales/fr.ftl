@@ -190,7 +190,6 @@ section-timesheet-entry = Saisie de temps
 
 ## Onglets des listes
 
-list-tab-all = Tous
 
 ## Libellés
 

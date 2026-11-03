@@ -207,13 +207,11 @@ impl Action<ProductResource> for BulkSetProductVisibility {
         choice: VisibilityChoice,
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<VisibilityChoiceField>> {
-        for product in products {
-            Product::filter_by_id(product.id)
-                .update()
-                .is_visible(choice.is_visible)
-                .exec(&mut *ex)
-                .await?;
-        }
+        Product::filter(filter_keys(products))
+            .update()
+            .is_visible(choice.is_visible)
+            .exec(ex)
+            .await?;
         Ok(Outcome::done())
     }
 
@@ -243,14 +241,12 @@ impl Action<ProductResource> for AdjustProductPrice {
         change: PriceChange,
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<PriceChangeField>> {
-        for product in products {
-            Product::filter_by_id(product.id)
-                .update()
-                .price(Some(change.price))
-                .old_price(change.old_price)
-                .exec(&mut *ex)
-                .await?;
-        }
+        Product::filter(filter_keys(products))
+            .update()
+            .price(Some(change.price))
+            .old_price(change.old_price)
+            .exec(ex)
+            .await?;
         Ok(Outcome::done())
     }
 }
@@ -286,13 +282,11 @@ impl Action<ProductResource> for AdjustProductStock {
         change: StockChange,
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<StockChangeField>> {
-        for product in products {
-            Product::filter_by_id(product.id)
-                .update()
-                .qty(change.qty.max(0) as u64)
-                .exec(&mut *ex)
-                .await?;
-        }
+        Product::filter(filter_keys(products))
+            .update()
+            .qty(change.qty.max(0) as u64)
+            .exec(ex)
+            .await?;
         Ok(Outcome::done())
     }
 }

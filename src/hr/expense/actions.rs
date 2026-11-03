@@ -33,14 +33,12 @@ impl Action<ExpenseResource> for SubmitExpense {
         (): (),
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
-        for expense in expenses {
-            Expense::filter_by_id(expense.id)
-                .update()
-                .status(ExpenseStatus::Submitted)
-                .submitted_at(Some(Timestamp::now()))
-                .exec(&mut *ex)
-                .await?;
-        }
+        Expense::filter(filter_keys(expenses))
+            .update()
+            .status(ExpenseStatus::Submitted)
+            .submitted_at(Some(Timestamp::now()))
+            .exec(ex)
+            .await?;
         Ok(Outcome::done())
     }
 
@@ -68,14 +66,12 @@ impl Action<ExpenseResource> for ApproveExpense {
         (): (),
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
-        for expense in expenses {
-            Expense::filter_by_id(expense.id)
-                .update()
-                .status(ExpenseStatus::Approved)
-                .approved_at(Some(Timestamp::now()))
-                .exec(&mut *ex)
-                .await?;
-        }
+        Expense::filter(filter_keys(expenses))
+            .update()
+            .status(ExpenseStatus::Approved)
+            .approved_at(Some(Timestamp::now()))
+            .exec(ex)
+            .await?;
         Ok(Outcome::done())
     }
 
@@ -109,14 +105,12 @@ impl Action<ExpenseResource> for RejectExpense {
         rejection: RejectionReason,
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<RejectionReasonField>> {
-        for expense in expenses {
-            Expense::filter_by_id(expense.id)
-                .update()
-                .status(ExpenseStatus::Rejected)
-                .notes(Some(rejection.reason.clone()))
-                .exec(&mut *ex)
-                .await?;
-        }
+        Expense::filter(filter_keys(expenses))
+            .update()
+            .status(ExpenseStatus::Rejected)
+            .notes(Some(rejection.reason))
+            .exec(ex)
+            .await?;
         Ok(Outcome::done())
     }
 
@@ -144,13 +138,11 @@ impl Action<ExpenseResource> for ReimburseExpense {
         (): (),
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
-        for expense in expenses {
-            Expense::filter_by_id(expense.id)
-                .update()
-                .status(ExpenseStatus::Reimbursed)
-                .exec(&mut *ex)
-                .await?;
-        }
+        Expense::filter(filter_keys(expenses))
+            .update()
+            .status(ExpenseStatus::Reimbursed)
+            .exec(ex)
+            .await?;
         Ok(Outcome::done())
     }
 
@@ -173,14 +165,12 @@ impl Action<ExpenseResource> for FlagExpense {
         flag: RejectionReason,
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<RejectionReasonField>> {
-        for expense in expenses {
-            Expense::filter_by_id(expense.id)
-                .update()
-                .status(ExpenseStatus::Draft)
-                .notes(Some(flag.reason.clone()))
-                .exec(&mut *ex)
-                .await?;
-        }
+        Expense::filter(filter_keys(expenses))
+            .update()
+            .status(ExpenseStatus::Draft)
+            .notes(Some(flag.reason))
+            .exec(ex)
+            .await?;
         Ok(Outcome::done())
     }
 

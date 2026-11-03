@@ -58,14 +58,12 @@ impl Action<OrderResource> for ShipOrder {
         shipping: ShippingNotes,
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<ShippingNotesField>> {
-        for order in orders {
-            Order::filter_by_id(order.id)
-                .update()
-                .status(OrderStatus::Shipped)
-                .notes(shipping.shipping_notes.clone())
-                .exec(&mut *ex)
-                .await?;
-        }
+        Order::filter(filter_keys(orders))
+            .update()
+            .status(OrderStatus::Shipped)
+            .notes(shipping.shipping_notes)
+            .exec(ex)
+            .await?;
         count_sold(orders, ex).await?;
         Ok(Outcome::done())
     }
@@ -174,13 +172,11 @@ async fn set_status<K>(
     status: OrderStatus,
     ex: &mut dyn toasty::Executor,
 ) -> Result<Outcome, WriteError<K>> {
-    for order in orders {
-        Order::filter_by_id(order.id)
-            .update()
-            .status(status)
-            .exec(&mut *ex)
-            .await?;
-    }
+    Order::filter(filter_keys(orders))
+        .update()
+        .status(status)
+        .exec(ex)
+        .await?;
     Ok(Outcome::done())
 }
 

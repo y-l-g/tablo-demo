@@ -223,12 +223,10 @@ async fn set_billable(
     billable: bool,
     ex: &mut dyn toasty::Executor,
 ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
-    for timesheet in timesheets {
-        Timesheet::filter_by_id(timesheet.id)
-            .update()
-            .is_billable(billable)
-            .exec(&mut *ex)
-            .await?;
-    }
+    Timesheet::filter(filter_keys(timesheets))
+        .update()
+        .is_billable(billable)
+        .exec(ex)
+        .await?;
     Ok(Outcome::done())
 }

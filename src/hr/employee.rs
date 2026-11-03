@@ -10,7 +10,7 @@ use super::{
 };
 use crate::access::{self, Domain};
 use crate::projects::{Timesheet, TimesheetResource};
-use crate::shared::{ColorInput, OptionTabs, suggestions};
+use crate::shared::{ColorInput, suggestions};
 
 /// The job titles the employee form suggests, which the seeded employees hold.
 pub const JOB_TITLES: &[&str] = &[
@@ -173,9 +173,7 @@ fn employee_table() -> Table<Employee> {
     ))
     .default_sort(lens!(Employee.name))
     .action_layout(ActionLayout::Menu)
-    .option_tabs(|employment_type: EmploymentType| {
-        Employee::fields().employment_type().eq(employment_type)
-    })
+    .option_tabs(lens!(Employee.employment_type))
     .filters((
         SelectFilter::relationship::<DepartmentResource>(lens!(Employee.department_id)),
         TernaryFilter::new(lens!(Employee.is_active)),
@@ -252,13 +250,11 @@ impl Action<EmployeeResource> for ChangeEmployeeDepartment {
         choice: DepartmentChoice,
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<DepartmentChoiceField>> {
-        for employee in employees {
-            Employee::filter_by_id(employee.id)
-                .update()
-                .department_id(choice.department_id)
-                .exec(&mut *ex)
-                .await?;
-        }
+        Employee::filter(filter_keys(employees))
+            .update()
+            .department_id(choice.department_id)
+            .exec(ex)
+            .await?;
         Ok(Outcome::done())
     }
 
@@ -304,13 +300,11 @@ impl Action<EmployeeResource> for BulkSetEmployeeActive {
         choice: ActiveChoice,
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<ActiveChoiceField>> {
-        for employee in employees {
-            Employee::filter_by_id(employee.id)
-                .update()
-                .is_active(choice.is_active)
-                .exec(&mut *ex)
-                .await?;
-        }
+        Employee::filter(filter_keys(employees))
+            .update()
+            .is_active(choice.is_active)
+            .exec(ex)
+            .await?;
         Ok(Outcome::done())
     }
 
