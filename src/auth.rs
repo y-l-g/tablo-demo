@@ -122,10 +122,7 @@ impl Authenticator for DemoAuth {
             return Ok(None);
         };
         let mut db = db(cx)?;
-        let user = User::filter(User::fields().id().eq(id))
-            .first()
-            .exec(&mut db)
-            .await?;
+        let user = User::filter_by_id(id).first().exec(&mut db).await?;
         match user {
             Some(user) => Ok(Some(Self::signed_in(user, &mut db).await?)),
             None => Ok(None),
@@ -279,7 +276,7 @@ impl tablo::auth::PasswordResetter for DemoResetter {
     ) -> topcoat::Result<()> {
         let id = account_id(user_id)?;
         let password = hash_password(password).await?;
-        User::filter(User::fields().id().eq(id))
+        User::filter_by_id(id)
             .update()
             .password(password)
             .exec(ex)
@@ -306,7 +303,7 @@ impl tablo::auth::EmailVerifier for DemoVerifier {
         ex: &mut dyn toasty::Executor,
     ) -> topcoat::Result<()> {
         let id = account_id(user_id)?;
-        User::filter(User::fields().id().eq(id))
+        User::filter_by_id(id)
             .update()
             .email(email.to_string())
             .email_verified_at(Some(Timestamp::now()))
@@ -452,7 +449,7 @@ impl ProfileEditor for DemoAuth {
         // mailed to it, and the old one gets a link that keeps it.
         let stored = email != signed.user.email
             && request_email_change(cx, &mut *ex, signed, &email).await? == EmailChange::Immediate;
-        let mut update = User::filter(User::fields().id().eq(signed.user.id))
+        let mut update = User::filter_by_id(signed.user.id)
             .update()
             .name(profile.name);
         if stored {
@@ -506,7 +503,7 @@ impl TenantEditor for DemoTenantRegistrar {
         input: NewTeam,
         ex: &mut dyn toasty::Executor,
     ) -> topcoat::Result<()> {
-        Team::filter(Team::fields().id().eq(team.tenant.get()))
+        Team::filter_by_id(team.tenant.get())
             .update()
             .name(input.name.trim().to_string())
             .exec(ex)

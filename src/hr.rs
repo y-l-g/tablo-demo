@@ -139,7 +139,7 @@ impl Action<DepartmentResource> for AdjustDepartmentBudget {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<BudgetChangeField>> {
         for department in departments {
-            Department::filter(Department::fields().id().eq(department.id))
+            Department::filter_by_id(department.id)
                 .update()
                 .budget(change.budget)
                 .exec(&mut *ex)
@@ -205,7 +205,7 @@ impl Action<DepartmentResource> for ToggleDepartmentActive {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for department in departments {
-            Department::filter(Department::fields().id().eq(department.id))
+            Department::filter_by_id(department.id)
                 .update()
                 .is_active(!department.is_active)
                 .exec(&mut *ex)
@@ -391,7 +391,7 @@ impl Action<EmployeeResource> for ToggleEmployeeActive {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for employee in employees {
-            Employee::filter(Employee::fields().id().eq(employee.id))
+            Employee::filter_by_id(employee.id)
                 .update()
                 .is_active(!employee.is_active)
                 .exec(&mut *ex)
@@ -422,7 +422,7 @@ impl Action<EmployeeResource> for ChangeEmployeeDepartment {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<DepartmentChoiceField>> {
         for employee in employees {
-            Employee::filter(Employee::fields().id().eq(employee.id))
+            Employee::filter_by_id(employee.id)
                 .update()
                 .department_id(choice.department_id)
                 .exec(&mut *ex)
@@ -474,7 +474,7 @@ impl Action<EmployeeResource> for BulkSetEmployeeActive {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<ActiveChoiceField>> {
         for employee in employees {
-            Employee::filter(Employee::fields().id().eq(employee.id))
+            Employee::filter_by_id(employee.id)
                 .update()
                 .is_active(choice.is_active)
                 .exec(&mut *ex)
@@ -757,7 +757,7 @@ async fn review<K>(
     ex: &mut dyn toasty::Executor,
 ) -> Result<Outcome, WriteError<K>> {
     for request in requests {
-        let mut update = LeaveRequest::filter(LeaveRequest::fields().id().eq(request.id)).update();
+        let mut update = LeaveRequest::filter_by_id(request.id).update();
         update = update.status(status).reviewed_at(Some(Timestamp::now()));
         // Approving keeps whatever notes the request already carries.
         if let Some(notes) = notes.clone() {
@@ -1012,7 +1012,7 @@ impl Action<ProjectResource> for CompleteProject {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for project in projects {
-            Project::filter(Project::fields().id().eq(project.id))
+            Project::filter_by_id(project.id)
                 .update()
                 .status(ProjectStatus::Completed)
                 .end_date(Some(Zoned::now().date()))
@@ -1034,7 +1034,7 @@ async fn set_project_status<K>(
     ex: &mut dyn toasty::Executor,
 ) -> Result<Outcome, WriteError<K>> {
     for project in projects {
-        Project::filter(Project::fields().id().eq(project.id))
+        Project::filter_by_id(project.id)
             .update()
             .status(status)
             .exec(&mut *ex)
@@ -1226,7 +1226,7 @@ impl Action<TaskResource> for CompleteTask {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<TaskCompletionField>> {
         for task in tasks {
-            Task::filter(Task::fields().id().eq(task.id))
+            Task::filter_by_id(task.id)
                 .update()
                 .status(TaskStatus::Completed)
                 .completed_at(Some(Timestamp::now()))
@@ -1263,7 +1263,7 @@ impl Action<TaskResource> for AssignTask {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<AssigneeChoiceField>> {
         for task in tasks {
-            Task::filter(Task::fields().id().eq(task.id))
+            Task::filter_by_id(task.id)
                 .update()
                 .assigned_to(choice.assigned_to)
                 .exec(&mut *ex)
@@ -1299,7 +1299,7 @@ impl Action<TaskResource> for SetTaskPriority {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<PriorityChangeField>> {
         for task in tasks {
-            Task::filter(Task::fields().id().eq(task.id))
+            Task::filter_by_id(task.id)
                 .update()
                 .priority(change.priority)
                 .exec(&mut *ex)
@@ -1387,7 +1387,7 @@ async fn set_task_status<K>(
     ex: &mut dyn toasty::Executor,
 ) -> Result<Outcome, WriteError<K>> {
     for task in tasks {
-        Task::filter(Task::fields().id().eq(task.id))
+        Task::filter_by_id(task.id)
             .update()
             .status(status)
             .exec(&mut *ex)
@@ -1558,7 +1558,7 @@ impl Action<TimesheetResource> for ToggleTimesheetBillable {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for timesheet in timesheets {
-            Timesheet::filter(Timesheet::fields().id().eq(timesheet.id))
+            Timesheet::filter_by_id(timesheet.id)
                 .update()
                 .is_billable(!timesheet.is_billable)
                 .exec(&mut *ex)
@@ -1621,7 +1621,7 @@ async fn set_billable(
     ex: &mut dyn toasty::Executor,
 ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
     for timesheet in timesheets {
-        Timesheet::filter(Timesheet::fields().id().eq(timesheet.id))
+        Timesheet::filter_by_id(timesheet.id)
             .update()
             .is_billable(billable)
             .exec(&mut *ex)
@@ -1774,7 +1774,7 @@ impl Action<ExpenseResource> for SubmitExpense {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for expense in expenses {
-            Expense::filter(Expense::fields().id().eq(expense.id))
+            Expense::filter_by_id(expense.id)
                 .update()
                 .status(ExpenseStatus::Submitted)
                 .submitted_at(Some(Timestamp::now()))
@@ -1809,7 +1809,7 @@ impl Action<ExpenseResource> for ApproveExpense {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for expense in expenses {
-            Expense::filter(Expense::fields().id().eq(expense.id))
+            Expense::filter_by_id(expense.id)
                 .update()
                 .status(ExpenseStatus::Approved)
                 .approved_at(Some(Timestamp::now()))
@@ -1850,7 +1850,7 @@ impl Action<ExpenseResource> for RejectExpense {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<RejectionReasonField>> {
         for expense in expenses {
-            Expense::filter(Expense::fields().id().eq(expense.id))
+            Expense::filter_by_id(expense.id)
                 .update()
                 .status(ExpenseStatus::Rejected)
                 .notes(Some(rejection.reason.clone()))
@@ -1885,7 +1885,7 @@ impl Action<ExpenseResource> for ReimburseExpense {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for expense in expenses {
-            Expense::filter(Expense::fields().id().eq(expense.id))
+            Expense::filter_by_id(expense.id)
                 .update()
                 .status(ExpenseStatus::Reimbursed)
                 .exec(&mut *ex)
@@ -1914,7 +1914,7 @@ impl Action<ExpenseResource> for FlagExpense {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<RejectionReasonField>> {
         for expense in expenses {
-            Expense::filter(Expense::fields().id().eq(expense.id))
+            Expense::filter_by_id(expense.id)
                 .update()
                 .status(ExpenseStatus::Draft)
                 .notes(Some(flag.reason.clone()))
@@ -2012,7 +2012,7 @@ impl Resource for ExpenseLineResource {
         record: &ExpenseLine,
         ex: &mut dyn toasty::Executor,
     ) -> Result<(), WriteError> {
-        ExpenseLine::filter(ExpenseLine::fields().id().eq(record.id))
+        ExpenseLine::filter_by_id(record.id)
             .delete()
             .exec(&mut *ex)
             .await?;
@@ -2028,7 +2028,7 @@ async fn refresh_expense_total(expense_id: u64, ex: &mut dyn toasty::Executor) -
         .exec(&mut *ex)
         .await?;
     let total: Decimal = lines.iter().map(|line| line.amount).sum();
-    Expense::filter(Expense::fields().id().eq(expense_id))
+    Expense::filter_by_id(expense_id)
         .update()
         .total_amount(total)
         .exec(&mut *ex)

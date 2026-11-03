@@ -425,7 +425,7 @@ async fn seed_orders(
         .await?;
     }
     for (product_id, units) in sold {
-        Product::filter(Product::fields().id().eq(product_id))
+        Product::filter_by_id(product_id)
             .update()
             .units_sold(units)
             .exec(db)
@@ -846,7 +846,7 @@ async fn seed_hr(db: &mut Db, rng: &mut Rng, now: &Zoned, today: Date) -> toasty
             .exec(db)
             .await?;
         }
-        Expense::filter(Expense::fields().id().eq(expense.id))
+        Expense::filter_by_id(expense.id)
             .update()
             .total_amount(total)
             .exec(db)

@@ -54,7 +54,7 @@ async fn send(cx: &Cx, notification: Notification, url: Option<String>) -> Resul
 async fn customer_name(cx: &Cx, id: Option<u64>) -> Option<String> {
     let id = id?;
     let mut db = tablo::db::db(cx).ok()?;
-    Customer::filter(Customer::fields().id().eq(id))
+    Customer::filter_by_id(id)
         .first()
         .exec(&mut db)
         .await

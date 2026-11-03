@@ -226,7 +226,7 @@ impl Action<ProductResource> for BulkSetProductVisibility {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<VisibilityChoiceField>> {
         for product in products {
-            Product::filter(Product::fields().id().eq(product.id))
+            Product::filter_by_id(product.id)
                 .update()
                 .is_visible(choice.is_visible)
                 .exec(&mut *ex)
@@ -262,7 +262,7 @@ impl Action<ProductResource> for AdjustProductPrice {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<PriceChangeField>> {
         for product in products {
-            Product::filter(Product::fields().id().eq(product.id))
+            Product::filter_by_id(product.id)
                 .update()
                 .price(Some(change.price))
                 .old_price(change.old_price)
@@ -305,7 +305,7 @@ impl Action<ProductResource> for AdjustProductStock {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<StockChangeField>> {
         for product in products {
-            Product::filter(Product::fields().id().eq(product.id))
+            Product::filter_by_id(product.id)
                 .update()
                 .qty(change.qty.max(0) as u64)
                 .exec(&mut *ex)
@@ -395,7 +395,7 @@ impl Resource for BrandResource {
             .exec(&mut *ex)
             .await?;
         brand.sort = last.map_or(0, |last| last.sort + 1);
-        Brand::filter(Brand::fields().id().eq(brand.id))
+        Brand::filter_by_id(brand.id)
             .update()
             .sort(brand.sort)
             .exec(&mut *ex)
@@ -500,12 +500,12 @@ async fn swap_place(
     let Some(neighbour) = neighbour else {
         return Ok(());
     };
-    Brand::filter(Brand::fields().id().eq(brand.id))
+    Brand::filter_by_id(brand.id)
         .update()
         .sort(neighbour.sort)
         .exec(&mut *ex)
         .await?;
-    Brand::filter(Brand::fields().id().eq(neighbour.id))
+    Brand::filter_by_id(neighbour.id)
         .update()
         .sort(brand.sort)
         .exec(&mut *ex)
@@ -813,7 +813,7 @@ impl Resource for OrderResource {
                 "error-order-has-payments"
             )));
         }
-        Order::filter(Order::fields().id().eq(order.id))
+        Order::filter_by_id(order.id)
             .update()
             .deleted_at(Some(jiff::Timestamp::now()))
             .exec(&mut *ex)
@@ -933,7 +933,7 @@ impl Action<OrderResource> for ShipOrder {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<ShippingNotesField>> {
         for order in orders {
-            Order::filter(Order::fields().id().eq(order.id))
+            Order::filter_by_id(order.id)
                 .update()
                 .status(OrderStatus::Shipped)
                 .notes(shipping.shipping_notes.clone())
@@ -1049,7 +1049,7 @@ async fn set_status<K>(
     ex: &mut dyn toasty::Executor,
 ) -> Result<Outcome, WriteError<K>> {
     for order in orders {
-        Order::filter(Order::fields().id().eq(order.id))
+        Order::filter_by_id(order.id)
             .update()
             .status(status)
             .exec(&mut *ex)
@@ -1068,14 +1068,14 @@ async fn count_sold(orders: &[Order], ex: &mut dyn toasty::Executor) -> toasty::
             let Some(product_id) = item.product_id else {
                 continue;
             };
-            let product = Product::filter(Product::fields().id().eq(product_id))
+            let product = Product::filter_by_id(product_id)
                 .first()
                 .exec(&mut *ex)
                 .await?;
             let Some(product) = product else {
                 continue;
             };
-            Product::filter(Product::fields().id().eq(product_id))
+            Product::filter_by_id(product_id)
                 .update()
                 .units_sold(product.units_sold + item.qty.max(0) as u64)
                 .exec(&mut *ex)

@@ -160,7 +160,7 @@ impl Action<PostResource> for TogglePostPublish {
             } else {
                 Some(jiff::Zoned::now().date())
             };
-            Post::filter(Post::fields().id().eq(post.id))
+            Post::filter_by_id(post.id)
                 .update()
                 .published_at(published_at)
                 .exec(&mut *ex)
