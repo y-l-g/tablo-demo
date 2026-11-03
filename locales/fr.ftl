@@ -146,6 +146,13 @@ tab-employment = Emploi
 tab-overview = Aperçu
 tab-budget = Budget
 
+## Étapes des assistants
+
+step-details = Détails
+step-review = Vérification
+step-order-details = Détails de la commande
+step-notes = Notes
+
 ## List summaries
 
 summary-orders = Commandes
@@ -164,7 +171,6 @@ section-comment = Commentaire
 section-content = Contenu
 section-customer = Client
 section-department = Service
-section-details = Détails
 section-expense-details = Détails de la note de frais
 section-expense-line = Ligne de frais
 section-image = Image
@@ -182,7 +188,6 @@ section-receipt = Justificatif
 section-review = Relecture
 section-shipping = Expédition
 section-status = Statut
-section-summary = Résumé
 section-task = Tâche
 section-task-details = Détails de la tâche
 section-timesheet = Feuille de temps

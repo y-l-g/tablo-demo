@@ -76,26 +76,27 @@ impl Resource for ExpenseResource {
                 Section::new(tablo::text!("section-receipt"))
                     .columns(FileColumn::new(lens!(Expense.receipt_path))),
             )))
-            .form(Schema::new((
-                Section::new(tablo::text!("section-details")).schema(Grid::new(2).schema((
+            // Who spent what on what first, then the amount, the receipt and the status.
+            .form(Schema::new(Wizard::new([
+                Step::new(tablo::text!("step-details")).schema(Grid::new(2).schema((
                     c.expense_number.disabled_on_edit(),
                     c.employee_id.searchable(),
                     c.project_id.searchable(),
-                    c.category.radio(),
-                    c.status.buttons(),
-                    c.description.multiline(3),
+                    c.category.radio().span_full(),
+                    c.description.multiline(3).span_full(),
                 ))),
-                Section::new(tablo::text!("section-summary")).schema(
+                Step::new(tablo::text!("step-review")).schema(
                     Grid::new(2).schema((
-                        c.total_amount,
+                        c.total_amount.prefix("$"),
                         c.currency.choice().options(["USD"]),
+                        c.status.buttons().span_full(),
                         c.receipt_path
                             .extensions(RECEIPT_EXTENSIONS)
                             .max_bytes(RECEIPT_MAX_BYTES),
                         c.notes.multiline(3),
                     )),
                 ),
-            )))
+            ])))
             .record_title(lens!(Expense.expense_number))
             .relation(
                 Relation::has_many::<ExpenseLineResource>(ExpenseLine::fields().expense_id()).tab(),
