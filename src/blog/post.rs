@@ -39,6 +39,7 @@ impl Resource for PostResource {
                 ))),
                 Section::new(tablo::text!("section-image")).schema(
                     c.image
+                        .image()
                         .extensions(IMAGE_EXTENSIONS)
                         .max_bytes(IMAGE_MAX_BYTES),
                 ),
