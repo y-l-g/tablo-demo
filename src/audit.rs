@@ -1,81 +1,69 @@
 //! The audit trail: a row per write, written in the write's own transaction.
 //!
-//! Tablo's `before_commit` hook runs inside the transaction the write opened,
+//! Tablo's commit hook runs inside the transaction the write opened,
 //! so the row it writes commits with the write or not at all: there is no
 //! window where the record changed and the trail did not.
 
 use tablo::{
-    Change, DateColumn, NoForm, ReadOnly, Resource, ResourceDef, ResourcePage, Table, TextColumn,
-    lens, when,
+    Change, ChangedRecord, CommitHook, DateColumn, NoForm, PanelChange, ReadOnly, Resource,
+    ResourceDef, ResourcePage, Table, TextColumn, lens, when,
 };
 use topcoat::{Result, context::Cx};
 
 use crate::auth::SignedIn;
 use crate::models::AuditEntry;
 
-/// Writes the audit row for `change`, in the write's transaction.
-pub async fn write<R: Resource>(
-    cx: &Cx,
-    change: &Change<R::Model>,
-    ex: &mut dyn toasty::Executor,
-) -> Result<()> {
-    let (kind, record) = match change {
-        Change::Create(record) => (tablo::t!(cx, "audit-create"), url::<R>(cx, record)),
-        Change::Update { after, .. } => (tablo::t!(cx, "audit-update"), url::<R>(cx, after)),
-        Change::Delete(records) => (tablo::t!(cx, "audit-delete"), first_url::<R>(cx, records)),
-        Change::Restore(records) => (tablo::t!(cx, "audit-restore"), first_url::<R>(cx, records)),
-        Change::ForceDelete(records) => (
-            tablo::t!(cx, "audit-force-delete"),
-            first_url::<R>(cx, records),
-        ),
-        Change::Action { name, records } => (
-            tablo::t!(cx, "audit-action", name = *name),
-            first_url::<R>(cx, records),
-        ),
-        Change::HeaderAction { name } => (
-            tablo::t!(cx, "audit-header-action", name = *name),
-            String::new(),
-        ),
-        Change::Attach { owner, .. } => (tablo::t!(cx, "audit-attach"), url::<R>(cx, owner)),
-        Change::Detach { owner, .. } => (tablo::t!(cx, "audit-detach"), url::<R>(cx, owner)),
-    };
-    let user = match tablo::auth::user::<SignedIn>(cx) {
-        Some(user) => user.user.email.clone(),
-        None => "anonymous".to_string(),
-    };
-    toasty::create!(AuditEntry {
-        resource: resource_name::<R>(),
-        change: kind,
-        record,
-        user,
-        at: jiff::Timestamp::now(),
-    })
-    .exec(&mut *ex)
-    .await?;
-    Ok(())
-}
-
-/// Records every write to the resource in the write's own transaction.
+/// Writes an audit row for every write the admin panel makes, in the write's transaction.
 ///
-/// The audit matches every kind of write, so a kind Tablo adds later stops the
-/// build instead of going unrecorded.
-#[macro_export]
-macro_rules! audit {
-    () => {
-        async fn before_commit(
-            cx: &topcoat::context::Cx,
-            change: &tablo::Change<Self::Model>,
-            ex: &mut dyn toasty::Executor,
-        ) -> topcoat::Result<()> {
-            $crate::audit::write::<Self>(cx, change, ex).await
-        }
-    };
+/// The hook matches every kind of write, so a kind Tablo adds later stops the build instead of
+/// going unrecorded.
+pub struct Audit;
+
+impl CommitHook for Audit {
+    async fn before_commit(
+        cx: &Cx,
+        change: &PanelChange,
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<()> {
+        let kind = match change.change() {
+            Change::Create(_) => tablo::t!(cx, "audit-create"),
+            Change::Update { .. } => tablo::t!(cx, "audit-update"),
+            Change::Delete(_) => tablo::t!(cx, "audit-delete"),
+            Change::Restore(_) => tablo::t!(cx, "audit-restore"),
+            Change::ForceDelete(_) => tablo::t!(cx, "audit-force-delete"),
+            Change::Action { name, .. } => tablo::t!(cx, "audit-action", name = *name),
+            Change::HeaderAction { name } => tablo::t!(cx, "audit-header-action", name = *name),
+            Change::Attach { .. } => tablo::t!(cx, "audit-attach"),
+            Change::Detach { .. } => tablo::t!(cx, "audit-detach"),
+        };
+        let user = match tablo::auth::user::<SignedIn>(cx) {
+            Some(user) => user.user.email.clone(),
+            None => "anonymous".to_string(),
+        };
+        toasty::create!(AuditEntry {
+            resource: change.label().localize(cx),
+            change: kind,
+            // The first record the write names; a bulk write links the first of its rows.
+            record: change
+                .change()
+                .records()
+                .first()
+                .and_then(ChangedRecord::url)
+                .unwrap_or_default()
+                .to_string(),
+            user,
+            at: jiff::Timestamp::now(),
+        })
+        .exec(&mut *ex)
+        .await?;
+        Ok(())
+    }
 }
 
 /// The audit trail: every write the panel made, newest first, for administrators to read.
 ///
 /// The trail records every domain's writes, so only administrators open it, and no one writes
-/// to it through the panel: its rows come from [`write`] alone.
+/// to it through the panel: its rows come from [`Audit`] alone.
 pub struct AuditTrail;
 
 impl Resource for AuditTrail {
@@ -105,27 +93,4 @@ impl Resource for AuditTrail {
                 .default_sort_desc(lens!(AuditEntry.at)),
             )
     }
-}
-
-/// The record's path in the panel, empty when the resource serves no such page.
-fn url<R: Resource>(cx: &Cx, record: &R::Model) -> String {
-    tablo::url::record::<R>(cx, record).unwrap_or_default()
-}
-
-/// The path of the first of `records`, empty when there is none.
-fn first_url<R: Resource>(cx: &Cx, records: &[R::Model]) -> String {
-    records
-        .first()
-        .map(|record| url::<R>(cx, record))
-        .unwrap_or_default()
-}
-
-/// The resource's name, e.g. `Order` for `tablo_demo::shop::OrderResource`.
-fn resource_name<R: Resource>() -> String {
-    std::any::type_name::<R>()
-        .rsplit("::")
-        .next()
-        .unwrap_or("Resource")
-        .trim_end_matches("Resource")
-        .to_string()
 }

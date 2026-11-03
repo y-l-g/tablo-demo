@@ -46,8 +46,6 @@ impl Resource for PostResource {
             .action::<TogglePostPublish>()
             .list_widget::<PostStatusWidget>()
     }
-
-    crate::audit!();
 }
 
 /// The post list's status: published or draft, spelled in the request's locale.
@@ -199,8 +197,6 @@ impl Resource for TagResource {
                 Tag::fields().posts(),
             ))
     }
-
-    crate::audit!();
 }
 
 /// The tag's record form.
@@ -262,8 +258,6 @@ impl Resource for PostCategoryResource {
             ))
             .record_title(lens!(PostCategory.name))
     }
-
-    crate::audit!();
 }
 
 /// The category's record form.
@@ -319,8 +313,6 @@ impl Resource for AuthorResource {
             ))
             .record_title(lens!(Author.name))
     }
-
-    crate::audit!();
 }
 
 /// The author's record form.
@@ -393,8 +385,6 @@ impl Resource for CommentResource {
         }
         Ok(())
     }
-
-    crate::audit!();
 }
 
 /// The comment's record form.

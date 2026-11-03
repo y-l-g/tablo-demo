@@ -99,8 +99,6 @@ impl Resource for ProductResource {
             .action::<AdjustProductPrice>()
             .action::<AdjustProductStock>()
     }
-
-    crate::audit!();
 }
 
 /// The product list.
@@ -396,8 +394,6 @@ impl Resource for BrandResource {
             .await?;
         Ok(brand)
     }
-
-    crate::audit!();
 }
 
 /// The brand's record form.
@@ -568,8 +564,6 @@ impl Resource for ProductCategoryResource {
                 ProductCategory::fields().products(),
             ))
     }
-
-    crate::audit!();
 }
 
 /// The category's record form.
@@ -639,8 +633,6 @@ impl Resource for CustomerResource {
             .action::<SendCustomerEmail>()
             .soft_delete(lens!(Customer.deleted_at))
     }
-
-    crate::audit!();
 }
 
 /// The customer's country, the first address's.
@@ -822,8 +814,6 @@ impl Resource for OrderResource {
         }
         Ok(())
     }
-
-    crate::audit!();
 }
 
 /// The order list.
@@ -1114,8 +1104,6 @@ impl Resource for OrderItemResource {
                 )),
             ))
     }
-
-    crate::audit!();
 }
 
 /// The order item's record form.
@@ -1172,8 +1160,6 @@ impl Resource for PaymentResource {
             ))
             .record_title(lens!(Payment.reference))
     }
-
-    crate::audit!();
 }
 
 /// The payment's record form.
@@ -1256,8 +1242,6 @@ impl Resource for AddressResource {
             ))
             .record_title(lens!(Address.street))
     }
-
-    crate::audit!();
 }
 
 /// The address's record form.
@@ -1320,8 +1304,6 @@ impl Resource for OrderAddressResource {
             ))
             .record_title(lens!(OrderAddress.street))
     }
-
-    crate::audit!();
 }
 
 /// The order address's record form.

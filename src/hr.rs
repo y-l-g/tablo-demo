@@ -94,8 +94,6 @@ impl Resource for DepartmentResource {
             .action::<ToggleDepartmentActive>()
             .action::<ReplicateDepartment>()
     }
-
-    crate::audit!();
 }
 
 /// The department's record form.
@@ -304,8 +302,6 @@ impl Resource for EmployeeResource {
             .action::<BulkSetEmployeeActive>()
             .soft_delete(lens!(Employee.deleted_at))
     }
-
-    crate::audit!();
 }
 
 /// The employee list.
@@ -617,8 +613,6 @@ impl Resource for LeaveRequestResource {
         }
         Ok(record)
     }
-
-    crate::audit!();
 }
 
 /// Refuses the dates `start` to `end` of `employee_id` when another request of that employee
@@ -864,8 +858,6 @@ impl Resource for ProjectResource {
             .action::<CompleteProject>()
             .soft_delete(lens!(Project.deleted_at))
     }
-
-    crate::audit!();
 }
 
 /// How far along a project is, as the list reads it.
@@ -1119,8 +1111,6 @@ impl Resource for TaskResource {
             .action::<BulkSetTaskStatus>()
             .action::<ReplicateTask>()
     }
-
-    crate::audit!();
 }
 
 /// The task's record form.
@@ -1498,8 +1488,6 @@ impl Resource for TimesheetResource {
         }
         Ok(record)
     }
-
-    crate::audit!();
 }
 
 /// The timesheet's record form.
@@ -1718,8 +1706,6 @@ impl Resource for ExpenseResource {
             .action::<ReimburseExpense>()
             .action::<FlagExpense>()
     }
-
-    crate::audit!();
 }
 
 /// The expense's record form.
@@ -2013,8 +1999,6 @@ impl Resource for ExpenseLineResource {
             .await?;
         Ok(refresh_expense_total(record.expense_id, ex).await?)
     }
-
-    crate::audit!();
 }
 
 /// Sets a claim's total to what its lines now come to.
