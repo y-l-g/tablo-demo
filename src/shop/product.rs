@@ -42,9 +42,11 @@ impl Resource for ProductResource {
                         )),
                         Section::new(tablo::text!("section-images")).schema((
                             c.image
+                                .image()
                                 .extensions(IMAGE_EXTENSIONS)
                                 .max_bytes(IMAGE_MAX_BYTES),
                             c.gallery
+                                .image()
                                 .extensions(IMAGE_EXTENSIONS)
                                 .max_bytes(IMAGE_MAX_BYTES)
                                 .max_files(4),
