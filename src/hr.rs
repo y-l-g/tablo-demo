@@ -94,8 +94,6 @@ impl Resource for DepartmentResource {
             .action::<ToggleDepartmentActive>()
             .action::<ReplicateDepartment>()
     }
-
-    crate::audit!();
 }
 
 /// The department's record form.
@@ -304,8 +302,6 @@ impl Resource for EmployeeResource {
             .action::<BulkSetEmployeeActive>()
             .soft_delete(lens!(Employee.deleted_at))
     }
-
-    crate::audit!();
 }
 
 /// The employee list.
@@ -336,10 +332,9 @@ fn employee_table() -> Table<Employee> {
     ))
     .default_sort(lens!(Employee.name))
     .action_layout(ActionLayout::Menu)
-    .option_tabs(
-        lens!(Employee.employment_type),
-        |employment_type: EmploymentType| Employee::fields().employment_type().eq(employment_type),
-    )
+    .option_tabs(|employment_type: EmploymentType| {
+        Employee::fields().employment_type().eq(employment_type)
+    })
     .filters((
         SelectFilter::relationship::<DepartmentResource>(lens!(Employee.department_id)),
         TernaryFilter::new(lens!(Employee.is_active)),
@@ -524,9 +519,7 @@ impl Resource for LeaveRequestResource {
                     _ => None,
                 })
                 .row_color_reading(Reads::of(lens!(LeaveRequest.status)))
-                .option_tabs(lens!(LeaveRequest.status), |status: LeaveStatus| {
-                    LeaveRequest::fields().status().eq(status)
-                })
+                .option_tabs(|status: LeaveStatus| LeaveRequest::fields().status().eq(status))
                 .filters((SelectFilter::of(lens!(LeaveRequest.kind)),)),
             )
             .detail(Detail::new((
@@ -617,8 +610,6 @@ impl Resource for LeaveRequestResource {
         }
         Ok(record)
     }
-
-    crate::audit!();
 }
 
 /// Refuses the dates `start` to `end` of `employee_id` when another request of that employee
@@ -864,8 +855,6 @@ impl Resource for ProjectResource {
             .action::<CompleteProject>()
             .soft_delete(lens!(Project.deleted_at))
     }
-
-    crate::audit!();
 }
 
 /// How far along a project is, as the list reads it.
@@ -1119,8 +1108,6 @@ impl Resource for TaskResource {
             .action::<BulkSetTaskStatus>()
             .action::<ReplicateTask>()
     }
-
-    crate::audit!();
 }
 
 /// The task's record form.
@@ -1498,8 +1485,6 @@ impl Resource for TimesheetResource {
         }
         Ok(record)
     }
-
-    crate::audit!();
 }
 
 /// The timesheet's record form.
@@ -1661,9 +1646,7 @@ impl Resource for ExpenseResource {
                     _ => None,
                 })
                 .row_color_reading(Reads::of(lens!(Expense.status)))
-                .option_tabs(lens!(Expense.status), |status: ExpenseStatus| {
-                    Expense::fields().status().eq(status)
-                })
+                .option_tabs(|status: ExpenseStatus| Expense::fields().status().eq(status))
                 .filters((
                     SelectFilter::of(lens!(Expense.category)),
                     SelectFilter::relationship::<EmployeeResource>(lens!(Expense.employee_id)),
@@ -1718,8 +1701,6 @@ impl Resource for ExpenseResource {
             .action::<ReimburseExpense>()
             .action::<FlagExpense>()
     }
-
-    crate::audit!();
 }
 
 /// The expense's record form.
@@ -2013,8 +1994,6 @@ impl Resource for ExpenseLineResource {
             .await?;
         Ok(refresh_expense_total(record.expense_id, ex).await?)
     }
-
-    crate::audit!();
 }
 
 /// Sets a claim's total to what its lines now come to.

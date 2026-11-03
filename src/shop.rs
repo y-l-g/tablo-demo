@@ -99,8 +99,6 @@ impl Resource for ProductResource {
             .action::<AdjustProductPrice>()
             .action::<AdjustProductStock>()
     }
-
-    crate::audit!();
 }
 
 /// The product list.
@@ -149,9 +147,7 @@ fn product_table() -> Table<Product> {
     ))
     .summary(Summary::count(tablo::text!("summary-products")))
     .summary(
-        Summary::count(tablo::text!("summary-low-stock"))
-            .query(Product::fields().qty().lt(10))
-            .reading(Reads::of(lens!(Product.qty))),
+        Summary::count(tablo::text!("summary-low-stock")).query(Product::fields().qty().lt(10)),
     )
 }
 
@@ -396,8 +392,6 @@ impl Resource for BrandResource {
             .await?;
         Ok(brand)
     }
-
-    crate::audit!();
 }
 
 /// The brand's record form.
@@ -568,8 +562,6 @@ impl Resource for ProductCategoryResource {
                 ProductCategory::fields().products(),
             ))
     }
-
-    crate::audit!();
 }
 
 /// The category's record form.
@@ -639,8 +631,6 @@ impl Resource for CustomerResource {
             .action::<SendCustomerEmail>()
             .soft_delete(lens!(Customer.deleted_at))
     }
-
-    crate::audit!();
 }
 
 /// The customer's country, the first address's.
@@ -822,8 +812,6 @@ impl Resource for OrderResource {
         }
         Ok(())
     }
-
-    crate::audit!();
 }
 
 /// The order list.
@@ -848,9 +836,7 @@ fn order_table() -> Table<Order> {
     .action_layout(ActionLayout::Menu)
     .row_color(|order: &Order| (order.status == OrderStatus::Cancelled).then_some(Color::Danger))
     .row_color_reading(Reads::of(lens!(Order.status)))
-    .option_tabs(lens!(Order.status), |status: OrderStatus| {
-        Order::fields().status().eq(status)
-    })
+    .option_tabs(|status: OrderStatus| Order::fields().status().eq(status))
     .filters((DateFilter::new(lens!(Order.created_at))
         .label(tablo::text!("label-order-date"))
         .range(),))
@@ -858,8 +844,7 @@ fn order_table() -> Table<Order> {
     .summary(Summary::count(tablo::text!("summary-orders")))
     .summary(
         Summary::count(tablo::text!("summary-cancelled"))
-            .query(Order::fields().status().eq(OrderStatus::Cancelled))
-            .reading(Reads::of(lens!(Order.status))),
+            .query(Order::fields().status().eq(OrderStatus::Cancelled)),
     )
 }
 
@@ -1114,8 +1099,6 @@ impl Resource for OrderItemResource {
                 )),
             ))
     }
-
-    crate::audit!();
 }
 
 /// The order item's record form.
@@ -1172,8 +1155,6 @@ impl Resource for PaymentResource {
             ))
             .record_title(lens!(Payment.reference))
     }
-
-    crate::audit!();
 }
 
 /// The payment's record form.
@@ -1256,8 +1237,6 @@ impl Resource for AddressResource {
             ))
             .record_title(lens!(Address.street))
     }
-
-    crate::audit!();
 }
 
 /// The address's record form.
@@ -1320,8 +1299,6 @@ impl Resource for OrderAddressResource {
             ))
             .record_title(lens!(OrderAddress.street))
     }
-
-    crate::audit!();
 }
 
 /// The order address's record form.

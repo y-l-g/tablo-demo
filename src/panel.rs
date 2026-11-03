@@ -52,6 +52,8 @@ pub fn admin_panel(config: &Config) -> Panel {
         .brand(brand())
         .login_hint(login_hint())
         .notifications()
+        // Every write of every resource below leaves a row in the audit trail.
+        .before_commit::<crate::audit::Audit>()
         .home::<Dashboard>()
         .page::<ShopDashboard>()
         .page::<HrDashboard>()
