@@ -16,13 +16,11 @@ page-welcome-description = Une application de démonstration construite sur Tabl
 page-shop-dashboard = Tableau de bord boutique
 page-hr-dashboard = Tableau de bord RH
 page-settings = Paramètres
-page-audit-trail = Journal d'audit
 
 dashboard-shop-description = L'état de la boutique, sur tous les clients et toutes les commandes. Une période compare ses ventes à autant de jours avant elle, et termine les graphiques sur son dernier jour.
 dashboard-hr-description = Les effectifs, leurs congés, leurs projets et leur coût.
 dashboard-filter-period = Période
 
-copy-audit-description = Chaque écriture du panneau, enregistrée dans la transaction de l'écriture elle-même.
 copy-no-team = Aucune équipe sélectionnée.
 copy-settings-description = Hormis l'équipe, cette page est vide.
 copy-team-description = Le locataire au nom duquel agit cette session.
@@ -69,6 +67,8 @@ resource-timesheet = Feuille de temps
     .plural = Feuilles de temps
 resource-expense = Note de frais
     .plural = Notes de frais
+resource-audit-entry = Entrée d'audit
+    .plural = Journal d'audit
 resource-expense-line = Ligne de frais
     .plural = Lignes de frais
 
@@ -196,8 +196,6 @@ list-tab-all = Tous
 
 label-gallery = Galerie
 label-active = Actif
-label-by = Par
-label-change = Modification
 label-email = E-mail
 label-headcount = Effectif
 label-hidden = Masqué
@@ -210,8 +208,6 @@ label-phone = Téléphone
 label-price = Prix
 label-progress = Avancement
 label-public-visibility = Visibilité publique
-label-record = Enregistrement
-label-resource = Ressource
 label-shipping-address = Adresse de livraison
 label-sku = SKU
 label-sku-stock-keeping-unit = SKU (unité de gestion de stock)
@@ -219,7 +215,6 @@ label-status = Statut
 label-team = Équipe
 label-total = Total
 label-visible = Visible
-label-when = Quand
 
 ## Indications, unités et valeurs
 
@@ -382,6 +377,11 @@ field-metadata = Métadonnées
 field-posts = Articles
 field-skills = Compétences
 field-units_sold = Unités vendues
+field-at = Quand
+field-resource = Ressource
+field-change = Modification
+field-record = Enregistrement
+field-user = Par
 
 ## Options
 

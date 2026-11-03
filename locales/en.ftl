@@ -16,13 +16,11 @@ page-welcome-description = A demo application built on Tablo.
 page-shop-dashboard = Shop dashboard
 page-hr-dashboard = HR dashboard
 page-settings = Settings
-page-audit-trail = Audit trail
 
 dashboard-shop-description = How the shop is doing, over every customer and order. A period compares its sales with as many days before it, and ends the charts on its last day.
 dashboard-hr-description = The workforce, its leave, its projects and what they cost.
 dashboard-filter-period = Period
 
-copy-audit-description = Every write the panel made, recorded in the write's own transaction.
 copy-no-team = No team selected.
 copy-settings-description = Apart from the team, this page is empty.
 copy-team-description = The tenant this session acts for.
@@ -45,6 +43,8 @@ resource-leave-request = Leave request
     .plural = Leave requests
 resource-expense = Expense
     .plural = Expenses
+resource-audit-entry = Audit entry
+    .plural = Audit trail
 
 ## Dashboard figures
 
@@ -170,8 +170,6 @@ section-timesheet-entry = Timesheet entry
 
 label-gallery = Gallery
 label-active = Active
-label-by = By
-label-change = Change
 label-email = Email
 label-headcount = Headcount
 label-hidden = Hidden
@@ -184,8 +182,6 @@ label-phone = Phone
 label-price = Price
 label-progress = Progress
 label-public-visibility = Public visibility
-label-record = Record
-label-resource = Resource
 label-shipping-address = Shipping address
 label-sku = SKU
 label-sku-stock-keeping-unit = SKU (Stock Keeping Unit)
@@ -193,7 +189,6 @@ label-status = Status
 label-team = Team
 label-total = Total
 label-visible = Visible
-label-when = When
 
 ## Hints, units and values
 
@@ -279,6 +274,11 @@ field-unit_price = Unit price
 field-units_sold = Units sold
 field-updated_at = Last modified at
 field-zip = Zip / Postal code
+field-at = When
+field-resource = Resource
+field-change = Change
+field-record = Record
+field-user = By
 
 ## Options
 

@@ -57,9 +57,9 @@ pub fn admin_panel() -> Panel {
         .home::<Dashboard>()
         .page::<ShopDashboard>()
         .page::<HrDashboard>()
-        .page::<crate::audit::AuditTrail>()
         // The first resource of a group fixes the group's place in the sidebar,
         // so the registration order is the demo's navigation order.
+        .resource::<crate::audit::AuditTrail>()
         .resource::<crate::shop::ProductResource>()
         .resource::<crate::hr::DepartmentResource>()
         .resource::<crate::hr::ProjectResource>()
