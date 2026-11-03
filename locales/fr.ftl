@@ -495,8 +495,6 @@ flash-employees-updated =
         [one] Un employé mis à jour
        *[other] { $count } employés mis à jour
     }
-flash-leave-approved = Demande de congé approuvée
-flash-leave-rejected = Demande de congé rejetée
 flash-leaves-approved =
     { $count ->
         [one] Une demande de congé approuvée
@@ -594,10 +592,6 @@ action-adjust-price = Ajuster le prix
 action-adjust-stock = Ajuster le stock
 action-approve = Approuver
 action-assign = Assigner
-action-bulk-approve = Approuver la sélection
-action-bulk-assign = Assigner la sélection
-action-bulk-change-department = Changer le service de la sélection
-action-bulk-reject = Rejeter la sélection
 action-bulk-set-active = Définir l'activité de la sélection
 action-bulk-set-status = Définir le statut de la sélection
 action-cancel = Annuler

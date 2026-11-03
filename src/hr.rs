@@ -294,7 +294,6 @@ impl Resource for EmployeeResource {
             ))
             .action::<ToggleEmployeeActive>()
             .action::<ChangeEmployeeDepartment>()
-            .action::<BulkChangeEmployeeDepartment>()
             .action::<BulkSetEmployeeActive>()
             .soft_delete(lens!(Employee.deleted_at))
     }
@@ -396,13 +395,13 @@ pub struct DepartmentChoice {
     pub department_id: Option<u64>,
 }
 
-/// Moves one employee to another department.
+/// Moves an employee, or the selection, to another department.
 pub struct ChangeEmployeeDepartment;
 
 impl Action<EmployeeResource> for ChangeEmployeeDepartment {
     type Input = DepartmentChoice;
     const NAME: &'static str = "change-department";
-    const PLACES: Places = Places::ROW;
+    const PLACES: Places = Places::ROW.with(Places::BULK);
 
     async fn run(
         _cx: &Cx,
@@ -410,50 +409,19 @@ impl Action<EmployeeResource> for ChangeEmployeeDepartment {
         choice: DepartmentChoice,
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<DepartmentChoiceField>> {
-        move_department(employees, choice.department_id, ex).await
-    }
-}
-
-/// Moves the selection to another department.
-pub struct BulkChangeEmployeeDepartment;
-
-impl Action<EmployeeResource> for BulkChangeEmployeeDepartment {
-    type Input = DepartmentChoice;
-    const NAME: &'static str = "bulk-change-department";
-    const PLACES: Places = Places::BULK;
-
-    fn label() -> Text {
-        tablo::text!("action-bulk-change-department")
-    }
-
-    async fn run(
-        _cx: &Cx,
-        employees: &[Employee],
-        choice: DepartmentChoice,
-        ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<DepartmentChoiceField>> {
-        move_department(employees, choice.department_id, ex).await
+        for employee in employees {
+            Employee::filter(Employee::fields().id().eq(employee.id))
+                .update()
+                .department_id(choice.department_id)
+                .exec(&mut *ex)
+                .await?;
+        }
+        Ok(Outcome::done())
     }
 
     fn success(count: usize) -> Text {
         tablo::text!("flash-employees-moved", count = count)
     }
-}
-
-/// Moves every employee of `employees` to `department_id`.
-async fn move_department(
-    employees: &[Employee],
-    department_id: Option<u64>,
-    ex: &mut dyn toasty::Executor,
-) -> Result<Outcome, WriteError<DepartmentChoiceField>> {
-    for employee in employees {
-        Employee::filter(Employee::fields().id().eq(employee.id))
-            .update()
-            .department_id(department_id)
-            .exec(&mut *ex)
-            .await?;
-    }
-    Ok(Outcome::done())
 }
 
 /// What a yes or no choice asks for.
@@ -596,8 +564,6 @@ impl Resource for LeaveRequestResource {
             .create_column(lens!(LeaveRequest.days_requested))
             .action::<ApproveLeaveRequest>()
             .action::<RejectLeaveRequest>()
-            .action::<BulkApproveLeaveRequests>()
-            .action::<BulkRejectLeaveRequests>()
             .list_widget::<LeaveStatusWidget>()
     }
 
@@ -712,76 +678,13 @@ pub struct Rejection {
     pub rejection_reason: String,
 }
 
-/// Approves a pending leave request, confirming first.
+/// Approves a pending leave request, or every pending one of the selection, confirming first.
 pub struct ApproveLeaveRequest;
 
 impl Action<LeaveRequestResource> for ApproveLeaveRequest {
     type Input = ();
     const NAME: &'static str = "approve";
-    const PLACES: Places = Places::ROW.with(Places::DETAIL);
-    const CONFIRM: bool = true;
-
-    fn can_run(_cx: &Cx, request: &LeaveRequest) -> bool {
-        request.status == LeaveStatus::Pending
-    }
-
-    async fn run(
-        _cx: &Cx,
-        requests: &[LeaveRequest],
-        (): (),
-        ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
-        review(requests, LeaveStatus::Approved, None, ex).await
-    }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-leave-approved")
-    }
-}
-
-/// Rejects a pending leave request, with the reason.
-pub struct RejectLeaveRequest;
-
-impl Action<LeaveRequestResource> for RejectLeaveRequest {
-    type Input = Rejection;
-    const NAME: &'static str = "reject";
-    const PLACES: Places = Places::ROW.with(Places::DETAIL);
-
-    fn can_run(_cx: &Cx, request: &LeaveRequest) -> bool {
-        request.status == LeaveStatus::Pending
-    }
-
-    async fn run(
-        _cx: &Cx,
-        requests: &[LeaveRequest],
-        rejection: Rejection,
-        ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<RejectionField>> {
-        review(
-            requests,
-            LeaveStatus::Rejected,
-            Some(rejection.rejection_reason),
-            ex,
-        )
-        .await
-    }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-leave-rejected")
-    }
-}
-
-/// Approves every pending request of the selection.
-pub struct BulkApproveLeaveRequests;
-
-impl Action<LeaveRequestResource> for BulkApproveLeaveRequests {
-    type Input = ();
-    const NAME: &'static str = "bulk-approve";
-    const PLACES: Places = Places::BULK;
-
-    fn label() -> Text {
-        tablo::text!("action-bulk-approve")
-    }
+    const PLACES: Places = Places::ROW.with(Places::DETAIL).with(Places::BULK);
     const CONFIRM: bool = true;
 
     fn can_run(_cx: &Cx, request: &LeaveRequest) -> bool {
@@ -802,17 +705,13 @@ impl Action<LeaveRequestResource> for BulkApproveLeaveRequests {
     }
 }
 
-/// Rejects every pending request of the selection.
-pub struct BulkRejectLeaveRequests;
+/// Rejects a pending leave request, or every pending one of the selection, with the reason.
+pub struct RejectLeaveRequest;
 
-impl Action<LeaveRequestResource> for BulkRejectLeaveRequests {
+impl Action<LeaveRequestResource> for RejectLeaveRequest {
     type Input = Rejection;
-    const NAME: &'static str = "bulk-reject";
-    const PLACES: Places = Places::BULK;
-
-    fn label() -> Text {
-        tablo::text!("action-bulk-reject")
-    }
+    const NAME: &'static str = "reject";
+    const PLACES: Places = Places::ROW.with(Places::DETAIL).with(Places::BULK);
 
     fn can_run(_cx: &Cx, request: &LeaveRequest) -> bool {
         request.status == LeaveStatus::Pending
@@ -1211,7 +1110,6 @@ impl Resource for TaskResource {
             .action::<AssignTask>()
             .action::<SetTaskPriority>()
             .action::<BulkSetTaskStatus>()
-            .action::<BulkAssignTask>()
             .action::<ReplicateTask>()
     }
 
@@ -1338,13 +1236,13 @@ pub struct AssigneeChoice {
     pub assigned_to: Option<u64>,
 }
 
-/// Assigns a task to an employee.
+/// Assigns a task, or every task of the selection, to an employee.
 pub struct AssignTask;
 
 impl Action<TaskResource> for AssignTask {
     type Input = AssigneeChoice;
     const NAME: &'static str = "assign";
-    const PLACES: Places = Places::ROW;
+    const PLACES: Places = Places::ROW.with(Places::BULK);
 
     async fn run(
         _cx: &Cx,
@@ -1352,50 +1250,19 @@ impl Action<TaskResource> for AssignTask {
         choice: AssigneeChoice,
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<AssigneeChoiceField>> {
-        assign(tasks, choice.assigned_to, ex).await
-    }
-}
-
-/// Assigns every task in the selection.
-pub struct BulkAssignTask;
-
-impl Action<TaskResource> for BulkAssignTask {
-    type Input = AssigneeChoice;
-    const NAME: &'static str = "bulk-assign";
-    const PLACES: Places = Places::BULK;
-
-    fn label() -> Text {
-        tablo::text!("action-bulk-assign")
-    }
-
-    async fn run(
-        _cx: &Cx,
-        tasks: &[Task],
-        choice: AssigneeChoice,
-        ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<AssigneeChoiceField>> {
-        assign(tasks, choice.assigned_to, ex).await
+        for task in tasks {
+            Task::filter(Task::fields().id().eq(task.id))
+                .update()
+                .assigned_to(choice.assigned_to)
+                .exec(&mut *ex)
+                .await?;
+        }
+        Ok(Outcome::done())
     }
 
     fn success(count: usize) -> Text {
         tablo::text!("flash-tasks-assigned", count = count)
     }
-}
-
-/// Assigns every task of `tasks` to `assigned_to`.
-async fn assign(
-    tasks: &[Task],
-    assigned_to: Option<u64>,
-    ex: &mut dyn toasty::Executor,
-) -> Result<Outcome, WriteError<AssigneeChoiceField>> {
-    for task in tasks {
-        Task::filter(Task::fields().id().eq(task.id))
-            .update()
-            .assigned_to(assigned_to)
-            .exec(&mut *ex)
-            .await?;
-    }
-    Ok(Outcome::done())
 }
 
 /// What setting a priority asks for.

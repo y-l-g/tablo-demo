@@ -392,8 +392,6 @@ flash-employees-updated =
         [one] Updated one employee
        *[other] Updated { $count } employees
     }
-flash-leave-approved = Leave request approved
-flash-leave-rejected = Leave request rejected
 flash-leaves-approved =
     { $count ->
         [one] Approved one leave request
@@ -491,10 +489,6 @@ action-adjust-price = Adjust price
 action-adjust-stock = Adjust stock
 action-approve = Approve
 action-assign = Assign
-action-bulk-approve = Approve
-action-bulk-assign = Assign
-action-bulk-change-department = Change department
-action-bulk-reject = Reject
 action-bulk-set-active = Set active
 action-bulk-set-status = Set status
 action-cancel = Cancel
