@@ -54,14 +54,15 @@ impl Resource for OrderResource {
                     RichTextColumn::new(lens!(Order.notes)),
                 )),
             ))
-            .form(Schema::new(
-                Section::new(tablo::text!("section-order")).schema(Grid::new(2).schema((
+            // The order's number, customer and status first, then its notes.
+            .form(Schema::new(Wizard::new([
+                Step::new(tablo::text!("step-order-details")).schema(Grid::new(2).schema((
                     c.number,
                     c.customer_id.searchable().creatable(),
-                    c.status.buttons(),
-                    c.notes.rich_text(),
+                    c.status.buttons().span_full(),
                 ))),
-            ))
+                Step::new(tablo::text!("step-notes")).schema(c.notes.rich_text()),
+            ])))
             .record_title(lens!(Order.number))
             .global_search(
                 GlobalSearch::new()

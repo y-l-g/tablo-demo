@@ -120,6 +120,13 @@ tab-employment = Employment
 tab-overview = Overview
 tab-budget = Budget
 
+## Wizard steps
+
+step-details = Details
+step-review = Review
+step-order-details = Order details
+step-notes = Notes
+
 ## List tabs
 
 
@@ -141,7 +148,6 @@ section-comment = Comment
 section-content = Content
 section-customer = Customer
 section-department = Department
-section-details = Details
 section-expense-details = Expense details
 section-expense-line = Expense line
 section-image = Image
@@ -159,7 +165,6 @@ section-receipt = Receipt
 section-review = Review
 section-shipping = Shipping
 section-status = Status
-section-summary = Summary
 section-task = Task
 section-task-details = Task details
 section-timesheet = Timesheet
