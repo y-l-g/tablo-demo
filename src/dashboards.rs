@@ -12,7 +12,8 @@ use std::{
 use jiff::{Timestamp, Zoned, civil::Date, tz::TimeZone};
 use tablo::{
     Chart, Color, Currency, FormScalar, Page, PageDef, PageFilter, RecordTable, Resource, Series,
-    Stat, Text, Trend, Widget, WidgetDef, can_list, db::db, page_filters, scoped_query,
+    Stat, Text, Trend, Widget, WidgetDef, can_list, db, db::db, list_query, page_filters,
+    scoped_query,
 };
 use topcoat::{Result, context::Cx, view::View};
 
@@ -253,7 +254,8 @@ impl Widget for OrdersWidget {
 }
 
 /// Where the shop's orders sit now, a tile per status linked to the orders in it, and the orders
-/// that have waited too long. The shop dashboard shows it, and so does the order list.
+/// that have waited too long. The shop dashboard shows it, and so does the order list, where the
+/// figures follow the list's tab, search and filters.
 pub struct PipelineWidget;
 
 impl Widget for PipelineWidget {
@@ -264,46 +266,43 @@ impl Widget for PipelineWidget {
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
-        let now = Timestamp::now();
-        let orders = scoped_query::<OrderResource>(cx)?
-            .exec(&mut db(cx)?)
-            .await?;
+        let orders = list_query::<OrderResource>(cx).await?;
+        let total = db::count(cx, orders.clone()).await?;
         let url = tablo::url::resource::<OrderResource>(cx);
-        let mut tiles: Vec<Stat> = [
+        let mut tiles = Vec::new();
+        for option in [
             OrderStatus::New,
             OrderStatus::Processing,
             OrderStatus::Shipped,
             OrderStatus::Delivered,
             OrderStatus::Cancelled,
-        ]
-        .into_iter()
-        .map(|status| {
-            let count = orders.iter().filter(|order| order.status == status).count();
-            let tile = Stat::new(status.label(), count.to_string())
+        ] {
+            let count = db::count(cx, orders.clone().filter(Order::fields().status().eq(option))).await?;
+            let tile = Stat::new(option.label(), count.to_string())
                 .detail(tablo::text!(
                     "stat-detail-share",
-                    share = percent(share(count as f64, orders.len() as f64))
+                    share = percent(share(count as f64, total as f64))
                 ))
-                .color(status.color().unwrap_or(Color::Gray));
-            linked(
+                .color(option.color().unwrap_or(Color::Gray));
+            tiles.push(linked(
                 tile,
                 url.as_ref()
-                    .map(|url| format!("{url}?tab={}", status.value())),
-            )
-        })
-        .collect();
+                    .map(|url| format!("{url}?tab={}", option.value())),
+            ));
+        }
 
-        let flagged = orders
-            .iter()
-            .filter(|order| {
-                let age = days_since(now, order.created_at);
-                match order.status {
-                    OrderStatus::New => age >= NEW_FLAG_DAYS,
-                    OrderStatus::Processing => age >= PROCESSING_FLAG_DAYS,
-                    _ => false,
-                }
-            })
-            .count();
+        let now = Timestamp::now();
+        let waited = |days: i64| now - jiff::SignedDuration::from_hours(days * 24);
+        let fields = Order::fields();
+        let late = fields
+            .status()
+            .eq(OrderStatus::New)
+            .and(fields.created_at().le(waited(NEW_FLAG_DAYS)))
+            .or(fields
+                .status()
+                .eq(OrderStatus::Processing)
+                .and(fields.created_at().le(waited(PROCESSING_FLAG_DAYS))));
+        let flagged = db::count(cx, orders.filter(late)).await?;
         // Oldest first, the orders list opens on the longest waits.
         tiles.push(linked(
             Stat::new(tablo::text!("stat-flagged-orders"), flagged.to_string())
@@ -312,7 +311,7 @@ impl Widget for PipelineWidget {
                     new = NEW_FLAG_DAYS.to_string(),
                     processing = PROCESSING_FLAG_DAYS.to_string()
                 ))
-                .color(alert(flagged, Color::Danger)),
+                .color(alert(flagged as usize, Color::Danger)),
             url.map(|url| format!("{url}?sort=created_at&dir=asc")),
         ));
         Ok(tablo::stats(cx, tiles))
@@ -817,7 +816,7 @@ impl Widget for ExpenseQueueWidget {
 }
 
 /// The leave requests by status, a tile per status linked to the requests in it, above the leave
-/// list. Only a user who may open the leave list sees it.
+/// list, following its tab, search and filters. Only a user who may open the leave list sees it.
 pub struct LeaveStatusWidget;
 
 impl Widget for LeaveStatusWidget {
@@ -828,43 +827,41 @@ impl Widget for LeaveStatusWidget {
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
-        let requests = scoped_query::<LeaveRequestResource>(cx)?
-            .exec(&mut db(cx)?)
-            .await?;
+        let requests = list_query::<LeaveRequestResource>(cx).await?;
+        let total = db::count(cx, requests.clone()).await?;
         let url = tablo::url::resource::<LeaveRequestResource>(cx);
-        let tiles: Vec<Stat> = [
+        let mut tiles = Vec::new();
+        for status in [
             LeaveStatus::Pending,
             LeaveStatus::Approved,
             LeaveStatus::Taken,
             LeaveStatus::Rejected,
             LeaveStatus::Cancelled,
-        ]
-        .into_iter()
-        .map(|status| {
-            let count = requests
-                .iter()
-                .filter(|request| request.status == status)
-                .count();
+        ] {
+            let query = requests
+                .clone()
+                .filter(LeaveRequest::fields().status().eq(status));
+            let count = db::count(cx, query).await?;
             let tile = Stat::new(status.label(), count.to_string())
                 .detail(tablo::text!(
                     "stat-detail-share-requests",
-                    share = percent(share(count as f64, requests.len() as f64))
+                    share = percent(share(count as f64, total as f64))
                 ))
                 .color(status.color().unwrap_or(Color::Gray));
-            linked(
+            tiles.push(linked(
                 tile,
                 url.as_ref()
                     .map(|url| format!("{url}?tab={}", status.value())),
-            )
-        })
-        .collect();
+            ));
+        }
         Ok(tablo::stats(cx, tiles))
     }
 }
 
-/// The articles published and the drafts, above the post list. A post dated after today counts as
-/// a draft, as the list's status column shows it. The list filters by date alone, so the tiles do
-/// not link. Only a user who may open the post list sees it.
+/// The articles published and the drafts, above the post list, following its search and filters.
+/// A post dated after today counts as a draft, as the list's status column shows it. The list
+/// filters by date alone, so the tiles do not link. Only a user who may open the post list sees
+/// it.
 pub struct PostStatusWidget;
 
 impl Widget for PostStatusWidget {
@@ -875,13 +872,16 @@ impl Widget for PostStatusWidget {
     }
 
     async fn render(cx: &Cx) -> Result<impl View> {
-        let posts = scoped_query::<PostResource>(cx)?.exec(&mut db(cx)?).await?;
-        let published = posts.iter().filter(|post| post.is_published()).count();
-        let drafts = posts.len() - published;
-        let detail = |count: usize| {
+        let posts = list_query::<PostResource>(cx).await?;
+        let total = db::count(cx, posts.clone()).await?;
+        let today = Zoned::now().date();
+        let published = posts.filter(Post::fields().published_at().le(today));
+        let published = db::count(cx, published).await?;
+        let drafts = total - published;
+        let detail = |count: u64| {
             tablo::text!(
                 "stat-detail-share-articles",
-                share = percent(share(count as f64, posts.len() as f64))
+                share = percent(share(count as f64, total as f64))
             )
         };
         Ok(tablo::stats(

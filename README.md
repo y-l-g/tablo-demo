@@ -122,7 +122,8 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   linking to its record.
 - **List widgets** above three lists, the orders, leave requests and posts: the
   order pipeline, the leave requests by status, and the articles by publishing
-  state. The order and leave figures link to their list tabs.
+  state, each counting the rows its list shows under the current tab, search and
+  filters. The order and leave figures link to their list tabs.
 - **Theming** through Tablo's tokens: [`styles.css`](styles.css) gives both
   panels an indigo brand, in light and dark, with a logo that turns light on a
   dark page.
