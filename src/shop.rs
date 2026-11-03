@@ -1,15 +1,9 @@
 //! The shop resources: products, brands, categories, customers and orders.
 
 use rust_decimal::Decimal;
-use tablo::{
-    Action, ActionLayout, BooleanColumn, Change, Color, ColumnToggle, ColumnWidth, ComputedColumn,
-    Currency, DateColumn, DateFilter, Detail, FieldErrors, FontWeight, FormInput, GlobalSearch,
-    Grid, ImageColumn, Outcome, Places, Reads, Relation, RelationColumn, Resource, ResourceDef,
-    RichTextColumn, RowLink, Schema, Section, SelectFilter, Summary, Table, TernaryFilter, Text,
-    TextColumn, ToggleColumn, WriteError,
-    extend::{Column, Includes},
-    lens, relation, write_create,
-};
+use tablo::extend::{Column, Includes};
+use tablo::prelude::*;
+use tablo::{ColumnToggle, write_create};
 use topcoat::{Result, context::Cx};
 
 use crate::blog::CommentResource;

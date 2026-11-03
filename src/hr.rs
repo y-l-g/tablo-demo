@@ -2,13 +2,8 @@
 
 use jiff::{Span, Timestamp, Zoned};
 use rust_decimal::Decimal;
-use tablo::{
-    Action, ActionLayout, BooleanColumn, Color, ColorColumn, ComputedColumn, CountColumn, Currency,
-    DateColumn, DateFilter, Detail, FieldAccess, FileColumn, FormInput, GlobalSearch, Grid,
-    ListColumn, Outcome, Places, Reads, RecordForm, Relation, RelationColumn, RepeaterColumn,
-    Resource, ResourceDef, Schema, Section, SelectColumn, SelectFilter, Tab, Table, Tabs,
-    TernaryFilter, Text, TextColumn, WriteError, lens, relation,
-};
+use tablo::prelude::*;
+use tablo::{ListColumn, SelectColumn};
 use topcoat::{Result, context::Cx};
 
 use crate::controls::ColorInput;

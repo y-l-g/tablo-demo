@@ -1,12 +1,7 @@
 //! The blog resources: posts, categories and authors.
 
-use tablo::{
-    Action, ActionLayout, BooleanColumn, Change, CountColumn, DateColumn, DateFilter, Detail, Grid,
-    ImageColumn, Outcome, Places, Relation, RelationColumn, Resource, ResourceDef, RichTextColumn,
-    Schema, Section, Table, Text, TextColumn, ToggleColumn, WriteError,
-    extend::{Column, Includes},
-    lens, relation,
-};
+use tablo::extend::{Column, Includes};
+use tablo::prelude::*;
 use topcoat::{Result, context::Cx};
 
 use crate::dashboards::PostStatusWidget;

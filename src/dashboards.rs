@@ -10,11 +10,8 @@ use std::{
 };
 
 use jiff::{Timestamp, Zoned, civil::Date, tz::TimeZone};
-use tablo::{
-    Chart, Color, Currency, FormScalar, Page, PageDef, PageFilter, RecordTable, Resource, Series,
-    Stat, Text, Trend, Widget, WidgetDef, can_list, db, db::db, list_query, page_filters,
-    scoped_query,
-};
+use tablo::prelude::*;
+use tablo::{FormScalar, db, db::db};
 use topcoat::{Result, context::Cx, view::View};
 
 use crate::{
