@@ -1210,6 +1210,11 @@ impl tablo::Options for Providers {
     }
 }
 
+/// The cities the address forms suggest, which the seeded addresses are in.
+pub const CITIES: &[&str] = &[
+    "Portland", "Austin", "Denver", "Boston", "Seattle", "Chicago", "Toronto", "Dublin",
+];
+
 /// Addresses, which the customer and brand pages list.
 pub struct AddressResource;
 
@@ -1249,7 +1254,7 @@ impl Resource for AddressResource {
                     c.country.searchable(),
                     c.street,
                     Grid::new(3).schema((
-                        c.city.suggestions(crate::seed::CITIES.iter().copied()),
+                        c.city.suggestions(CITIES.iter().copied()),
                         c.state,
                         c.zip,
                     )),
@@ -1313,7 +1318,7 @@ impl Resource for OrderAddressResource {
                     c.country,
                     c.street,
                     Grid::new(3).schema((
-                        c.city.suggestions(crate::seed::CITIES.iter().copied()),
+                        c.city.suggestions(CITIES.iter().copied()),
                         c.state,
                         c.zip,
                     )),

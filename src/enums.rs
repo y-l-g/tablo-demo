@@ -200,21 +200,47 @@ pub enum StaffRole {
     Viewer,
 }
 
+/// The skills the employee form suggests, which the seeded employees claim.
+pub const SKILLS: &[&str] = &[
+    "Rust",
+    "TypeScript",
+    "React",
+    "Python",
+    "SQL",
+    "Docker",
+    "Kubernetes",
+    "AWS",
+    "Figma",
+    "Go",
+];
+
 /// The skills the employee form suggests.
 pub struct Skills;
 
 impl tablo::Options for Skills {
     fn options() -> Vec<(String, tablo::Text)> {
-        suggestions(crate::seed::SKILLS)
+        suggestions(SKILLS)
     }
 }
+
+/// The labels the task form suggests, which the seeded tasks carry.
+pub const TASK_LABELS: &[&str] = &[
+    "bug",
+    "feature",
+    "enhancement",
+    "documentation",
+    "design",
+    "testing",
+    "refactor",
+    "urgent",
+];
 
 /// The labels the task form suggests.
 pub struct TaskLabels;
 
 impl tablo::Options for TaskLabels {
     fn options() -> Vec<(String, tablo::Text)> {
-        suggestions(crate::seed::TASK_LABELS)
+        suggestions(TASK_LABELS)
     }
 }
 

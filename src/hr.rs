@@ -25,6 +25,20 @@ use crate::panel::{RECEIPT_EXTENSIONS, RECEIPT_MAX_BYTES};
 use crate::roles::{self, Domain};
 use crate::tabs::OptionTabs;
 
+/// The job titles the employee form suggests, which the seeded employees hold.
+pub const JOB_TITLES: &[&str] = &[
+    "Software Engineer",
+    "Senior Engineer",
+    "Designer",
+    "Product Manager",
+    "Data Analyst",
+    "Support Specialist",
+    "Account Manager",
+    "Technical Writer",
+    "QA Engineer",
+    "DevOps Engineer",
+];
+
 /// Departments.
 pub struct DepartmentResource;
 
@@ -220,9 +234,7 @@ impl Resource for EmployeeResource {
             .prefix("$")
             .suffix(tablo::text!("unit-per-hour"))
             .visible_when(&c.employment_type, ["contractor", "intern"]);
-        let job_title = c
-            .job_title
-            .suggestions(crate::seed::JOB_TITLES.iter().copied());
+        let job_title = c.job_title.suggestions(JOB_TITLES.iter().copied());
         ResourceDef::new()
             .icon(crate::icons::EMPLOYEES)
             .navigation_group(tablo::text!("navigation-hr"))

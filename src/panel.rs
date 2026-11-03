@@ -21,11 +21,10 @@ use topcoat::{
 };
 
 use crate::{
-    auth::{DemoAuth, DemoResetter, DemoTenantRegistrar, DemoVerifier, SignedIn},
+    auth::{self, DemoAuth, DemoResetter, DemoTenantRegistrar, DemoVerifier, SignedIn},
     blog::{AuthorResource, CommentResource, PostCategoryResource, PostResource, TagResource},
     dashboards::{Dashboard, HrDashboard, ShopDashboard},
     mailbox::Postbox,
-    seed,
     welcome::{AdminPanel, AppPanel},
 };
 
@@ -45,7 +44,7 @@ pub const RECEIPT_MAX_BYTES: usize = 5 * 1024 * 1024;
 
 /// The login hint both panels show, with the demo account the seed creates.
 pub fn login_hint() -> String {
-    format!("{} / {}", seed::ADMIN_EMAIL, seed::ADMIN_PASSWORD)
+    format!("{} / {}", auth::ADMIN_EMAIL, auth::ADMIN_PASSWORD)
 }
 
 /// The admin panel: every resource of the demo.

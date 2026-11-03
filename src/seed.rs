@@ -9,12 +9,13 @@ use tablo::rich_text::from_text;
 use toasty::Db;
 use uuid::Uuid;
 
-use crate::auth::create_user;
+use crate::auth::{ADMIN_EMAIL, ADMIN_NAME, ADMIN_PASSWORD, STAFF, create_user};
 use crate::enums::{
     CountryCode, CurrencyCode, EmploymentType, ExpenseCategory, ExpenseStatus, LeaveStatus,
-    LeaveType, OrderStatus, PaymentMethod, ProductType, ProjectStatus, StaffRole, TaskPriority,
-    TaskStatus,
+    LeaveType, OrderStatus, PaymentMethod, ProductType, ProjectStatus, SKILLS, StaffRole,
+    TASK_LABELS, TaskPriority, TaskStatus,
 };
+use crate::hr::JOB_TITLES;
 use crate::models::{
     Address, Author, Brand, Comment, Customer, Department, Employee, Expense, ExpenseLine,
     LeaveRequest, MetadataEntry, Order, OrderAddress, OrderItem, Payment, Post, PostCategory,
@@ -23,42 +24,7 @@ use crate::models::{
 };
 use crate::models::{cost, money, round};
 use crate::panel::{UPLOAD_URL_PREFIX, upload_dir};
-
-/// The demo administrator's name.
-pub const ADMIN_NAME: &str = "Demo User";
-
-/// The demo administrator's email address.
-pub const ADMIN_EMAIL: &str = "admin@example.com";
-
-/// The demo administrator's password.
-pub const ADMIN_PASSWORD: &str = "password";
-
-/// A seeded member of staff besides the administrator, who signs in with the same password.
-pub struct StaffAccount {
-    pub name: &'static str,
-    pub email: &'static str,
-    pub role: StaffRole,
-}
-
-/// The staff the welcome page signs in as, one per role but the administrator's, whose account
-/// is [`ADMIN_EMAIL`]'s.
-pub const STAFF: [StaffAccount; 3] = [
-    StaffAccount {
-        name: "Sam Rivera",
-        email: "shop@example.com",
-        role: StaffRole::ShopManager,
-    },
-    StaffAccount {
-        name: "Jordan Blake",
-        email: "hr@example.com",
-        role: StaffRole::HrManager,
-    },
-    StaffAccount {
-        name: "Robin Ellis",
-        email: "viewer@example.com",
-        role: StaffRole::Viewer,
-    },
-];
+use crate::shop::CITIES;
 
 /// Fills an empty database with the demo's rows.
 pub async fn seed(db: &mut Db) -> toasty::Result<()> {
@@ -1298,7 +1264,7 @@ const POST_CATEGORIES: &[&str] = &[
 ];
 
 /// The tags the seeded posts carry.
-pub const TAGS: &[&str] = &[
+const TAGS: &[&str] = &[
     "Rust",
     "Async",
     "CSS",
@@ -1452,34 +1418,6 @@ const DEPARTMENT_NAMES: &[&str] = &["Engineering", "Operations", "Marketing", "P
 
 const SUBDEPARTMENTS: &[&str] = &["Frontend", "Backend", "DevOps", "QA", "Content", "SEO"];
 
-/// The job titles the seeded employees hold, and the forms suggest.
-pub const JOB_TITLES: &[&str] = &[
-    "Software Engineer",
-    "Senior Engineer",
-    "Designer",
-    "Product Manager",
-    "Data Analyst",
-    "Support Specialist",
-    "Account Manager",
-    "Technical Writer",
-    "QA Engineer",
-    "DevOps Engineer",
-];
-
-/// The skills the seeded employees claim, and the employee form suggests.
-pub const SKILLS: &[&str] = &[
-    "Rust",
-    "TypeScript",
-    "React",
-    "Python",
-    "SQL",
-    "Docker",
-    "Kubernetes",
-    "AWS",
-    "Figma",
-    "Go",
-];
-
 const CERTIFICATIONS: &[&str] = &["AWS Certified", "PMP", "Scrum Master", "None"];
 
 const OFFICES: &[&str] = &["New York", "San Francisco", "London", "Remote"];
@@ -1540,18 +1478,6 @@ const TASK_DESCRIPTIONS: &[&str] = &[
     "Check the empty and error states before merging.",
 ];
 
-/// The labels the seeded tasks carry, and the task form suggests.
-pub const TASK_LABELS: &[&str] = &[
-    "bug",
-    "feature",
-    "enhancement",
-    "documentation",
-    "design",
-    "testing",
-    "refactor",
-    "urgent",
-];
-
 const TIMESHEET_NOTES: &[&str] = &[
     "Pairing on the importer.",
     "Reviewing pull requests.",
@@ -1579,11 +1505,6 @@ const EXPENSE_LINES: &[&str] = &[
 ];
 
 const STREETS: &[&str] = &["Main St", "Oak Ave", "Cedar Lane", "Market St", "Hill Rd"];
-
-/// The cities the seeded addresses are in, and the forms suggest.
-pub const CITIES: &[&str] = &[
-    "Portland", "Austin", "Denver", "Boston", "Seattle", "Chicago", "Toronto", "Dublin",
-];
 
 const STATES: &[&str] = &["CA", "TX", "CO", "MA", "WA", "IL", "ON", "D"];
 
