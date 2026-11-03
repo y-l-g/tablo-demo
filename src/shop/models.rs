@@ -1,0 +1,386 @@
+//! The shop's tables: brands, categories, products, customers, their addresses, and the orders
+//! and payments they make, with the closed value sets their columns store.
+//!
+//! Toasty stores each enum variant under its `snake_case` name. Its label is the
+//! `option-{enum}.{variant}` message, which the catalogs under `locales/` translate and which
+//! falls back to the variant in sentence case.
+
+use jiff::{Timestamp, civil::Date};
+use rust_decimal::Decimal;
+use toasty::Deferred;
+use topcoat::icon::{IconData, iconify::iconify_icon};
+
+use crate::blog::Comment;
+
+/// A maker of products.
+#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+pub struct Brand {
+    #[key]
+    #[auto]
+    pub id: u64,
+    pub name: String,
+    #[unique]
+    pub slug: String,
+    pub website: Option<String>,
+    pub description: Option<String>,
+    #[default(0)]
+    pub position: u16,
+    #[default(false)]
+    pub is_visible: bool,
+    pub seo_title: Option<String>,
+    pub seo_description: Option<String>,
+    /// The brand's place in the list's manual order, which the move actions swap.
+    #[default(0)]
+    pub sort: i64,
+    #[default(Timestamp::now())]
+    pub created_at: Timestamp,
+    #[update(Timestamp::now())]
+    pub updated_at: Timestamp,
+    #[has_many]
+    pub products: Deferred<Vec<Product>>,
+    #[has_many]
+    pub addresses: Deferred<Vec<Address>>,
+}
+
+/// A product category, which may sit under another one.
+#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+pub struct ProductCategory {
+    #[key]
+    #[auto]
+    pub id: u64,
+    #[index]
+    pub parent_id: Option<u64>,
+    #[belongs_to(key = parent_id, references = id)]
+    pub parent: Deferred<Option<ProductCategory>>,
+    pub name: String,
+    #[unique]
+    pub slug: String,
+    pub description: Option<String>,
+    #[default(0)]
+    pub position: u16,
+    #[default(false)]
+    pub is_visible: bool,
+    pub seo_title: Option<String>,
+    pub seo_description: Option<String>,
+    #[default(Timestamp::now())]
+    pub created_at: Timestamp,
+    #[update(Timestamp::now())]
+    pub updated_at: Timestamp,
+    #[has_many(pair = parent)]
+    pub children: Deferred<Vec<ProductCategory>>,
+    #[has_many(pair = category)]
+    pub links: Deferred<Vec<ProductCategoryLink>>,
+    #[has_many(via = links.product)]
+    pub products: Deferred<Vec<Product>>,
+}
+
+/// A product.
+#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+pub struct Product {
+    #[key]
+    #[auto]
+    pub id: u64,
+    #[index]
+    pub brand_id: Option<u64>,
+    #[belongs_to(key = brand_id, references = id)]
+    pub brand: Deferred<Option<Brand>>,
+    pub name: String,
+    #[unique]
+    pub slug: Option<String>,
+    #[unique]
+    pub sku: Option<String>,
+    #[unique]
+    pub barcode: Option<String>,
+    pub description: Option<String>,
+    #[default(0)]
+    pub qty: u64,
+    #[default(0)]
+    pub security_stock: u64,
+    /// The units shipped so far, which the top-products widget ranks.
+    #[default(0)]
+    pub units_sold: u64,
+    #[default(false)]
+    pub featured: bool,
+    #[default(false)]
+    pub is_visible: bool,
+    pub old_price: Option<Decimal>,
+    pub price: Option<Decimal>,
+    pub cost: Option<Decimal>,
+    #[column("type")]
+    pub kind: Option<ProductType>,
+    #[default(false)]
+    pub backorder: bool,
+    #[default(false)]
+    pub requires_shipping: bool,
+    pub published_at: Option<Date>,
+    pub seo_title: Option<String>,
+    pub seo_description: Option<String>,
+    #[default(Some(0.0))]
+    pub weight_value: Option<f64>,
+    #[default("kg".to_string())]
+    pub weight_unit: String,
+    #[default(Some(0.0))]
+    pub height_value: Option<f64>,
+    #[default("cm".to_string())]
+    pub height_unit: String,
+    #[default(Some(0.0))]
+    pub width_value: Option<f64>,
+    #[default("cm".to_string())]
+    pub width_unit: String,
+    #[default(Some(0.0))]
+    pub depth_value: Option<f64>,
+    #[default("cm".to_string())]
+    pub depth_unit: String,
+    #[default(Some(0.0))]
+    pub volume_value: Option<f64>,
+    #[default("l".to_string())]
+    pub volume_unit: String,
+    /// The product's image, the path of the uploaded file.
+    #[default(String::new())]
+    pub image: String,
+    /// The product's further images, in the order the gallery shows them.
+    #[default(Vec::<String>::new())]
+    pub gallery: Vec<String>,
+    #[default(Timestamp::now())]
+    pub created_at: Timestamp,
+    #[update(Timestamp::now())]
+    pub updated_at: Timestamp,
+    #[has_many]
+    pub links: Deferred<Vec<ProductCategoryLink>>,
+    #[has_many(via = links.category)]
+    pub categories: Deferred<Vec<ProductCategory>>,
+    #[has_many]
+    pub comments: Deferred<Vec<Comment>>,
+}
+
+/// Files a product under a category: the join model of the two.
+#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[key(product_id, product_category_id)]
+pub struct ProductCategoryLink {
+    #[index]
+    pub product_id: u64,
+    #[belongs_to(key = product_id, references = id)]
+    pub product: Deferred<Product>,
+    #[index]
+    pub product_category_id: u64,
+    #[belongs_to(key = product_category_id, references = id)]
+    pub category: Deferred<ProductCategory>,
+}
+
+/// Someone who buys from the shop.
+#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+pub struct Customer {
+    #[key]
+    #[auto]
+    pub id: u64,
+    pub name: String,
+    #[unique]
+    pub email: String,
+    pub photo: Option<String>,
+    pub phone: Option<String>,
+    pub birthday: Option<Date>,
+    /// Set by a delete, which hides the row instead of removing it.
+    pub deleted_at: Option<Timestamp>,
+    #[default(Timestamp::now())]
+    pub created_at: Timestamp,
+    #[update(Timestamp::now())]
+    pub updated_at: Timestamp,
+    #[has_many]
+    pub addresses: Deferred<Vec<Address>>,
+    #[has_many]
+    pub comments: Deferred<Vec<Comment>>,
+    #[has_many]
+    pub orders: Deferred<Vec<Order>>,
+}
+
+/// A postal address, owned by the customer or the brand whose column names it.
+///
+/// Toasty has no polymorphic relation, so `customer_id` and `brand_id` are two
+/// nullable keys, one per owner.
+#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+pub struct Address {
+    #[key]
+    #[auto]
+    pub id: u64,
+    #[index]
+    pub customer_id: Option<u64>,
+    #[belongs_to(key = customer_id, references = id)]
+    pub customer: Deferred<Option<Customer>>,
+    #[index]
+    pub brand_id: Option<u64>,
+    #[belongs_to(key = brand_id, references = id)]
+    pub brand: Deferred<Option<Brand>>,
+    pub country: Option<CountryCode>,
+    pub street: Option<String>,
+    pub city: Option<String>,
+    pub state: Option<String>,
+    pub zip: Option<String>,
+    #[default(Timestamp::now())]
+    pub created_at: Timestamp,
+    #[update(Timestamp::now())]
+    pub updated_at: Timestamp,
+}
+
+/// One line of an order.
+#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+pub struct OrderItem {
+    #[key]
+    #[auto]
+    pub id: u64,
+    /// The line's place in the order.
+    #[default(0)]
+    pub sort: u32,
+    #[index]
+    pub order_id: Option<u64>,
+    #[belongs_to(key = order_id, references = id)]
+    pub order: Deferred<Option<Order>>,
+    #[index]
+    pub product_id: Option<u64>,
+    #[belongs_to(key = product_id, references = id)]
+    pub product: Deferred<Option<Product>>,
+    pub qty: i64,
+    pub unit_price: Decimal,
+    #[default(Timestamp::now())]
+    pub created_at: Timestamp,
+    #[update(Timestamp::now())]
+    pub updated_at: Timestamp,
+}
+
+/// Where an order ships.
+#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+pub struct OrderAddress {
+    #[key]
+    #[auto]
+    pub id: u64,
+    #[index]
+    pub order_id: Option<u64>,
+    #[belongs_to(key = order_id, references = id)]
+    pub order: Deferred<Option<Order>>,
+    pub country: Option<CountryCode>,
+    pub street: Option<String>,
+    pub city: Option<String>,
+    pub state: Option<String>,
+    pub zip: Option<String>,
+    #[default(Timestamp::now())]
+    pub created_at: Timestamp,
+    #[update(Timestamp::now())]
+    pub updated_at: Timestamp,
+}
+
+/// A customer's order.
+#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+pub struct Order {
+    #[key]
+    #[auto]
+    pub id: u64,
+    #[index]
+    pub customer_id: Option<u64>,
+    #[belongs_to(key = customer_id, references = id)]
+    pub customer: Deferred<Option<Customer>>,
+    #[unique]
+    pub number: String,
+    pub total_price: Option<Decimal>,
+    #[default(OrderStatus::New)]
+    pub status: OrderStatus,
+    pub shipping_price: Option<Decimal>,
+    pub shipping_method: Option<String>,
+    pub notes: Option<String>,
+    /// Set by a delete, which hides the row instead of removing it.
+    pub deleted_at: Option<Timestamp>,
+    #[default(Timestamp::now())]
+    pub created_at: Timestamp,
+    #[update(Timestamp::now())]
+    pub updated_at: Timestamp,
+    #[has_one]
+    pub address: Deferred<Option<OrderAddress>>,
+    #[has_many]
+    pub items: Deferred<Vec<OrderItem>>,
+    #[has_many]
+    pub payments: Deferred<Vec<Payment>>,
+}
+
+/// A payment against an order.
+#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+pub struct Payment {
+    #[key]
+    #[auto]
+    pub id: u64,
+    #[index]
+    pub order_id: u64,
+    #[belongs_to(key = order_id, references = id)]
+    pub order: Deferred<Order>,
+    pub reference: String,
+    pub provider: String,
+    pub method: PaymentMethod,
+    pub amount: Decimal,
+    pub currency: CurrencyCode,
+    #[default(Timestamp::now())]
+    pub created_at: Timestamp,
+    #[update(Timestamp::now())]
+    pub updated_at: Timestamp,
+}
+
+/// Where a customer or an address is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, toasty::Embed, tablo::Options)]
+pub enum CountryCode {
+    Us,
+    Gb,
+    De,
+    Fr,
+    Ca,
+    Au,
+    Nl,
+    Br,
+    Jp,
+    In,
+}
+
+/// The currency a payment or a reimbursement is in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, toasty::Embed, tablo::Options)]
+pub enum CurrencyCode {
+    Usd,
+    Eur,
+    Gbp,
+    Cad,
+    Aud,
+    Jpy,
+    Brl,
+    Inr,
+}
+
+/// The icons of the order statuses that have none in Tablo's own set.
+const ORDER_NEW: IconData = iconify_icon!("lucide:clipboard-list");
+const ORDER_PROCESSING: IconData = iconify_icon!("lucide:package");
+const ORDER_SHIPPED: IconData = iconify_icon!("lucide:truck");
+
+/// Where an order sits in its fulfilment flow.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, toasty::Embed, tablo::Options)]
+pub enum OrderStatus {
+    #[option(color = "info", icon = ORDER_NEW)]
+    New,
+    #[option(color = "warning", icon = ORDER_PROCESSING)]
+    Processing,
+    #[option(color = "success", icon = ORDER_SHIPPED)]
+    Shipped,
+    #[option(color = "success", icon = tablo::ui::icons::CIRCLE_CHECK)]
+    Delivered,
+    #[option(color = "danger", icon = tablo::ui::icons::CIRCLE_X)]
+    Cancelled,
+}
+
+/// How a payment was made.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, toasty::Embed, tablo::Options)]
+pub enum PaymentMethod {
+    CreditCard,
+    BankTransfer,
+    Paypal,
+    ApplePay,
+    GooglePay,
+}
+
+/// How a product is delivered.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, toasty::Embed, tablo::Options)]
+pub enum ProductType {
+    Deliverable,
+    Downloadable,
+}

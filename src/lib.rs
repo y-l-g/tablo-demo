@@ -1,21 +1,58 @@
-//! The Tablo demo.
+//! The Tablo demo: a shop, a blog, HR and projects, run by staff from the `admin` panel, and an
+//! `app` panel customers sign up on.
+//!
+//! Each business domain is a module that owns its tables, its resources and its dashboard:
+//! [`shop`], [`blog`], [`hr`] and [`projects`]. Around them, [`accounts`] holds who signs in,
+//! [`access`] what each staff role may do there, and [`audit`] the row every write leaves.
+//! [`panels`] mounts it all, [`router`] serves the panels beside the public [`welcome`] page, and
+//! [`seed`] fills the database on every start.
 
+pub mod access;
+pub mod accounts;
 pub mod audit;
-pub mod auth;
 pub mod blog;
-pub mod brand;
 pub mod config;
-pub mod controls;
-pub mod dashboards;
-pub mod enums;
+pub mod home;
 pub mod hr;
-pub mod icons;
 pub mod mailbox;
-pub mod models;
-pub mod notifications;
-pub mod panel;
-pub mod roles;
+pub mod panels;
+pub mod projects;
+pub mod router;
 pub mod seed;
+pub mod shared;
 pub mod shop;
-pub mod tabs;
 pub mod welcome;
+
+/// Every table the demo stores, for the database to create.
+pub fn models() -> toasty::ModelSet {
+    tablo::models!(
+        accounts::User,
+        accounts::Team,
+        accounts::TeamUser,
+        audit::AuditEntry,
+        shop::Brand,
+        shop::ProductCategory,
+        shop::Product,
+        shop::ProductCategoryLink,
+        shop::Customer,
+        shop::Address,
+        shop::Order,
+        shop::OrderItem,
+        shop::OrderAddress,
+        shop::Payment,
+        blog::Author,
+        blog::PostCategory,
+        blog::Tag,
+        blog::Post,
+        blog::PostTag,
+        blog::Comment,
+        hr::Department,
+        hr::Employee,
+        hr::LeaveRequest,
+        hr::Expense,
+        hr::ExpenseLine,
+        projects::Project,
+        projects::Task,
+        projects::Timesheet
+    )
+}

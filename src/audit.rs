@@ -4,14 +4,33 @@
 //! so the row it writes commits with the write or not at all: there is no
 //! window where the record changed and the trail did not.
 
+use jiff::Timestamp;
 use tablo::{
     Change, ChangedRecord, CommitHook, DateColumn, NoForm, PanelChange, ReadOnly, Resource,
     ResourceDef, ResourcePage, Table, TextColumn, lens, when,
 };
-use topcoat::{Result, context::Cx};
+use topcoat::{Result, context::Cx, icon::iconify::iconify_icon};
 
-use crate::auth::SignedIn;
-use crate::models::AuditEntry;
+use crate::access;
+use crate::accounts::SignedIn;
+
+/// One write the panel made, recorded in the write's own transaction.
+#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+pub struct AuditEntry {
+    #[key]
+    #[auto]
+    pub id: u64,
+    /// The resource that was written, by its label, e.g. `Leave request`.
+    pub resource: String,
+    /// What the write did, e.g. `create` or `action: publish`.
+    pub change: String,
+    /// The record the write touched, as its path in the panel.
+    pub record: String,
+    /// Who made the write.
+    pub user: String,
+    /// When the write committed.
+    pub at: Timestamp,
+}
 
 /// Writes an audit row for every write the admin panel makes, in the write's transaction.
 ///
@@ -73,9 +92,9 @@ impl Resource for AuditTrail {
     fn declare() -> ResourceDef<Self> {
         ResourceDef::new()
             .slug("audit-trail")
-            .icon(crate::icons::AUDIT_TRAIL)
+            .icon(iconify_icon!("lucide:rotate-ccw-clock"))
             .navigation_order(-1)
-            .policy(ReadOnly.and(when(crate::roles::is_administrator)))
+            .policy(ReadOnly.and(when(access::is_administrator)))
             .without_global_search()
             .without_page(ResourcePage::View)
             .table(
