@@ -17,7 +17,7 @@ use topcoat::{
     view::{View, class, component, view},
 };
 
-use crate::{auth, enums::StaffRole};
+use crate::accounts::{self, StaffRole};
 
 /// The mounted admin panel, whose document, translations and URLs the page borrows.
 pub struct AdminPanel(pub PanelHandle);
@@ -142,18 +142,18 @@ async fn welcome(cx: &Cx) -> Result<impl View> {
         }
     };
     let mut admin_personas = vec![persona(
-        auth::ADMIN_NAME,
-        auth::ADMIN_EMAIL,
+        accounts::ADMIN_NAME,
+        accounts::ADMIN_EMAIL,
         StaffRole::Administrator,
     )];
     admin_personas.extend(
-        auth::STAFF
+        accounts::STAFF
             .iter()
             .map(|account| persona(account.name, account.email, account.role)),
     );
     let app_personas = vec![Persona {
-        name: auth::ADMIN_NAME,
-        email: auth::ADMIN_EMAIL,
+        name: accounts::ADMIN_NAME,
+        email: accounts::ADMIN_EMAIL,
         role: t("home-role-member"),
         about: t("home-role-member-about"),
         tone: "bg-info/15 text-info",
@@ -250,14 +250,14 @@ async fn welcome(cx: &Cx) -> Result<impl View> {
                             " "
                             (t("home-password-note"))
                             " "
-                            <code class="rounded bg-muted px-1 font-mono text-foreground">(auth::ADMIN_PASSWORD)</code>
+                            <code class="rounded bg-muted px-1 font-mono text-foreground">(accounts::ADMIN_PASSWORD)</code>
                             "."
                         </p>
                         <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
                             <form method="post" action=(admin_login)>
                                 <input type="hidden" name=(tablo::csrf::FIELD_NAME) value=(csrf.clone())>
-                                <input type="hidden" name=(tablo::auth::LOGIN_FIELD) value=(auth::ADMIN_EMAIL)>
-                                <input type="hidden" name=(tablo::auth::PASSWORD_FIELD) value=(auth::ADMIN_PASSWORD)>
+                                <input type="hidden" name=(tablo::auth::LOGIN_FIELD) value=(accounts::ADMIN_EMAIL)>
+                                <input type="hidden" name=(tablo::auth::PASSWORD_FIELD) value=(accounts::ADMIN_PASSWORD)>
                                 <button
                                     type="submit"
                                     class="inline-flex h-11 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -418,7 +418,7 @@ async fn panel(
                         <form method="post" action=(login.clone())>
                             <input type="hidden" name=(tablo::csrf::FIELD_NAME) value=(csrf.clone())>
                             <input type="hidden" name=(tablo::auth::LOGIN_FIELD) value=(persona.email)>
-                            <input type="hidden" name=(tablo::auth::PASSWORD_FIELD) value=(auth::ADMIN_PASSWORD)>
+                            <input type="hidden" name=(tablo::auth::PASSWORD_FIELD) value=(accounts::ADMIN_PASSWORD)>
                             <button
                                 type="submit"
                                 class="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"

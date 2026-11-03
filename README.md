@@ -19,7 +19,7 @@ public, rendered in the admin panel's document and catalog through its
 
 The seed creates one account per staff role, each signing in with `password`;
 the welcome page signs in as any of them in one click, through the panel's own
-login form. What each role may do is [`src/roles.rs`](src/roles.rs): a policy per
+login form. What each role may do is [`src/access.rs`](src/access.rs): a policy per
 domain, field access on what employees are paid, and the dashboards and the
 audit trail gated to the roles that read them.
 
@@ -140,5 +140,37 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   choosing until a visitor picks the other from the language menu in the
   sidebar footer. The demo's own words are in [`locales/`](locales/), beside Tablo's
   catalog.
+
+## Layout
+
+The code follows the domains the sidebar shows, so a feature is found where its
+menu entry is.
+
+| Module                                           | Holds                                                                  |
+| ------------------------------------------------ | ---------------------------------------------------------------------- |
+| [`src/shop/`](src/shop), [`src/blog/`](src/blog), [`src/hr/`](src/hr), [`src/projects/`](src/projects) | a domain: its models, its resources, its dashboard and its list widgets |
+| [`src/accounts/`](src/accounts)                  | the users and teams, sign-in, sign-up, the profile and the team pages  |
+| [`src/access.rs`](src/access.rs)                 | what each staff role may do, domain by domain                          |
+| [`src/audit.rs`](src/audit.rs)                   | the audit trail: its model, the commit hook that writes it, its resource |
+| [`src/home.rs`](src/home.rs)                     | the dashboard both panels open on                                       |
+| [`src/panels/`](src/panels)                      | the two panels, built from the domains, and the brand they share        |
+| [`src/router.rs`](src/router.rs)                 | the routes: the welcome page, both panels and the assets                |
+| [`src/shared/`](src/shared)                      | what several domains use: stats, uploads, notifications, custom inputs |
+| [`src/seed/`](src/seed)                          | the demo data, a file per domain, all from one fixed-seed generator    |
+
+A few conventions keep it that way:
+
+- **A file per resource**, named after it; a resource that outgrows one file,
+  past some 400 lines, becomes a folder, as the orders and expenses have.
+- **A domain's models in its `models.rs`**, with its enums, and the business
+  rules on the models themselves: a project's progress, a timesheet's cost and
+  lock, the days a leave request takes, an expense line's amount. Resources
+  call them, so a form, a column and the seed agree.
+- **A child resource beside its parent**: an order's items, payments and
+  shipping address live in `shop/order/`.
+- **A list widget beside its list's resource**; a dashboard's widgets
+  in the domain's `dashboard`.
+- **The seed imports the domains, and none imports it.**
+- **Icons inline**, as `iconify_icon!("lucide:…")` in each `declare()`.
 
 [GAPS.md](GAPS.md) lists the features this demo still lacks, and what blocks each.
