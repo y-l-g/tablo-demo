@@ -561,6 +561,7 @@ error-team-name-required = Saisissez un nom pour votre équipe
 error-quantity-negative = La quantité doit être égale ou supérieure à zéro
 error-order-has-payments = Une commande avec des paiements ne peut pas être supprimée ; annulez-la
 reason-timesheet-locked = Seules les feuilles de temps de la semaine passée peuvent changer
+reason-expense-no-amount = Une note de frais doit avoir un montant pour être soumise
 error-leave-overlap = Ces dates chevauchent une autre demande de congé de cet employé
 
 ## Notifications

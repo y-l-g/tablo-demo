@@ -1745,8 +1745,14 @@ impl Action<ExpenseResource> for SubmitExpense {
     const PLACES: Places = Places::ROW.with(Places::DETAIL);
     const CONFIRM: bool = true;
 
+    /// A draft with an amount; a draft without one shows the button disabled, saying why.
     fn can_run(_cx: &Cx, expense: &Expense) -> bool {
-        expense.status == ExpenseStatus::Draft
+        expense.status == ExpenseStatus::Draft && expense.total_amount > Decimal::ZERO
+    }
+
+    fn disabled_reason(_cx: &Cx, expense: &Expense) -> Option<Text> {
+        (expense.status == ExpenseStatus::Draft && expense.total_amount <= Decimal::ZERO)
+            .then(|| tablo::text!("reason-expense-no-amount"))
     }
 
     async fn run(
@@ -1756,9 +1762,6 @@ impl Action<ExpenseResource> for SubmitExpense {
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
         for expense in expenses {
-            if expense.total_amount <= Decimal::ZERO {
-                return Err(topcoat::Error::msg("Cannot submit an expense with no amount").into());
-            }
             Expense::filter(Expense::fields().id().eq(expense.id))
                 .update()
                 .status(ExpenseStatus::Submitted)

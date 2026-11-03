@@ -458,6 +458,7 @@ error-team-name-required = Enter a name for your team
 error-quantity-negative = Quantity must be zero or more
 error-order-has-payments = An order with payments cannot be deleted; cancel it instead
 reason-timesheet-locked = Only the last week's timesheets can change
+reason-expense-no-amount = An expense needs an amount before it is submitted
 error-leave-overlap = These dates overlap another leave request of this employee
 
 ## Notifications
