@@ -57,19 +57,23 @@ impl Resource for ProjectResource {
                 )),
             )
             .detail(Detail::new(Tabs::new([
-                Tab::new(tablo::text!("tab-overview")).columns(Grid::new(2).columns((
-                    TextColumn::new(lens!(Project.name)),
-                    TextColumn::new(lens!(Project.slug)),
-                    RelationColumn::of::<DepartmentResource>(relation!(Project.department)),
-                    TextColumn::new(lens!(Project.status)).badge(),
-                    TextColumn::new(lens!(Project.priority)).badge(),
-                    ColorColumn::new(lens!(Project.color)),
-                    DateColumn::new(lens!(Project.start_date)),
-                    DateColumn::new(lens!(Project.end_date)),
-                    TextColumn::new(lens!(Project.description)),
-                ))),
-                Tab::new(tablo::text!("tab-budget")).columns(Grid::new(2).columns(
-                    (
+                Tab::new(tablo::text!("tab-overview"))
+                    .icon(iconify_icon!("lucide:folder"))
+                    .columns(Grid::new(2).columns((
+                        TextColumn::new(lens!(Project.name)),
+                        TextColumn::new(lens!(Project.slug)),
+                        RelationColumn::of::<DepartmentResource>(relation!(Project.department)),
+                        TextColumn::new(lens!(Project.status)).badge(),
+                        TextColumn::new(lens!(Project.priority)).badge(),
+                        ColorColumn::new(lens!(Project.color)),
+                        DateColumn::new(lens!(Project.start_date)),
+                        DateColumn::new(lens!(Project.end_date)),
+                        TextColumn::new(lens!(Project.description)),
+                    ))),
+                Tab::new(tablo::text!("tab-budget"))
+                    .icon(iconify_icon!("lucide:banknote"))
+                    .badge("USD")
+                    .columns(Grid::new(2).columns((
                         TextColumn::new(lens!(Project.budget)).money(Currency::USD),
                         TextColumn::new(lens!(Project.spent)).money(Currency::USD),
                         TextColumn::new(lens!(Project.estimated_hours)).format(|hours| {
@@ -78,27 +82,31 @@ impl Resource for ProjectResource {
                         TextColumn::new(lens!(Project.actual_hours)).format(|hours| {
                             tablo::text!("value-hours", value = format!("{hours:.1}"))
                         }),
-                    ),
-                )),
+                    ))),
             ])))
             .form(Schema::new(Tabs::new([
-                Tab::new(tablo::text!("tab-overview")).schema(Grid::new(2).schema((
-                    c.name,
-                    c.slug.disabled_on_edit(),
-                    c.description.multiline(4),
-                    c.department_id.searchable(),
-                    c.status.buttons(),
-                    c.priority.radio(),
-                    c.color.custom(ColorInput),
-                    start_date,
-                    end_date,
-                ))),
-                Tab::new(tablo::text!("tab-budget")).schema(Grid::new(2).schema((
-                    c.budget.prefix("$"),
-                    c.spent.prefix("$"),
-                    c.estimated_hours.suffix(tablo::text!("unit-hours")),
-                    c.actual_hours.suffix(tablo::text!("unit-hours")),
-                ))),
+                Tab::new(tablo::text!("tab-overview"))
+                    .icon(iconify_icon!("lucide:folder"))
+                    .schema(Grid::new(2).schema((
+                        c.name,
+                        c.slug.disabled_on_edit(),
+                        c.description.multiline(4),
+                        c.department_id.searchable(),
+                        c.status.buttons(),
+                        c.priority.radio(),
+                        c.color.custom(ColorInput),
+                        start_date,
+                        end_date,
+                    ))),
+                Tab::new(tablo::text!("tab-budget"))
+                    .icon(iconify_icon!("lucide:banknote"))
+                    .badge("USD")
+                    .schema(Grid::new(2).schema((
+                        c.budget.prefix("$"),
+                        c.spent.prefix("$"),
+                        c.estimated_hours.suffix(tablo::text!("unit-hours")),
+                        c.actual_hours.suffix(tablo::text!("unit-hours")),
+                    ))),
             ])))
             .record_title(lens!(Project.name))
             .relation(Relation::has_many::<TaskResource>(

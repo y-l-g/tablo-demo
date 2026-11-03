@@ -86,45 +86,53 @@ impl Resource for EmployeeResource {
             )
             .table(employee_table())
             .detail(Detail::new(Tabs::new([
-                Tab::new(tablo::text!("tab-personal")).columns(Grid::new(2).columns((
-                    TextColumn::new(lens!(Employee.name)),
-                    TextColumn::new(lens!(Employee.email)),
-                    TextColumn::new(lens!(Employee.phone)),
-                    DateColumn::new(lens!(Employee.date_of_birth)),
-                    ColorColumn::new(lens!(Employee.team_color)),
-                ))),
-                Tab::new(tablo::text!("tab-employment")).columns(Grid::new(2).columns((
-                    RelationColumn::of::<DepartmentResource>(relation!(Employee.department)),
-                    TextColumn::new(lens!(Employee.job_title)),
-                    TextColumn::new(lens!(Employee.employment_type)).badge(),
-                    DateColumn::new(lens!(Employee.hire_date)),
-                    TextColumn::new(lens!(Employee.salary)).money(Currency::USD),
-                    ListColumn::new(lens!(Employee.skills)),
-                    RepeaterColumn::new(lens!(Employee.metadata)),
-                    BooleanColumn::new(lens!(Employee.is_active)),
-                ))),
+                Tab::new(tablo::text!("tab-personal"))
+                    .icon(iconify_icon!("lucide:id-card"))
+                    .columns(Grid::new(2).columns((
+                        TextColumn::new(lens!(Employee.name)),
+                        TextColumn::new(lens!(Employee.email)),
+                        TextColumn::new(lens!(Employee.phone)),
+                        DateColumn::new(lens!(Employee.date_of_birth)),
+                        ColorColumn::new(lens!(Employee.team_color)),
+                    ))),
+                Tab::new(tablo::text!("tab-employment"))
+                    .icon(iconify_icon!("lucide:briefcase"))
+                    .columns(Grid::new(2).columns((
+                        RelationColumn::of::<DepartmentResource>(relation!(Employee.department)),
+                        TextColumn::new(lens!(Employee.job_title)),
+                        TextColumn::new(lens!(Employee.employment_type)).badge(),
+                        DateColumn::new(lens!(Employee.hire_date)),
+                        TextColumn::new(lens!(Employee.salary)).money(Currency::USD),
+                        ListColumn::new(lens!(Employee.skills)),
+                        RepeaterColumn::new(lens!(Employee.metadata)),
+                        BooleanColumn::new(lens!(Employee.is_active)),
+                    ))),
             ])))
             .form(Schema::new(Tabs::new([
-                Tab::new(tablo::text!("tab-personal")).schema(Grid::new(2).schema((
-                    c.name,
-                    c.email.email().unique(),
-                    c.phone.tel(),
-                    c.date_of_birth,
-                    c.team_color.custom(ColorInput),
-                ))),
-                Tab::new(tablo::text!("tab-employment")).schema((
-                    Grid::new(2).schema((
-                        c.department_id.searchable(),
-                        job_title,
-                        c.employment_type.radio(),
-                        c.hire_date,
-                        c.skills,
-                        salary,
-                        hourly_rate,
-                        c.is_active.switch(),
+                Tab::new(tablo::text!("tab-personal"))
+                    .icon(iconify_icon!("lucide:id-card"))
+                    .schema(Grid::new(2).schema((
+                        c.name,
+                        c.email.email().unique(),
+                        c.phone.tel(),
+                        c.date_of_birth,
+                        c.team_color.custom(ColorInput),
+                    ))),
+                Tab::new(tablo::text!("tab-employment"))
+                    .icon(iconify_icon!("lucide:briefcase"))
+                    .schema((
+                        Grid::new(2).schema((
+                            c.department_id.searchable(),
+                            job_title,
+                            c.employment_type.radio(),
+                            c.hire_date,
+                            c.skills,
+                            salary,
+                            hourly_rate,
+                            c.is_active.switch(),
+                        )),
+                        c.metadata.add_label(tablo::text!("action-add-metadata")),
                     )),
-                    c.metadata.add_label(tablo::text!("action-add-metadata")),
-                )),
             ])))
             .record_title(lens!(Employee.name))
             .global_search(
