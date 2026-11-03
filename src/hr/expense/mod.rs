@@ -13,7 +13,6 @@ use self::actions::{ApproveExpense, FlagExpense, ReimburseExpense, RejectExpense
 use super::{EmployeeResource, Expense, ExpenseCategory, ExpenseLine, ExpenseStatus};
 use crate::access::{self, Domain};
 use crate::projects::ProjectResource;
-use crate::shared::OptionTabs;
 use crate::shared::uploads::{RECEIPT_EXTENSIONS, RECEIPT_MAX_BYTES};
 
 /// Expenses.
@@ -52,7 +51,7 @@ impl Resource for ExpenseResource {
                     _ => None,
                 })
                 .row_color_reading(Reads::of(lens!(Expense.status)))
-                .option_tabs(|status: ExpenseStatus| Expense::fields().status().eq(status))
+                .option_tabs(lens!(Expense.status))
                 .filters((
                     SelectFilter::of(lens!(Expense.category)),
                     SelectFilter::relationship::<EmployeeResource>(lens!(Expense.employee_id)),

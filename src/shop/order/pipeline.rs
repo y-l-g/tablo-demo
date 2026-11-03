@@ -30,13 +30,7 @@ impl Widget for PipelineWidget {
         let total = db::count(cx, orders.clone()).await?;
         let url = tablo::url::resource::<OrderResource>(cx);
         let mut tiles = Vec::new();
-        for option in [
-            OrderStatus::New,
-            OrderStatus::Processing,
-            OrderStatus::Shipped,
-            OrderStatus::Delivered,
-            OrderStatus::Cancelled,
-        ] {
+        for &option in OrderStatus::ALL {
             let count = db::count(
                 cx,
                 orders.clone().filter(Order::fields().status().eq(option)),

@@ -8,7 +8,6 @@ use topcoat::{Result, context::Cx, icon::iconify::iconify_icon, view::View};
 
 use super::{EmployeeResource, LeaveRequest, LeaveStatus, LeaveType};
 use crate::access::{self, Domain};
-use crate::shared::OptionTabs;
 use crate::shared::stats::{linked, percent, share};
 
 /// Leave requests.
@@ -52,7 +51,7 @@ impl Resource for LeaveRequestResource {
                     _ => None,
                 })
                 .row_color_reading(Reads::of(lens!(LeaveRequest.status)))
-                .option_tabs(|status: LeaveStatus| LeaveRequest::fields().status().eq(status))
+                .option_tabs(lens!(LeaveRequest.status))
                 .filters((SelectFilter::of(lens!(LeaveRequest.kind)),)),
             )
             .detail(Detail::new((
@@ -297,13 +296,7 @@ impl Widget for LeaveStatusWidget {
         let total = db::count(cx, requests.clone()).await?;
         let url = tablo::url::resource::<LeaveRequestResource>(cx);
         let mut tiles = Vec::new();
-        for status in [
-            LeaveStatus::Pending,
-            LeaveStatus::Approved,
-            LeaveStatus::Taken,
-            LeaveStatus::Rejected,
-            LeaveStatus::Cancelled,
-        ] {
+        for &status in LeaveStatus::ALL {
             let query = requests
                 .clone()
                 .filter(LeaveRequest::fields().status().eq(status));

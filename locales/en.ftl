@@ -122,7 +122,6 @@ tab-budget = Budget
 
 ## List tabs
 
-list-tab-all = All
 
 ## List summaries
 

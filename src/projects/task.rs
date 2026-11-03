@@ -248,13 +248,11 @@ impl Action<TaskResource> for AssignTask {
         choice: AssigneeChoice,
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<AssigneeChoiceField>> {
-        for task in tasks {
-            Task::filter_by_id(task.id)
-                .update()
-                .assigned_to(choice.assigned_to)
-                .exec(&mut *ex)
-                .await?;
-        }
+        Task::filter(filter_keys(tasks))
+            .update()
+            .assigned_to(choice.assigned_to)
+            .exec(ex)
+            .await?;
         Ok(Outcome::done())
     }
 
@@ -284,13 +282,11 @@ impl Action<TaskResource> for SetTaskPriority {
         change: PriorityChange,
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<PriorityChangeField>> {
-        for task in tasks {
-            Task::filter_by_id(task.id)
-                .update()
-                .priority(change.priority)
-                .exec(&mut *ex)
-                .await?;
-        }
+        Task::filter(filter_keys(tasks))
+            .update()
+            .priority(change.priority)
+            .exec(ex)
+            .await?;
         Ok(Outcome::done())
     }
 }
@@ -372,12 +368,10 @@ async fn set_task_status<K>(
     status: TaskStatus,
     ex: &mut dyn toasty::Executor,
 ) -> Result<Outcome, WriteError<K>> {
-    for task in tasks {
-        Task::filter_by_id(task.id)
-            .update()
-            .status(status)
-            .exec(&mut *ex)
-            .await?;
-    }
+    Task::filter(filter_keys(tasks))
+        .update()
+        .status(status)
+        .exec(ex)
+        .await?;
     Ok(Outcome::done())
 }

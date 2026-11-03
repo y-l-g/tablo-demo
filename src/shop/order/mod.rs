@@ -20,7 +20,7 @@ use super::{
     CustomerResource, Order, OrderAddress, OrderItem, OrderStatus, Payment, customer_name,
 };
 use crate::access::{self, Domain};
-use crate::shared::{OptionTabs, notify};
+use crate::shared::notify;
 
 /// Orders.
 pub struct OrderResource;
@@ -82,9 +82,10 @@ impl Resource for OrderResource {
             .list_widget::<PipelineWidget>()
     }
 
-    /// A paid order stays: a delete declines while it holds payments, and the message flashes.
+    /// A paid order stays: a delete declines while it holds payments, and the message flashes;
+    /// any other order goes to the trash the way Tablo deletes it.
     async fn delete_record(
-        _cx: &Cx,
+        cx: &Cx,
         order: &Order,
         ex: &mut dyn toasty::Executor,
     ) -> Result<(), WriteError> {
@@ -96,12 +97,7 @@ impl Resource for OrderResource {
                 "error-order-has-payments"
             )));
         }
-        Order::filter_by_id(order.id)
-            .update()
-            .deleted_at(Some(jiff::Timestamp::now()))
-            .exec(&mut *ex)
-            .await?;
-        Ok(())
+        tablo::write_delete::<Self>(cx, order, ex).await
     }
 
     /// Tells the signed-in user about a new order, once the write committed.
@@ -135,7 +131,7 @@ fn order_table() -> Table<Order> {
     .action_layout(ActionLayout::Menu)
     .row_color(|order: &Order| (order.status == OrderStatus::Cancelled).then_some(Color::Danger))
     .row_color_reading(Reads::of(lens!(Order.status)))
-    .option_tabs(|status: OrderStatus| Order::fields().status().eq(status))
+    .option_tabs(lens!(Order.status))
     .filters((DateFilter::new(lens!(Order.created_at))
         .label(tablo::text!("label-order-date"))
         .range(),))

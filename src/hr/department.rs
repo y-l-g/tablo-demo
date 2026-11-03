@@ -105,13 +105,11 @@ impl Action<DepartmentResource> for AdjustDepartmentBudget {
         change: BudgetChange,
         ex: &mut dyn toasty::Executor,
     ) -> Result<Outcome, WriteError<BudgetChangeField>> {
-        for department in departments {
-            Department::filter_by_id(department.id)
-                .update()
-                .budget(change.budget)
-                .exec(&mut *ex)
-                .await?;
-        }
+        Department::filter(filter_keys(departments))
+            .update()
+            .budget(change.budget)
+            .exec(ex)
+            .await?;
         Ok(Outcome::done())
     }
 
