@@ -16,13 +16,11 @@ page-welcome-description = A demo application built on Tablo.
 page-shop-dashboard = Shop dashboard
 page-hr-dashboard = HR dashboard
 page-settings = Settings
-page-audit-trail = Audit trail
 
 dashboard-shop-description = How the shop is doing, over every customer and order. A period compares its sales with as many days before it, and ends the charts on its last day.
 dashboard-hr-description = The workforce, its leave, its projects and what they cost.
 dashboard-filter-period = Period
 
-copy-audit-description = Every write the panel made, recorded in the write's own transaction.
 copy-no-team = No team selected.
 copy-settings-description = Apart from the team, this page is empty.
 copy-team-description = The tenant this session acts for.
@@ -45,6 +43,8 @@ resource-leave-request = Leave request
     .plural = Leave requests
 resource-expense = Expense
     .plural = Expenses
+resource-audit-entry = Audit entry
+    .plural = Audit trail
 
 ## Dashboard figures
 
@@ -170,74 +170,25 @@ section-timesheet-entry = Timesheet entry
 
 label-gallery = Gallery
 label-active = Active
-label-approver = Approver
-label-assignee = Assignee
-label-author = Author
-label-barcode-isbn-upc-gtin-etc = Barcode (ISBN, UPC, GTIN, etc.)
-label-billable = Billable
-label-brand = Brand
-label-by = By
-label-category = Category
-label-change = Change
-label-compare-at-price = Compare at price
-label-cost-per-item = Cost per item
-label-customer = Customer
-label-date = Date
-label-department = Department
 label-email = Email
-label-email-address = Email address
-label-employee = Employee
-label-end-time-half-days = End time (half days)
-label-expense = Expense
-label-github-handle = GitHub handle
 label-headcount = Headcount
 label-hidden = Hidden
 label-inactive = Inactive
 label-job-title = Job title
-label-last-modified-at = Last modified at
-label-number = Number
-label-order = Order
 label-order-date = Order date
-label-parent = Parent
 label-parent-category = Parent category
 label-parent-department = Parent department
 label-phone = Phone
-label-post = Post
-label-post-category = Post category
 label-price = Price
-label-product = Product
 label-progress = Progress
-label-project = Project
 label-public-visibility = Public visibility
-label-publishing-date = Publishing date
-label-quantity = Quantity
-label-receipt = Receipt
-label-record = Record
-label-resource = Resource
-label-reviewed-at = Reviewed at
-label-shipping-cost = Shipping cost
 label-shipping-address = Shipping address
 label-sku = SKU
 label-sku-stock-keeping-unit = SKU (Stock Keeping Unit)
-label-start-time-half-days = Start time (half days)
-label-state-province = State / Province
 label-status = Status
-label-street-address = Street address
-label-tags = Tags
-label-skills = Skills
-label-metadata = Metadata
-label-units-sold = Units sold
-label-labels = Labels
-label-task = Task
 label-team = Team
 label-total = Total
-label-twitter-handle = Twitter handle
-label-type = Type
-label-unit-price = Unit price
-label-visibility = Visibility
 label-visible = Visible
-label-when = When
-label-zip-postal-code = Zip / Postal code
 
 ## Hints, units and values
 
@@ -272,6 +223,62 @@ field-reason = Reason
 field-subject = Subject
 field-receipt_path = Receipt
 field-shipping_price = Shipping cost
+field-approver = Approver
+field-approver_id = Approver
+field-assignee = Assignee
+field-author = Author
+field-author_id = Author
+field-barcode = Barcode (ISBN, UPC, GTIN, etc.)
+field-brand = Brand
+field-brand_id = Brand
+field-cost = Cost per item
+field-customer = Customer
+field-customer_id = Customer
+field-date = Date
+field-department = Department
+field-employee = Employee
+field-employee_id = Employee
+field-end_time = End time (half days)
+field-expense = Expense
+field-expense_id = Expense
+field-gallery = Gallery
+field-github_handle = GitHub handle
+field-is_billable = Billable
+field-kind = Type
+field-labels = Labels
+field-metadata = Metadata
+field-number = Number
+field-order = Order
+field-order_id = Order
+field-parent = Parent
+field-post_category = Category
+field-post_category_id = Category
+field-post_id = Post
+field-posts = Posts
+field-product = Product
+field-product_id = Product
+field-project = Project
+field-project_id = Project
+field-published_at = Publishing date
+field-reviewed_at = Reviewed at
+field-skills = Skills
+field-sku = SKU
+field-start_time = Start time (half days)
+field-state = State / Province
+field-street = Street address
+field-tags = Tags
+field-task = Task
+field-task_id = Task
+field-twitter_handle = Twitter handle
+field-unit_price = Unit price
+field-units_sold = Units sold
+field-updated_at = Last modified at
+field-zip = Zip / Postal code
+field-at = When
+field-resource = Resource
+field-change = Change
+field-record = Record
+field-user = By
 
 ## Options
 
@@ -385,8 +392,6 @@ flash-employees-updated =
         [one] Updated one employee
        *[other] Updated { $count } employees
     }
-flash-leave-approved = Leave request approved
-flash-leave-rejected = Leave request rejected
 flash-leaves-approved =
     { $count ->
         [one] Approved one leave request
@@ -453,6 +458,7 @@ error-team-name-required = Enter a name for your team
 error-quantity-negative = Quantity must be zero or more
 error-order-has-payments = An order with payments cannot be deleted; cancel it instead
 reason-timesheet-locked = Only the last week's timesheets can change
+reason-expense-no-amount = An expense needs an amount before it is submitted
 error-leave-overlap = These dates overlap another leave request of this employee
 
 ## Notifications
@@ -484,10 +490,6 @@ action-adjust-price = Adjust price
 action-adjust-stock = Adjust stock
 action-approve = Approve
 action-assign = Assign
-action-bulk-approve = Approve
-action-bulk-assign = Assign
-action-bulk-change-department = Change department
-action-bulk-reject = Reject
 action-bulk-set-active = Set active
 action-bulk-set-status = Set status
 action-cancel = Cancel
@@ -518,7 +520,6 @@ action-submit = Submit
 action-toggle-active = Toggle active
 action-toggle-billable = Toggle billable
 action-toggle-publish = Toggle publish
-action-toggle-visibility = Toggle visibility
 action-visit-website = Visit website
 
 ## Welcome page

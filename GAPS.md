@@ -41,6 +41,5 @@ cannot, and what blocks it.
 
 | Gap | Blocker |
 | --- | --- |
-| Widgets that follow the list's table state | a list's widgets rerun with its table but read none of its filters, so they show the same figures under any filter |
 | `topbar(false)`, Vite theme | the shell is Tablo's |
 | Importer column mapping | an import reads the create form's columns |

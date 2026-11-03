@@ -97,7 +97,8 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   page, so their resources have no sidebar entry.
 - **Tables** with search, sort, filters, grouping, pagination and CSV export,
   status tabs with their counts, and switches and selects that save in their
-  cells: a product's or a brand's visibility, a leave request's status. Cancelled
+  cells: the visibility of a product, a brand or a category, a leave request's
+  status. Cancelled
   orders, pending and rejected leave, and submitted and rejected expenses are
   tinted. The order and product lists count their records under the rows, the
   product filters wait for an Apply button, and each brand links to its website.
@@ -122,7 +123,8 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   linking to its record.
 - **List widgets** above three lists, the orders, leave requests and posts: the
   order pipeline, the leave requests by status, and the articles by publishing
-  state. The order and leave figures link to their list tabs.
+  state, each counting the rows its list shows under the current tab, search and
+  filters. The order and leave figures link to their list tabs.
 - **Theming** through Tablo's tokens: [`styles.css`](styles.css) gives both
   panels an indigo brand, in light and dark, with a logo that turns light on a
   dark page.

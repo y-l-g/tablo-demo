@@ -4,12 +4,11 @@
 //! so the row it writes commits with the write or not at all: there is no
 //! window where the record changed and the trail did not.
 
-use tablo::{Change, Page, PageDef, Resource, db::db};
-use topcoat::{
-    Result,
-    context::Cx,
-    view::{View, view},
+use tablo::{
+    Change, DateColumn, NoForm, ReadOnly, Resource, ResourceDef, ResourcePage, Table, TextColumn,
+    lens, when,
 };
+use topcoat::{Result, context::Cx};
 
 use crate::auth::SignedIn;
 use crate::models::AuditEntry;
@@ -73,77 +72,39 @@ macro_rules! audit {
     };
 }
 
-/// The panel's page: every write the panel made, newest first.
+/// The audit trail: every write the panel made, newest first, for administrators to read.
+///
+/// The trail records every domain's writes, so only administrators open it, and no one writes
+/// to it through the panel: its rows come from [`write`] alone.
 pub struct AuditTrail;
 
-impl Page for AuditTrail {
-    fn declare() -> PageDef {
-        PageDef::new()
+impl Resource for AuditTrail {
+    type Model = AuditEntry;
+    type Form = NoForm<AuditEntry>;
+
+    fn declare() -> ResourceDef<Self> {
+        ResourceDef::new()
+            .slug("audit-trail")
             .icon(crate::icons::AUDIT_TRAIL)
             .navigation_order(-1)
-            // The trail records every domain's writes, so it is the administrators'.
-            .access(crate::roles::is_administrator)
-    }
-
-    async fn render(cx: &Cx) -> Result<impl View> {
-        let mut db = db(cx)?;
-        let mut entries = AuditEntry::all().exec(&mut db).await?;
-        entries.reverse();
-
-        Ok(view! {
-            cx =>
-            tablo::ui::page(
-                tablo::ui::page_header(
-                    tablo::ui::page_title((tablo::t!(cx, "page-audit-trail")))
-                    tablo::ui::page_description(
-                        (tablo::t!(cx, "copy-audit-description"))
-                    )
-                )
-                tablo::ui::page_content(
-                    tablo::ui::table(
-                        tablo::ui::table_header(
-                            tablo::ui::table_row(
-                                tablo::ui::table_head((tablo::t!(cx, "label-when")))
-                                tablo::ui::table_head((tablo::t!(cx, "label-resource")))
-                                tablo::ui::table_head((tablo::t!(cx, "label-change")))
-                                tablo::ui::table_head((tablo::t!(cx, "label-record")))
-                                tablo::ui::table_head((tablo::t!(cx, "label-by")))
-                            )
-                        )
-                        tablo::ui::table_body(
-                            for entry in entries {
-                                tablo::ui::table_row(
-                                    tablo::ui::table_cell((moment(entry.at)))
-                                    tablo::ui::table_cell((entry.resource))
-                                    tablo::ui::table_cell((entry.change))
-                                    tablo::ui::table_cell(
-                                        if entry.record.is_empty() {
-                                            "-"
-                                        } else {
-                                            <a
-                                                href=(entry.record.clone())
-                                                class="text-primary underline underline-offset-4"
-                                            >
-                                                (entry.record)
-                                            </a>
-                                        }
-                                    )
-                                    tablo::ui::table_cell((entry.user))
-                                )
-                            }
-                        )
-                    )
-                )
+            .policy(ReadOnly.and(when(crate::roles::is_administrator)))
+            .without_global_search()
+            .without_page(ResourcePage::View)
+            .table(
+                Table::new((
+                    DateColumn::new(lens!(AuditEntry.at)).sortable(),
+                    TextColumn::new(lens!(AuditEntry.resource)).searchable(),
+                    TextColumn::new(lens!(AuditEntry.change)).searchable(),
+                    TextColumn::new(lens!(AuditEntry.record))
+                        .url(|entry: &AuditEntry| {
+                            (!entry.record.is_empty()).then(|| entry.record.clone())
+                        })
+                        .placeholder("-"),
+                    TextColumn::new(lens!(AuditEntry.user)).searchable(),
+                ))
+                .default_sort_desc(lens!(AuditEntry.at)),
             )
-        })
     }
-}
-
-/// The moment the write committed, as a readable time.
-fn moment(at: jiff::Timestamp) -> String {
-    at.to_zoned(jiff::tz::TimeZone::UTC)
-        .strftime("%Y-%m-%d %H:%M:%S")
-        .to_string()
 }
 
 /// The record's path in the panel, empty when the resource serves no such page.

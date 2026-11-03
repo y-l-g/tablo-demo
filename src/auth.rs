@@ -122,10 +122,7 @@ impl Authenticator for DemoAuth {
             return Ok(None);
         };
         let mut db = db(cx)?;
-        let user = User::filter(User::fields().id().eq(id))
-            .first()
-            .exec(&mut db)
-            .await?;
+        let user = User::filter_by_id(id).first().exec(&mut db).await?;
         match user {
             Some(user) => Ok(Some(Self::signed_in(user, &mut db).await?)),
             None => Ok(None),
@@ -182,6 +179,45 @@ impl Registrar for DemoAuth {
         Self::signed_in(user, ex).await
     }
 }
+
+// The demo's accounts: the seed creates them, the login hint names the administrator's, and the
+// welcome page signs in as each.
+
+/// The demo administrator's name.
+pub const ADMIN_NAME: &str = "Demo User";
+
+/// The demo administrator's email address.
+pub const ADMIN_EMAIL: &str = "admin@example.com";
+
+/// The demo administrator's password.
+pub const ADMIN_PASSWORD: &str = "password";
+
+/// A seeded member of staff besides the administrator, who signs in with the same password.
+pub struct StaffAccount {
+    pub name: &'static str,
+    pub email: &'static str,
+    pub role: StaffRole,
+}
+
+/// The staff the welcome page signs in as, one per role but the administrator's, whose account
+/// is [`ADMIN_EMAIL`]'s.
+pub const STAFF: [StaffAccount; 3] = [
+    StaffAccount {
+        name: "Sam Rivera",
+        email: "shop@example.com",
+        role: StaffRole::ShopManager,
+    },
+    StaffAccount {
+        name: "Jordan Blake",
+        email: "hr@example.com",
+        role: StaffRole::HrManager,
+    },
+    StaffAccount {
+        name: "Robin Ellis",
+        email: "viewer@example.com",
+        role: StaffRole::Viewer,
+    },
+];
 
 /// Creates a seeded account, hashed the way the login checks it. `role` is
 /// what opens the `admin` panel, and only the seed grants one.
@@ -240,7 +276,7 @@ impl tablo::auth::PasswordResetter for DemoResetter {
     ) -> topcoat::Result<()> {
         let id = account_id(user_id)?;
         let password = hash_password(password).await?;
-        User::filter(User::fields().id().eq(id))
+        User::filter_by_id(id)
             .update()
             .password(password)
             .exec(ex)
@@ -267,7 +303,7 @@ impl tablo::auth::EmailVerifier for DemoVerifier {
         ex: &mut dyn toasty::Executor,
     ) -> topcoat::Result<()> {
         let id = account_id(user_id)?;
-        User::filter(User::fields().id().eq(id))
+        User::filter_by_id(id)
             .update()
             .email(email.to_string())
             .email_verified_at(Some(Timestamp::now()))
@@ -413,7 +449,7 @@ impl ProfileEditor for DemoAuth {
         // mailed to it, and the old one gets a link that keeps it.
         let stored = email != signed.user.email
             && request_email_change(cx, &mut *ex, signed, &email).await? == EmailChange::Immediate;
-        let mut update = User::filter(User::fields().id().eq(signed.user.id))
+        let mut update = User::filter_by_id(signed.user.id)
             .update()
             .name(profile.name);
         if stored {
@@ -467,7 +503,7 @@ impl TenantEditor for DemoTenantRegistrar {
         input: NewTeam,
         ex: &mut dyn toasty::Executor,
     ) -> topcoat::Result<()> {
-        Team::filter(Team::fields().id().eq(team.tenant.get()))
+        Team::filter_by_id(team.tenant.get())
             .update()
             .name(input.name.trim().to_string())
             .exec(ex)

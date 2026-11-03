@@ -16,13 +16,11 @@ page-welcome-description = Une application de démonstration construite sur Tabl
 page-shop-dashboard = Tableau de bord boutique
 page-hr-dashboard = Tableau de bord RH
 page-settings = Paramètres
-page-audit-trail = Journal d'audit
 
 dashboard-shop-description = L'état de la boutique, sur tous les clients et toutes les commandes. Une période compare ses ventes à autant de jours avant elle, et termine les graphiques sur son dernier jour.
 dashboard-hr-description = Les effectifs, leurs congés, leurs projets et leur coût.
 dashboard-filter-period = Période
 
-copy-audit-description = Chaque écriture du panneau, enregistrée dans la transaction de l'écriture elle-même.
 copy-no-team = Aucune équipe sélectionnée.
 copy-settings-description = Hormis l'équipe, cette page est vide.
 copy-team-description = Le locataire au nom duquel agit cette session.
@@ -69,6 +67,8 @@ resource-timesheet = Feuille de temps
     .plural = Feuilles de temps
 resource-expense = Note de frais
     .plural = Notes de frais
+resource-audit-entry = Entrée d'audit
+    .plural = Journal d'audit
 resource-expense-line = Ligne de frais
     .plural = Lignes de frais
 
@@ -196,74 +196,25 @@ list-tab-all = Tous
 
 label-gallery = Galerie
 label-active = Actif
-label-approver = Approbateur
-label-assignee = Assigné à
-label-author = Auteur
-label-barcode-isbn-upc-gtin-etc = Code-barres (ISBN, UPC, GTIN, etc.)
-label-billable = Facturable
-label-brand = Marque
-label-by = Par
-label-category = Catégorie
-label-change = Modification
-label-compare-at-price = Prix comparé
-label-cost-per-item = Coût unitaire
-label-customer = Client
-label-date = Date
-label-department = Service
 label-email = E-mail
-label-email-address = Adresse e-mail
-label-employee = Employé
-label-end-time-half-days = Fin (demi-journées)
-label-expense = Note de frais
-label-github-handle = Identifiant GitHub
 label-headcount = Effectif
 label-hidden = Masqué
 label-inactive = Inactif
 label-job-title = Intitulé du poste
-label-last-modified-at = Dernière modification
-label-number = Numéro
-label-order = Commande
 label-order-date = Date de commande
-label-parent = Parent
 label-parent-category = Catégorie parente
 label-parent-department = Service parent
 label-phone = Téléphone
-label-post = Article
-label-post-category = Catégorie d'article
 label-price = Prix
-label-product = Produit
 label-progress = Avancement
-label-project = Projet
 label-public-visibility = Visibilité publique
-label-publishing-date = Date de publication
-label-quantity = Quantité
-label-receipt = Justificatif
-label-record = Enregistrement
-label-resource = Ressource
-label-reviewed-at = Date de revue
-label-shipping-cost = Frais de port
 label-shipping-address = Adresse de livraison
 label-sku = SKU
 label-sku-stock-keeping-unit = SKU (unité de gestion de stock)
-label-start-time-half-days = Début (demi-journées)
-label-state-province = Région
 label-status = Statut
-label-street-address = Adresse
-label-tags = Étiquettes
-label-skills = Compétences
-label-metadata = Métadonnées
-label-units-sold = Unités vendues
-label-labels = Libellés
-label-task = Tâche
 label-team = Équipe
 label-total = Total
-label-twitter-handle = Identifiant Twitter
-label-type = Type
-label-unit-price = Prix unitaire
-label-visibility = Visibilité
 label-visible = Visible
-label-when = Quand
-label-zip-postal-code = Code postal
 
 ## Indications, unités et valeurs
 
@@ -322,14 +273,14 @@ field-estimated_hours = Heures estimées
 field-actual_hours = Heures réelles
 field-start_date = Date de début
 field-end_date = Date de fin
-field-start_time = Début
-field-end_time = Fin
+field-start_time = Début (demi-journées)
+field-end_time = Fin (demi-journées)
 field-tags = Étiquettes
 field-published_at = Date de publication
 field-price = Prix
-field-cost = Coût
+field-cost = Coût unitaire
 field-sku = SKU
-field-barcode = Code-barres
+field-barcode = Code-barres (ISBN, UPC, GTIN, etc.)
 field-security_stock = Stock de sécurité
 field-backorder = Réapprovisionnement
 field-requires_shipping = Expédition requise
@@ -344,7 +295,7 @@ field-amount = Montant
 field-currency = Devise
 field-provider = Fournisseur
 field-method = Moyen de paiement
-field-street = Rue
+field-street = Adresse
 field-city = Ville
 field-state = Région
 field-zip = Code postal
@@ -405,7 +356,7 @@ field-number = Numéro
 field-order = Commande
 field-parent = Parent
 field-parent_id = Parent
-field-post_category = Catégorie d'article
+field-post_category = Catégorie
 field-post_id = Article
 field-product = Produit
 field-products = Produits
@@ -418,8 +369,19 @@ field-task = Tâche
 field-total_amount = Montant total
 field-total_cost = Coût total
 field-total_price = Prix total
-field-updated_at = Modifié le
+field-updated_at = Dernière modification
 field-website = Site web
+field-gallery = Galerie
+field-labels = Libellés
+field-metadata = Métadonnées
+field-posts = Articles
+field-skills = Compétences
+field-units_sold = Unités vendues
+field-at = Quand
+field-resource = Ressource
+field-change = Modification
+field-record = Enregistrement
+field-user = Par
 
 ## Options
 
@@ -533,8 +495,6 @@ flash-employees-updated =
         [one] Un employé mis à jour
        *[other] { $count } employés mis à jour
     }
-flash-leave-approved = Demande de congé approuvée
-flash-leave-rejected = Demande de congé rejetée
 flash-leaves-approved =
     { $count ->
         [one] Une demande de congé approuvée
@@ -601,6 +561,7 @@ error-team-name-required = Saisissez un nom pour votre équipe
 error-quantity-negative = La quantité doit être égale ou supérieure à zéro
 error-order-has-payments = Une commande avec des paiements ne peut pas être supprimée ; annulez-la
 reason-timesheet-locked = Seules les feuilles de temps de la semaine passée peuvent changer
+reason-expense-no-amount = Une note de frais doit avoir un montant pour être soumise
 error-leave-overlap = Ces dates chevauchent une autre demande de congé de cet employé
 
 ## Notifications
@@ -632,10 +593,6 @@ action-adjust-price = Ajuster le prix
 action-adjust-stock = Ajuster le stock
 action-approve = Approuver
 action-assign = Assigner
-action-bulk-approve = Approuver la sélection
-action-bulk-assign = Assigner la sélection
-action-bulk-change-department = Changer le service de la sélection
-action-bulk-reject = Rejeter la sélection
 action-bulk-set-active = Définir l'activité de la sélection
 action-bulk-set-status = Définir le statut de la sélection
 action-cancel = Annuler
@@ -666,7 +623,6 @@ action-submit = Soumettre
 action-toggle-active = Activer/désactiver
 action-toggle-billable = Basculer la facturation
 action-toggle-publish = Publier/dépublier
-action-toggle-visibility = Afficher/masquer
 action-visit-website = Visiter le site
 
 ## Page d'accueil
