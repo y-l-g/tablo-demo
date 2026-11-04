@@ -101,7 +101,8 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   status. Cancelled
   orders, pending and rejected leave, and submitted and rejected expenses are
   tinted. The order and product lists count their records under the rows, the
-  product filters wait for an Apply button, and each brand links to its website.
+  product filters wait for an Apply button, each brand links to its website, and
+  order numbers, SKUs and emails copy with a click.
 - **Forms** with choice enums, relationship choices, a parent category chosen
   among the top-level ones only, required nullable fields, dependent choices,
   conditional fields, tabs, embedded values, `has_many` and `belongs_to` writes, a

@@ -116,7 +116,8 @@ fn order_table() -> Table<Order> {
         TextColumn::new(lens!(Order.number))
             .weight(FontWeight::Medium)
             .searchable()
-            .sortable(),
+            .sortable()
+            .copyable(),
         RelationColumn::of::<CustomerResource>(relation!(Order.customer)).toggleable(),
         TextColumn::new(lens!(Order.status)).badge(),
         TextColumn::new(lens!(Order.total_price)).money(Currency::USD),

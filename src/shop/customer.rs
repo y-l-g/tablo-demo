@@ -29,7 +29,8 @@ impl Resource for CustomerResource {
                         .sortable(),
                     TextColumn::new(lens!(Customer.email))
                         .searchable()
-                        .sortable(),
+                        .sortable()
+                        .copyable(),
                     CustomerCountryColumn::new(),
                     TextColumn::new(lens!(Customer.phone))
                         .searchable()

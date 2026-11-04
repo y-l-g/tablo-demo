@@ -137,6 +137,7 @@ fn product_table() -> Table<Product> {
         TextColumn::new(lens!(Product.sku))
             .searchable()
             .sortable()
+            .copyable()
             .toggleable(),
         TextColumn::new(lens!(Product.qty))
             .numeric(0)

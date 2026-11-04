@@ -161,7 +161,8 @@ fn employee_table() -> Table<Employee> {
             .sortable(),
         TextColumn::new(lens!(Employee.email))
             .searchable()
-            .sortable(),
+            .sortable()
+            .copyable(),
         RelationColumn::of::<DepartmentResource>(relation!(Employee.department)).toggleable(),
         TextColumn::new(lens!(Employee.job_title))
             .searchable()
