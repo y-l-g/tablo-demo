@@ -34,7 +34,5 @@ is built here instead.
 | --- | --- |
 | Nested URLs (`shop/orders`) | a slug is one URL segment in Tablo |
 | Employee "view profile" slide-over | no slide-over; the detail page instead |
-| Colour per record (Employees) | an action's `COLOR` is a constant, so a button's tint cannot follow its record |
 | Extra dialog footer buttons (Ship and notify) | an action's dialog has one submit button |
-| Tooltips on menu items (Brands) | a menu item takes no tooltip; only an inline row button takes one |
 | Manage records in a list modal (Authors) | create and edit are pages, not dialogs on the list |
