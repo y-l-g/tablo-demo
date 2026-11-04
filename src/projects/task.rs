@@ -49,7 +49,10 @@ impl Resource for TaskResource {
             .policy(access::policy(Domain::Projects))
             .table(
                 Table::new((
-                    TextColumn::new(lens!(Task.title)).searchable().sortable(),
+                    TextColumn::new(lens!(Task.title))
+                        .searchable()
+                        .sortable()
+                        .limit(40),
                     RelationColumn::of::<ProjectResource>(relation!(Task.project)),
                     RelationColumn::of::<EmployeeResource>(relation!(Task.assignee)).toggleable(),
                     TextColumn::new(lens!(Task.status)).badge(),
