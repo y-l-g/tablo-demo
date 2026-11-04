@@ -194,6 +194,8 @@ const TASK_TITLES: &[&str] = &[
     "Write the migration",
     "Polish the form",
     "Ship the changelog",
+    "Reconcile the supplier invoices against the purchase orders",
+    "Document the carrier onboarding steps for every new region",
 ];
 
 const TASK_DESCRIPTIONS: &[&str] = &[

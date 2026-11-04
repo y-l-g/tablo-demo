@@ -3,7 +3,11 @@
 
 use rust_decimal::Decimal;
 use tablo::prelude::*;
-use topcoat::{Result, context::Cx, icon::iconify::iconify_icon};
+use topcoat::{
+    Result,
+    context::Cx,
+    icon::{IconData, iconify::iconify_icon},
+};
 
 use super::{BrandResource, Product, ProductCategoryResource};
 use crate::access::{self, Domain};
@@ -137,6 +141,7 @@ fn product_table() -> Table<Product> {
         TextColumn::new(lens!(Product.sku))
             .searchable()
             .sortable()
+            .copyable()
             .toggleable(),
         TextColumn::new(lens!(Product.qty))
             .numeric(0)
@@ -264,6 +269,7 @@ impl Action<ProductResource> for AdjustProductPrice {
     type Input = PriceChange;
     const NAME: &'static str = "adjust-price";
     const PLACES: Places = Places::ROW;
+    const ICON: Option<IconData> = Some(iconify_icon!("lucide:tag"));
 
     async fn run(
         _cx: &Cx,
