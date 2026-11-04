@@ -270,6 +270,7 @@ impl Action<ProductResource> for AdjustProductPrice {
     const NAME: &'static str = "adjust-price";
     const PLACES: Places = Places::ROW;
     const ICON: Option<IconData> = Some(iconify_icon!("lucide:tag"));
+    const COLOR: Color = Color::Warning;
 
     async fn run(
         _cx: &Cx,
