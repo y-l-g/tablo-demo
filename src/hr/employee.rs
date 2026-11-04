@@ -3,7 +3,11 @@
 use rust_decimal::Decimal;
 use tablo::ListColumn;
 use tablo::prelude::*;
-use topcoat::{Result, context::Cx, icon::iconify::iconify_icon};
+use topcoat::{
+    Result,
+    context::Cx,
+    icon::{IconData, iconify::iconify_icon},
+};
 
 use super::{
     DepartmentResource, Employee, EmploymentType, LeaveRequest, LeaveRequestResource, MetadataEntry,
@@ -221,6 +225,22 @@ impl Action<EmployeeResource> for ToggleEmployeeActive {
     const NAME: &'static str = "toggle-active";
     const PLACES: Places = Places::ROW;
     const CONFIRM: bool = true;
+
+    fn label_for(_cx: &Cx, employee: &Employee) -> Text {
+        if employee.is_active {
+            tablo::text!("action-deactivate")
+        } else {
+            tablo::text!("action-activate")
+        }
+    }
+
+    fn icon_for(_cx: &Cx, employee: &Employee) -> Option<IconData> {
+        if employee.is_active {
+            Some(iconify_icon!("lucide:user-minus"))
+        } else {
+            Some(iconify_icon!("lucide:user-plus"))
+        }
+    }
 
     async fn run(
         _cx: &Cx,

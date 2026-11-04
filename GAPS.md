@@ -34,7 +34,7 @@ is built here instead.
 | --- | --- |
 | Nested URLs (`shop/orders`) | a slug is one URL segment in Tablo |
 | Employee "view profile" slide-over | no slide-over; the detail page instead |
-| Dynamic action state: icon, label and colour per record (Employees) | an action's `label()` takes no record, and `ICON` is a constant |
+| Colour per record (Employees) | an action's `COLOR` is a constant, so a button's tint cannot follow its record |
 | Action colour (Adjust price) | an action takes an icon but no colour; `DESTRUCTIVE` is the only tint |
 | Extra dialog footer buttons (Ship and notify) | an action's dialog has one submit button |
 | Header action count badge (Leave requests) | a header action has no badge; navigation items do |

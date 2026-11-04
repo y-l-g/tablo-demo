@@ -114,7 +114,8 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   checked by extension and size before they are stored and
   served only at signed links that expire.
 - **Actions**, record and bulk, with input dialogs, confirmation, success
-  notifications, and an icon in the price adjustment's menu entry.
+  notifications, and an icon in the price adjustment's menu entry. An employee's
+  activation button reads Activate or Deactivate, with its icon, for that employee.
 - **Dashboards** built from Tablo's widgets, each page a grid of them, the shop's
   under a period filter its sales follow: figures
   as stat tiles with trends and sparklines, linked to the lists they count and

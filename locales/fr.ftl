@@ -577,6 +577,8 @@ audit-detach = détachement
 
 ## Actions
 
+action-activate = Activer
+action-deactivate = Désactiver
 action-adjust-budget = Ajuster le budget
 action-adjust-price = Ajuster le prix
 action-adjust-stock = Ajuster le stock
