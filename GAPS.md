@@ -10,7 +10,6 @@ is built here instead.
 | --- | --- |
 | Polymorphic relations (addresses, comments), so no Attach/Detach on addresses | Toasty has no polymorphic relation; two nullable keys instead |
 | `Customer::payments` (through orders) is not shown | Tablo's relations hold rows by a foreign key or a join model, with no through relation |
-| Money columns are not sortable (prices, totals, salaries) | SQLite stores a `Decimal` as text, so `ORDER BY` sorts by spelling |
 
 ## Tables
 
@@ -18,11 +17,7 @@ is built here instead.
 | --- | --- |
 | Summaries other than a count (`Sum`, `Average`, `Range`) | Toasty has no other aggregate, so `Table::summary` only counts |
 | Product `QueryBuilder` | no query builder; fixed filters instead |
-| `poll` | Topcoat has no interval primitive; Tablo has no polling |
-| Collapsible filters, `stackedOnMobile` | no equivalent |
-| Drag-and-drop reordering (Brands) | a table has no row reorder; only file fields reorder by drag |
 | Column layouts, split and stack (Authors) | a column holds one value, with no multi-row layout |
-| Deferred tab badges (Orders) | tab counts load with the page; `deferred_filters` covers filters only |
 
 ## Forms
 
@@ -45,11 +40,3 @@ is built here instead.
 | Header action count badge (Leave requests) | a header action has no badge; navigation items do |
 | Tooltips on custom row actions (Brands) | custom actions have no tooltip; the built-in View, Edit and Delete have one |
 | Manage records in a list modal (Authors) | create and edit are pages, not dialogs on the list |
-| Keyboard shortcut on a record page (Posts) | no record-page shortcut; only the search box's Cmd+K |
-
-## Dashboards and shell
-
-| Gap | Blocker |
-| --- | --- |
-| `topbar(false)`, Vite theme | the shell is Tablo's |
-| Importer column mapping | an import reads the create form's columns |
