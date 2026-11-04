@@ -476,10 +476,13 @@ audit-detach = detach
 
 ## Actions
 
+action-activate = Activate
+action-deactivate = Deactivate
 action-adjust-budget = Adjust budget
 action-adjust-price = Adjust price
 action-adjust-stock = Adjust stock
 action-approve = Approve
+action-approve-pending = Approve pending
 action-assign = Assign
 action-bulk-set-active = Set active
 action-bulk-set-status = Set status
