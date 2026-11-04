@@ -36,6 +36,5 @@ is built here instead.
 | Employee "view profile" slide-over | no slide-over; the detail page instead |
 | Colour per record (Employees) | an action's `COLOR` is a constant, so a button's tint cannot follow its record |
 | Extra dialog footer buttons (Ship and notify) | an action's dialog has one submit button |
-| Header action count badge (Leave requests) | a header action has no badge; navigation items do |
 | Tooltips on custom row actions (Brands) | custom actions have no tooltip; the built-in View, Edit and Delete have one |
 | Manage records in a list modal (Authors) | create and edit are pages, not dialogs on the list |

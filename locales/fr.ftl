@@ -583,6 +583,7 @@ action-adjust-budget = Ajuster le budget
 action-adjust-price = Ajuster le prix
 action-adjust-stock = Ajuster le stock
 action-approve = Approuver
+action-approve-pending = Approuver les demandes en attente
 action-assign = Assigner
 action-bulk-set-active = Définir l'activité de la sélection
 action-bulk-set-status = Définir le statut de la sélection

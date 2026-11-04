@@ -65,6 +65,11 @@ pub fn reaches(cx: &Cx, domain: Domain) -> bool {
     role(cx).is_some_and(|role| role.access(domain) != Access::None)
 }
 
+/// Whether the user may change the records of a domain, which only full access allows.
+pub fn may_write(cx: &Cx, domain: Domain) -> bool {
+    role(cx).is_some_and(|role| role.access(domain) == Access::Full)
+}
+
 /// Whether the user sees what employees are paid: administrators and HR managers.
 pub fn sees_pay(cx: &Cx) -> bool {
     matches!(

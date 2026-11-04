@@ -4,7 +4,12 @@
 use jiff::Timestamp;
 use tablo::prelude::*;
 use tablo::{FormScalar, SelectColumn, db};
-use topcoat::{Result, context::Cx, icon::iconify::iconify_icon, view::View};
+use topcoat::{
+    Result,
+    context::Cx,
+    icon::{IconData, iconify::iconify_icon},
+    view::View,
+};
 
 use super::{EmployeeResource, LeaveRequest, LeaveStatus, LeaveType};
 use crate::access::{self, Domain};
@@ -96,6 +101,9 @@ impl Resource for LeaveRequestResource {
             .create_column(lens!(LeaveRequest.days_requested))
             .action::<ApproveLeaveRequest>()
             .action::<RejectLeaveRequest>()
+            .header_action_with_badge::<ApprovePendingLeave>(
+                LeaveRequest::fields().status().eq(LeaveStatus::Pending),
+            )
             .list_widget::<LeaveStatusWidget>()
     }
 
@@ -258,6 +266,34 @@ impl Action<LeaveRequestResource> for RejectLeaveRequest {
 
     fn success(count: usize) -> Text {
         tablo::text!("flash-leaves-rejected", count = count)
+    }
+}
+
+/// Approves every pending leave request the user's scope holds, confirming first. Its button
+/// shows how many wait, and only a user who may write the HR domain sees it.
+pub struct ApprovePendingLeave;
+
+impl HeaderAction for ApprovePendingLeave {
+    type Input = ();
+    const NAME: &'static str = "approve-pending";
+    const CONFIRM: bool = true;
+    const ICON: Option<IconData> = Some(iconify_icon!("lucide:list-checks"));
+    const COLOR: Color = Color::Success;
+
+    fn can_run(cx: &Cx) -> bool {
+        access::may_write(cx, Domain::Hr)
+    }
+
+    async fn run(
+        cx: &Cx,
+        (): (),
+        ex: &mut dyn toasty::Executor,
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+        let pending = scoped_query::<LeaveRequestResource>(cx)?
+            .filter(LeaveRequest::fields().status().eq(LeaveStatus::Pending))
+            .exec(&mut *ex)
+            .await?;
+        review(&pending, LeaveStatus::Approved, None, ex).await
     }
 }
 
