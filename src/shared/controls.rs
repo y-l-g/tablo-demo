@@ -9,6 +9,6 @@ pub struct ColorInput;
 impl Control for ColorInput {
     fn render<'a>(&self, cx: &'a Cx, input: ControlInput) -> BoxView<'a> {
         let attrs = input.attributes(cx);
-        view! { cx => <input type="color" (attrs)> }.boxed()
+        view! { <input type="color" (attrs)> }.boxed()
     }
 }

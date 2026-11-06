@@ -37,7 +37,7 @@ registers a team of its own, and `/admin` refuses it.
 
 Tablo comes from its [Git repository](https://github.com/y-l-g/tablo) at the
 last commit of its `master` branch. Topcoat comes from its
-[Git repository](https://github.com/tokio-rs/topcoat) at `d84362b7`, the commit
+[Git repository](https://github.com/tokio-rs/topcoat) at `6d95e1ee`, the commit
 Tablo's `master` builds against, through the `[patch.crates-io]` section of
 `Cargo.toml`. Toasty comes from crates.io, so no other checkout is needed.
 `Cargo.lock` records the commit a build uses; `cargo update -p tablo` moves
@@ -48,7 +48,7 @@ The asset bundle has to come from that same Topcoat commit, so install its CLI
 from there:
 
 ```sh
-cargo install --git https://github.com/tokio-rs/topcoat --rev d84362b72bc1034a8342e00c1cdf1a36d68dd9cf topcoat-cli --locked
+cargo install --git https://github.com/tokio-rs/topcoat --rev 6d95e1eeabecd5c82eb459ce96d5e55ad5d5b8a7 topcoat-cli --locked
 ```
 
 ```sh

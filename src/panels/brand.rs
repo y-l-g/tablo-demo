@@ -4,6 +4,7 @@
 use tablo::Brand;
 use topcoat::{
     Result,
+    context::Cx,
     router::{
         HeaderMap, HeaderValue,
         header::{CACHE_CONTROL, CONTENT_TYPE},
@@ -27,13 +28,13 @@ pub(super) fn brand() -> Brand {
 
 /// `GET /brand/logo.svg` — the indigo mark.
 #[route(GET "/brand/logo.svg")]
-async fn logo() -> Result<(HeaderMap, &'static str)> {
+async fn logo(cx: &Cx) -> Result<(HeaderMap, &'static str)> {
     svg(include_str!("../../assets/brand/logo.svg"))
 }
 
 /// `GET /brand/logo-dark.svg` — the light mark for a dark background.
 #[route(GET "/brand/logo-dark.svg")]
-async fn dark_logo() -> Result<(HeaderMap, &'static str)> {
+async fn dark_logo(cx: &Cx) -> Result<(HeaderMap, &'static str)> {
     svg(include_str!("../../assets/brand/logo-dark.svg"))
 }
 

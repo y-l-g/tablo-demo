@@ -100,15 +100,13 @@ async fn welcome(cx: &Cx) -> Result<impl View> {
     let AdminPanel(admin) = context::<AdminPanel>(cx);
     let AppPanel(app) = context::<AppPanel>(cx);
     // Entering the admin panel gives the page its catalog and locale.
-    let outer = cx;
     let entered = admin.enter(cx);
-    let cx = &entered;
-    let t = |id: &'static str| tablo::t!(cx, id);
+    let t = |id: &'static str| tablo::t!(&entered, id);
     let admin_url = admin.url().unwrap_or_else(|| "/admin".to_string());
     let app_url = app.url().unwrap_or_else(|| "/app".to_string());
 
     // The buttons post the panels' login forms, which check this token against its cookie.
-    let csrf = tablo::csrf::ensure_token(outer);
+    let csrf = tablo::csrf::ensure_token(cx);
     let staff_role = |role: StaffRole| match role {
         StaffRole::Administrator => (
             "home-role-administrator",
@@ -160,11 +158,11 @@ async fn welcome(cx: &Cx) -> Result<impl View> {
     }];
     let features = FEATURES.map(|(data, title, body)| (data, t(title), t(body)));
 
-    let locale = topcoat::l10n::try_locale(cx).map(ToString::to_string);
+    let locale = topcoat::l10n::try_locale(&entered).map(ToString::to_string);
     let languages = LANGUAGES.map(|(tag, name)| (tag, name, locale.as_deref() == Some(tag)));
     // `theme.js` checks the theme picked on click; the page checks the stored one. The panels
     // default to light.
-    let stored = cookies(outer).get(THEME_COOKIE);
+    let stored = cookies(cx).get(THEME_COOKIE);
     let stored = stored.as_ref().map_or("light", |cookie| cookie.value());
     let themes = [
         ("light", tablo::ui::icons::SUN, t("tablo-shell-theme-light")),
@@ -328,7 +326,7 @@ async fn welcome(cx: &Cx) -> Result<impl View> {
             </div>
         </div>
     };
-    admin.document(outer, title, body).await
+    admin.document(cx, title, body).await
 }
 
 /// The language picked from the page's switch.
@@ -392,6 +390,7 @@ fn initials(name: &str) -> String {
 /// signs in the way the login page signs them in: throttle, two-factor and all.
 #[component]
 async fn panel(
+    cx: &Cx,
     path: String,
     title: String,
     body: String,
