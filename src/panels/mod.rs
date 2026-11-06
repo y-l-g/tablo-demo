@@ -1,13 +1,16 @@
-//! The two panels: `admin`, where staff run the business, and `app`, where customers sign up.
+//! The three panels: `admin`, where staff run the business, `app`, where customers sign up, and
+//! `partners`, which the host app signs in.
 //!
-//! Both wear the demo's brand, show the same login hint, and speak English and French.
+//! All wear the demo's brand and speak English and French; the first two show the same login hint.
 
 mod admin;
 mod app;
 mod brand;
+mod partners;
 
 pub use admin::admin_panel;
 pub use app::{Settings, app_panel};
+pub use partners::{PartnerHome, partners_panel};
 
 use tablo::Panel;
 use topcoat::l10n::locale;

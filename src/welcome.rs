@@ -1,4 +1,4 @@
-//! The public page at `/`: the two panels the demo mounts, and an account to sign in to each.
+//! The public page at `/`: the three panels the demo mounts, and an account to sign in to each.
 
 use serde::Deserialize;
 use tablo::PanelHandle;
@@ -18,6 +18,7 @@ use topcoat::{
 };
 
 use crate::accounts::{self, StaffRole};
+use crate::partners::PartnerPanel;
 
 /// The mounted admin panel, whose document, translations and URLs the page borrows.
 pub struct AdminPanel(pub PanelHandle);
@@ -104,6 +105,8 @@ async fn welcome(cx: &Cx) -> Result<impl View> {
     let t = |id: &'static str| tablo::t!(&entered, id);
     let admin_url = admin.url().unwrap_or_else(|| "/admin".to_string());
     let app_url = app.url().unwrap_or_else(|| "/app".to_string());
+    let PartnerPanel(partners) = context::<PartnerPanel>(cx);
+    let partners_url = partners.url().unwrap_or_else(|| "/partners".to_string());
 
     // The buttons post the panels' login forms, which check this token against its cookie.
     let csrf = tablo::csrf::ensure_token(cx);
@@ -295,6 +298,15 @@ async fn welcome(cx: &Cx) -> Result<impl View> {
                             sign_up: Some((sign_up, t("home-sign-up"))),
                             span: "lg:col-span-2",
                         )
+                        <section class="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl border border-border bg-card p-5 shadow-sm lg:col-span-5">
+                            <div class="min-w-0 flex-1">
+                                <h2 class="text-base font-semibold">(t("home-partners-title"))</h2>
+                                <p class="mt-1 text-sm text-muted-foreground text-pretty">(t("home-partners-body"))</p>
+                            </div>
+                            <a href=(partners_url) class="text-sm font-medium text-primary underline-offset-4 hover:underline">
+                                (t("home-partners-open"))
+                            </a>
+                        </section>
                     </div>
 
                     <section class="mt-20">
@@ -345,12 +357,14 @@ async fn pick_locale(cx: &Cx, Form(form): Form<LocaleForm>) -> Result<(HeaderMap
     }
     let AdminPanel(admin) = context::<AdminPanel>(cx);
     let AppPanel(app) = context::<AppPanel>(cx);
+    let PartnerPanel(partners) = context::<PartnerPanel>(cx);
     // The panels' own copies too, which outrank this one under their prefixes. The cookie jar
-    // keeps one cookie per name, so the three go out as headers of their own.
+    // keeps one cookie per name, so they go out as headers of their own.
     let paths = ["/".to_string()]
         .into_iter()
         .chain(admin.url())
-        .chain(app.url());
+        .chain(app.url())
+        .chain(partners.url());
     let mut headers = HeaderMap::new();
     for path in paths {
         let cookie = Cookie::build((LOCALE_COOKIE, form.locale.clone()))

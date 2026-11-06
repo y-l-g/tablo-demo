@@ -12,6 +12,10 @@ pub const ADMIN_EMAIL: &str = "admin@example.com";
 /// The demo administrator's password.
 pub const ADMIN_PASSWORD: &str = "password";
 
+/// The account the host app's sign-in page signs in to the `partners` panel: the seeded viewer,
+/// who changes nothing wherever they read.
+pub const PARTNER_EMAIL: &str = "viewer@example.com";
+
 /// A seeded member of staff besides the administrator, who signs in with the same password.
 pub struct StaffAccount {
     pub name: &'static str,

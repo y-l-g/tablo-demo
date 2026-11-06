@@ -10,7 +10,7 @@ mod profile;
 mod sign_in;
 mod teams;
 
-pub use demo::{ADMIN_EMAIL, ADMIN_NAME, ADMIN_PASSWORD, STAFF, StaffAccount};
+pub use demo::{ADMIN_EMAIL, ADMIN_NAME, ADMIN_PASSWORD, PARTNER_EMAIL, STAFF, StaffAccount};
 pub use models::{StaffRole, Team, TeamUser, User};
 pub use profile::{DemoResetter, DemoVerifier};
 pub use sign_in::{DemoAuth, SignUp, SignedIn};
