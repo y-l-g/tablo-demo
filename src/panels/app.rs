@@ -53,7 +53,6 @@ impl Page for Settings {
     async fn render(cx: &Cx) -> Result<impl View> {
         let team = membership(cx).map(|membership| membership.name.clone());
         Ok(view! {
-            cx =>
             tablo::ui::page(
                 tablo::ui::page_header(
                     tablo::ui::page_title((tablo::t!(cx, "page-settings")))

@@ -8,7 +8,8 @@ blocks it, rather than working around Tablo.
 
 - Each business domain (`shop`, `blog`, `hr`, `projects`) is a module that owns its models,
   resources and dashboard. `access.rs` says what each staff role may do, `panels/` mounts
-  everything, and `seed/` fills the in-memory database on every start.
+  everything, and `seed/` fills the in-memory database on every start. `partners.rs` is the demo's
+  own sign-in, which the `partners` panel trusts through `Auth::external`.
 - Every user-facing string is a key in both `locales/en.ftl` and `locales/fr.ftl`, under the same
   `##` section.
 - Icons come from the Lucide subset in `assets/iconify/`; an icon outside it fails the build.

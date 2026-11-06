@@ -4,15 +4,16 @@ A demo of [Tablo](https://github.com/y-l-g/tablo): models, relations, resources,
 tables, forms, actions and dashboards, served by Topcoat and persisted with
 Toasty.
 
-Two panels are mounted:
+Three panels are mounted:
 
 | Panel   | URL      | What it is                                                                           |
 | ------- | -------- | ------------------------------------------------------------------------------------ |
 | `admin` | `/admin` | every resource: the blog, the shop, HR and projects, plus the shop and HR dashboards. Staff only |
 | `app`   | `/app`   | the tenant panel: every auth page, a team switcher and the settings page             |
+| `partners` | `/partners` | the blog's authors and categories, to read, behind the demo's own sign-in page, not a Tablo form |
 
-The page at `/` introduces both, with a button per demo account that signs in to
-it, a tour of what Tablo covers, and switches for the language and the theme that
+The page at `/` introduces them, with a button per demo account that signs in to
+the first two, a tour of what Tablo covers, and switches for the language and the theme that
 the panels share. It is
 public, rendered in the admin panel's document and catalog through its
 `PanelHandle`, in [`src/welcome.rs`](src/welcome.rs).
@@ -37,7 +38,7 @@ registers a team of its own, and `/admin` refuses it.
 
 Tablo comes from its [Git repository](https://github.com/y-l-g/tablo) at the
 last commit of its `master` branch. Topcoat comes from its
-[Git repository](https://github.com/tokio-rs/topcoat) at `d84362b7`, the commit
+[Git repository](https://github.com/tokio-rs/topcoat) at `6d95e1ee`, the commit
 Tablo's `master` builds against, through the `[patch.crates-io]` section of
 `Cargo.toml`. Toasty comes from crates.io, so no other checkout is needed.
 `Cargo.lock` records the commit a build uses; `cargo update -p tablo` moves
@@ -48,7 +49,7 @@ The asset bundle has to come from that same Topcoat commit, so install its CLI
 from there:
 
 ```sh
-cargo install --git https://github.com/tokio-rs/topcoat --rev d84362b72bc1034a8342e00c1cdf1a36d68dd9cf topcoat-cli --locked
+cargo install --git https://github.com/tokio-rs/topcoat --rev 6d95e1eeabecd5c82eb459ce96d5e55ad5d5b8a7 topcoat-cli --locked
 ```
 
 ```sh
@@ -138,7 +139,9 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
 - **Auth** on the `app` panel: sign-up, password reset, email verification, a
   profile page that changes the name, password and email (the new address
   confirmed by a mailed link), two-factor sign-in with an authenticator app or
-  mailed codes and recovery codes, and creating and renaming a team.
+  mailed codes and recovery codes, and creating and renaming a team. The `partners`
+  panel has no login form: `Auth::external` trusts the demo's own session, from
+  [`src/partners.rs`](src/partners.rs), and Sign out ends both.
 - **Global search** in the topbar, over every resource, with results that respect
   the list's tenancy, trash and field access and open the record's page.
 - **Translations** in English and French, the browser's `Accept-Language`
@@ -157,9 +160,9 @@ menu entry is.
 | [`src/accounts/`](src/accounts)                  | the users and teams, sign-in, sign-up, the profile and the team pages  |
 | [`src/access.rs`](src/access.rs)                 | what each staff role may do, domain by domain                          |
 | [`src/audit.rs`](src/audit.rs)                   | the audit trail: its model, the commit hook that writes it, its resource |
-| [`src/home.rs`](src/home.rs)                     | the dashboard both panels open on                                       |
-| [`src/panels/`](src/panels)                      | the two panels, built from the domains, and the brand they share        |
-| [`src/router.rs`](src/router.rs)                 | the routes: the welcome page, both panels and the assets                |
+| [`src/home.rs`](src/home.rs)                     | the dashboard the first two panels open on                                      |
+| [`src/panels/`](src/panels)                      | the three panels, built from the domains, and the brand they share       |
+| [`src/router.rs`](src/router.rs)                 | the routes: the welcome page, the panels and the assets                |
 | [`src/shared/`](src/shared)                      | what several domains use: stats, uploads, notifications, custom inputs |
 | [`src/seed/`](src/seed)                          | the demo data, a file per domain, all from one fixed-seed generator    |
 

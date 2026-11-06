@@ -7,7 +7,7 @@ use tablo::{
 };
 use topcoat::context::Cx;
 
-use super::User;
+use super::{PARTNER_EMAIL, User};
 
 /// The signed-in user and the teams they may act for.
 #[derive(Debug)]
@@ -46,6 +46,7 @@ impl PanelUser for SignedIn {
         match panel {
             "/admin" => self.user.role.is_some(),
             "/app" => true,
+            "/partners" => self.user.email == PARTNER_EMAIL,
             _ => false,
         }
     }
@@ -64,7 +65,7 @@ impl DemoAuth {
     ///
     /// Runs on `ex` rather than on a fresh handle: sign-up calls this while its transaction holds
     /// the connection, and a second one would wait forever.
-    pub(super) async fn signed_in(
+    pub(crate) async fn signed_in(
         user: User,
         ex: &mut dyn toasty::Executor,
     ) -> topcoat::Result<SignedIn> {
