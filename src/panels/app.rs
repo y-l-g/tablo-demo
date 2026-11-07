@@ -1,26 +1,37 @@
 //! The `app` panel: where an account signs up, acts for a team, and edits its profile.
 
 use tablo::{
-    Auth, AuthMail, EmailVerification, Page, PageDef, Panel, PasswordReset, TenantRegistration,
-    TwoFactor, auth::membership,
+    Area, Auth, AuthMail, EmailVerification, Panel, PasswordReset, TenantRegistration, TwoFactor,
 };
-use topcoat::{
-    Result,
-    context::Cx,
-    icon::iconify::iconify_icon,
-    view::{View, view},
-};
+use topcoat::icon::iconify::iconify_icon;
 
 use crate::accounts::{DemoAuth, DemoResetter, DemoTenantRegistrar, DemoVerifier, SignedIn};
 use crate::config::Config;
 use crate::home::Dashboard;
 
-/// The tenant panel: sign-up, a tenant switcher and the settings page.
+/// The tenant panel: sign-up, a tenant switcher and a settings area.
 pub fn app_panel(config: &Config) -> Panel {
     super::shared(Panel::new("app"))
         .auth(app_auth(config))
         .home::<Dashboard>()
-        .page::<Settings>()
+        .area(settings())
+}
+
+/// The account's and the team's settings under `/app/settings`, with a sidebar of their own: the
+/// panel's sidebar lists the area as one entry, so pages a user opens rarely stay out of its way.
+fn settings() -> Area {
+    Area::new("settings")
+        .label(tablo::text!("page-settings"))
+        .icon(iconify_icon!("lucide:settings"))
+        .group(tablo::text!("settings-account"), |group| {
+            group
+                .profile()
+                .two_factor_with(|def| def.label(tablo::text!("settings-security")))
+        })
+        // Headed by the team the session acts for, and shown only while it acts for one.
+        .tenant_group(|group| {
+            group.tenant_profile_with(|def| def.slug("team").label(tablo::text!("settings-team")))
+        })
 }
 
 /// The app panel's auth: the demo's own sign-in, with sign-up, password reset,
@@ -40,42 +51,4 @@ fn app_auth(config: &Config) -> Auth<SignedIn> {
         .two_factor(TwoFactor::new().email_codes())
         .tenant_registration(TenantRegistration::new(DemoTenantRegistrar).required())
         .tenant_profile(DemoTenantRegistrar)
-}
-
-/// The tenant panel's settings page, which shows only the team.
-pub struct Settings;
-
-impl Page for Settings {
-    fn declare() -> PageDef {
-        PageDef::new().icon(iconify_icon!("lucide:settings"))
-    }
-
-    async fn render(cx: &Cx) -> Result<impl View> {
-        let team = membership(cx).map(|membership| membership.name.clone());
-        Ok(view! {
-            tablo::ui::page(
-                tablo::ui::page_header(
-                    tablo::ui::page_title((tablo::t!(cx, "page-settings")))
-                    tablo::ui::page_description(
-                        (tablo::t!(cx, "copy-settings-description"))
-                    )
-                )
-                tablo::ui::page_content(
-                    tablo::ui::card(
-                        tablo::ui::card_header(
-                            tablo::ui::card_title((tablo::t!(cx, "label-team")))
-                            tablo::ui::card_description(
-                                (tablo::t!(cx, "copy-team-description"))
-                            )
-                        )
-                        tablo::ui::card_content(
-                            <p class="text-sm">
-                                (team.unwrap_or_else(|| tablo::t!(cx, "copy-no-team")))
-                            </p>
-                        )
-                    )
-                )
-            )
-        })
-    }
 }

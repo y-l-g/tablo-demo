@@ -21,9 +21,9 @@ dashboard-shop-description = L'état de la boutique, sur tous les clients et tou
 dashboard-hr-description = Les effectifs, leurs congés, leurs projets et leur coût.
 dashboard-filter-period = Période
 
-copy-no-team = Aucune équipe sélectionnée.
-copy-settings-description = Hormis l'équipe, cette page est vide.
-copy-team-description = Le locataire au nom duquel agit cette session.
+settings-account = Compte
+settings-security = Sécurité
+settings-team = Général
 
 ## Ressources
 
@@ -216,7 +216,6 @@ label-shipping-address = Adresse de livraison
 label-sku = SKU
 label-sku-stock-keeping-unit = SKU (unité de gestion de stock)
 label-status = Statut
-label-team = Équipe
 label-total = Total
 label-visible = Visible
 

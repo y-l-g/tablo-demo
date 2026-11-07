@@ -9,7 +9,7 @@ mod brand;
 mod partners;
 
 pub use admin::admin_panel;
-pub use app::{Settings, app_panel};
+pub use app::app_panel;
 pub use partners::{PartnerHome, partners_panel};
 
 use tablo::Panel;

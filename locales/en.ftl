@@ -21,9 +21,9 @@ dashboard-shop-description = How the shop is doing, over every customer and orde
 dashboard-hr-description = The workforce, its leave, its projects and what they cost.
 dashboard-filter-period = Period
 
-copy-no-team = No team selected.
-copy-settings-description = Apart from the team, this page is empty.
-copy-team-description = The tenant this session acts for.
+settings-account = Account
+settings-security = Security
+settings-team = General
 
 ## Resources
 
@@ -190,7 +190,6 @@ label-shipping-address = Shipping address
 label-sku = SKU
 label-sku-stock-keeping-unit = SKU (Stock Keeping Unit)
 label-status = Status
-label-team = Team
 label-total = Total
 label-visible = Visible
 
