@@ -9,7 +9,7 @@ Three panels are mounted:
 | Panel   | URL      | What it is                                                                           |
 | ------- | -------- | ------------------------------------------------------------------------------------ |
 | `admin` | `/admin` | every resource: the blog, the shop, HR and projects, plus the shop and HR dashboards. Staff only |
-| `app`   | `/app`   | the tenant panel: every auth page, a team switcher and the settings page             |
+| `app`   | `/app`   | the tenant panel: every auth page, a team switcher and a settings area               |
 | `partners` | `/partners` | the blog's authors and categories, to read, behind the demo's own sign-in page, not a Tablo form |
 
 The page at `/` introduces them, with a button per demo account that signs in to
@@ -136,6 +136,9 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   dark page.
 - **Navigation** that swaps the page in place, and an icon of its own for every
   sidebar entry, from a Lucide subset the build stages.
+- **Areas**: the `app` panel's settings live under `/app/settings`, one sidebar
+  entry that opens a sidebar of their own, with the profile and two-factor pages
+  in an Account group and the team's page in a group headed by the team's name.
 - **Auth** on the `app` panel: sign-up, password reset, email verification, a
   profile page that changes the name, password and email (the new address
   confirmed by a mailed link), two-factor sign-in with an authenticator app or
