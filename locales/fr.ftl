@@ -67,8 +67,6 @@ resource-timesheet = Feuille de temps
     .plural = Feuilles de temps
 resource-expense = Note de frais
     .plural = Notes de frais
-resource-audit-entry = Entrée d'audit
-    .plural = Journal d'audit
 resource-expense-line = Ligne de frais
     .plural = Lignes de frais
 
@@ -561,18 +559,6 @@ notice-new-comment = Nouveau commentaire
 notice-comment-left = { $customer } a laissé un commentaire.
 notice-comment-left-unknown = Un commentaire a été laissé.
 notice-view = Voir
-
-## Journal d'audit
-
-audit-create = création
-audit-update = modification
-audit-delete = suppression
-audit-restore = restauration
-audit-force-delete = suppression définitive
-audit-action = action : { $name }
-audit-header-action = action d'en-tête : { $name }
-audit-attach = rattachement
-audit-detach = détachement
 
 ## Actions
 

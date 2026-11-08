@@ -43,8 +43,6 @@ resource-leave-request = Leave request
     .plural = Leave requests
 resource-expense = Expense
     .plural = Expenses
-resource-audit-entry = Audit entry
-    .plural = Audit trail
 
 ## Dashboard figures
 
@@ -460,18 +458,6 @@ notice-new-comment = New comment
 notice-comment-left = { $customer } left a comment.
 notice-comment-left-unknown = A comment was left.
 notice-view = View
-
-## Audit trail
-
-audit-create = create
-audit-update = update
-audit-delete = delete
-audit-restore = restore
-audit-force-delete = force delete
-audit-action = action: { $name }
-audit-header-action = header action: { $name }
-audit-attach = attach
-audit-detach = detach
 
 ## Actions
 

@@ -22,7 +22,7 @@ The seed creates one account per staff role, each signing in with `password`;
 the welcome page signs in as any of them in one click, through the panel's own
 login form. What each role may do is [`src/access.rs`](src/access.rs): a policy per
 domain, field access on what employees are paid, and the dashboards and the
-audit trail gated to the roles that read them.
+audit log gated to the roles that read them.
 
 | Account              | Role          | In `/admin`                                                  |
 | -------------------- | ------------- | ------------------------------------------------------------ |
@@ -162,7 +162,6 @@ menu entry is.
 | [`src/shop/`](src/shop), [`src/blog/`](src/blog), [`src/hr/`](src/hr), [`src/projects/`](src/projects) | a domain: its models, its resources, its dashboard and its list widgets |
 | [`src/accounts/`](src/accounts)                  | the users and teams, sign-in, sign-up, the profile and the team pages  |
 | [`src/access.rs`](src/access.rs)                 | what each staff role may do, domain by domain                          |
-| [`src/audit.rs`](src/audit.rs)                   | the audit trail: its model, the commit hook that writes it, its resource |
 | [`src/home.rs`](src/home.rs)                     | the dashboard the first two panels open on                                      |
 | [`src/panels/`](src/panels)                      | the three panels, built from the domains, and the brand they share       |
 | [`src/router.rs`](src/router.rs)                 | the routes: the welcome page, the panels and the assets                |

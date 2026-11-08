@@ -1,6 +1,6 @@
 //! Who may do what in the `admin` panel: each staff role's access to each part of the business.
 //!
-//! | Role          | Shop | Blog | HR   | Projects | Pay | Audit trail |
+//! | Role          | Shop | Blog | HR   | Projects | Pay | Audit log   |
 //! | ------------- | ---- | ---- | ---- | -------- | --- | ----------- |
 //! | Administrator | full | full | full | full     | yes | yes         |
 //! | Shop manager  | full | full | none | read     | no  | no          |

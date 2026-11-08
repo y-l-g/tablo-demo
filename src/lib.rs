@@ -3,13 +3,11 @@
 //!
 //! Each business domain is a module that owns its tables, its resources and its dashboard:
 //! [`shop`], [`blog`], [`hr`] and [`projects`]. Around them, [`accounts`] holds who signs in,
-//! [`access`] what each staff role may do there, [`audit`] the row every write leaves, and
-//! [`partners`] the sign-in the `partners` panel trusts. [`panels`] mounts it all, [`router`] serves the panels beside the public [`welcome`] page, and
+//! [`access`] what each staff role may do there, and [`partners`] the sign-in the `partners` panel trusts. [`panels`] mounts it all, [`router`] serves the panels beside the public [`welcome`] page, and
 //! [`seed`] fills the database on every start.
 
 pub mod access;
 pub mod accounts;
-pub mod audit;
 pub mod blog;
 pub mod config;
 pub mod home;
@@ -30,7 +28,6 @@ pub fn models() -> toasty::ModelSet {
         accounts::User,
         accounts::Team,
         accounts::TeamUser,
-        audit::AuditEntry,
         partners::PartnerSession,
         shop::Brand,
         shop::ProductCategory,
