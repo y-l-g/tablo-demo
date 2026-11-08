@@ -15,3 +15,4 @@
 | Manage records in a list modal (Authors) | create and edit are pages, not dialogs on the list |
 | The `Impersonate` action on a staff list | it needs a resource over the panel's user type, which `SignedIn` is not; the Staff page posts to `/admin/impersonate` itself |
 | Price filters (`?f.price.min=..`) | `NumberFilter` takes integers and floats, not `Decimal`; the products filter by stock instead |
+| Percentages in the reader's locale (`12,5 %`) | Tablo's number spelling is crate-private, and `Currency` spells amounts alone |

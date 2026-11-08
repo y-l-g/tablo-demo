@@ -146,14 +146,14 @@ pub fn share(part: f64, total: f64) -> f64 {
     }
 }
 
-/// An amount in dollars and cents, `$1,234.50`.
-pub fn money(amount: f64) -> String {
-    Currency::USD.format(amount)
+/// An amount in dollars and cents in the reader's locale: `$1,234.50`, or `1 234,50 $` in French.
+pub fn money(cx: &Cx, amount: f64) -> String {
+    Currency::USD.format_in(cx, amount)
 }
 
-/// An amount in whole dollars, `$1,235`.
-pub fn dollars(amount: f64) -> String {
-    Currency::USD.decimals(0).format(amount)
+/// An amount in whole dollars in the reader's locale: `$1,235`, or `1 235 $` in French.
+pub fn dollars(cx: &Cx, amount: f64) -> String {
+    Currency::USD.decimals(0).format_in(cx, amount)
 }
 
 /// A percentage, rounded to one decimal.

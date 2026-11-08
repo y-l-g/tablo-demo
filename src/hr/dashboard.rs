@@ -180,8 +180,8 @@ impl Widget for TimeWidget {
         let budget_tile = Stat::new(tablo::text!("stat-project-budget"), percent(used))
             .detail(tablo::text!(
                 "stat-detail-budget",
-                spent = dollars(spent),
-                budget = dollars(budget)
+                spent = dollars(cx, spent),
+                budget = dollars(cx, budget)
             ))
             .color(if used > 100.0 {
                 Color::Danger
@@ -336,7 +336,7 @@ impl Widget for ApprovalsWidget {
                     expense_url
                         .map(|url| format!("{url}?tab={}", ExpenseStatus::Submitted.value())),
                 ),
-                Stat::new(tablo::text!("stat-reimbursed"), dollars(paid)).detail(tablo::text!(
+                Stat::new(tablo::text!("stat-reimbursed"), dollars(cx, paid)).detail(tablo::text!(
                     "stat-detail-reimbursed",
                     count = reimbursed.to_string()
                 )),

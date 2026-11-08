@@ -68,7 +68,7 @@ impl Widget for SalesWidget {
         let revenue = trended(
             Stat::new(
                 tablo::text!("stat-revenue", days = days.to_string()),
-                dollars(last.revenue),
+                dollars(cx, last.revenue),
             )
             .chart(weeks.iter().map(|week| week.revenue)),
             last.revenue,
@@ -90,7 +90,7 @@ impl Widget for SalesWidget {
         let average = trended(
             Stat::new(
                 tablo::text!("stat-average-order", days = days.to_string()),
-                money(last.average()),
+                money(cx, last.average()),
             )
             .chart(weeks.iter().map(Totals::average)),
             last.average(),
@@ -282,11 +282,11 @@ impl Widget for CustomersWidget {
                 )),
                 Stat::new(
                     tablo::text!("stat-revenue-per-customer"),
-                    money(revenue_per_customer),
+                    money(cx, revenue_per_customer),
                 )
                 .detail(tablo::text!(
                     "stat-detail-revenue",
-                    total = dollars(revenue)
+                    total = dollars(cx, revenue)
                 )),
             ]),
         ))
