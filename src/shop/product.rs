@@ -162,10 +162,12 @@ fn product_table() -> Table<Product> {
     ))
     .default_sort(lens!(Product.name))
     .action_layout(ActionLayout::Menu)
-    // Six filters: a reader sets several, then reruns the list once.
+    // Seven filters: a reader sets several, then reruns the list once.
     .deferred_filters()
     .filters((
         SelectFilter::relationship::<BrandResource>(lens!(Product.brand_id)),
+        // Two inputs, either end optional: `?f.qty.min=10&f.qty.max=50`.
+        NumberFilter::new(lens!(Product.qty)).range(),
         TernaryFilter::new(lens!(Product.is_visible)),
         TernaryFilter::new(lens!(Product.featured)),
         TernaryFilter::new(lens!(Product.backorder)),

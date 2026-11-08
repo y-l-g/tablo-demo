@@ -38,7 +38,19 @@ impl Resource for CustomerResource {
                         .toggleable(),
                 ))
                 .default_sort(lens!(Customer.name))
-                .action_layout(ActionLayout::Menu),
+                .action_layout(ActionLayout::Menu)
+                .filters((
+                    // "Every customer at example.com": `?f.email=example.com&f.email.op=ends`.
+                    TextFilter::new(lens!(Customer.email)).matching([
+                        TextMatch::Contains,
+                        TextMatch::EndsWith,
+                        TextMatch::Is,
+                    ]),
+                    PresenceFilter::new(lens!(Customer.phone)).labels(
+                        tablo::text!("filter-phone-given"),
+                        tablo::text!("filter-phone-missing"),
+                    ),
+                )),
             )
             .detail(Detail::new(
                 Section::new(tablo::text!("section-customer")).columns((

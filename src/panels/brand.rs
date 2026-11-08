@@ -26,6 +26,15 @@ pub(super) fn brand() -> Brand {
         .favicon(LOGO_URL)
 }
 
+/// The brand of the `partners` panel: the demo's, painted teal over the indigo `styles.css` gives
+/// the others, so a partner never mistakes it for the staff's panel. The text on the color stays
+/// the stylesheet's, near-white on light pages and dark on dark ones.
+pub(super) fn partner_brand() -> Brand {
+    brand()
+        .color("oklch(0.52 0.11 190)")
+        .dark_color("oklch(0.74 0.11 190)")
+}
+
 /// `GET /brand/logo.svg` — the indigo mark.
 #[route(GET "/brand/logo.svg")]
 async fn logo(cx: &Cx) -> Result<(HeaderMap, &'static str)> {

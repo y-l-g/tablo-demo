@@ -1,6 +1,6 @@
 //! Who may do what in the `admin` panel: each staff role's access to each part of the business.
 //!
-//! | Role          | Shop | Blog | HR   | Projects | Pay | Audit trail |
+//! | Role          | Shop | Blog | HR   | Projects | Pay | Audit log   |
 //! | ------------- | ---- | ---- | ---- | -------- | --- | ----------- |
 //! | Administrator | full | full | full | full     | yes | yes         |
 //! | Shop manager  | full | full | none | read     | no  | no          |
@@ -78,7 +78,7 @@ pub fn sees_pay(cx: &Cx) -> bool {
     )
 }
 
-/// Whether the user is an administrator, who alone reads the audit trail.
+/// Whether the user is an administrator, who alone reads the audit log and acts as a colleague.
 pub fn is_administrator(cx: &Cx) -> bool {
     role(cx) == Some(StaffRole::Administrator)
 }

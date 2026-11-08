@@ -16,6 +16,8 @@ page-welcome-description = Une application de démonstration construite sur Tabl
 page-shop-dashboard = Tableau de bord boutique
 page-hr-dashboard = Tableau de bord RH
 page-settings = Paramètres
+page-staff = Personnel
+page-staff-description = Ouvrez le panneau tel qu'un collègue le voit, pendant une demi-heure ou jusqu'à ce que vous arrêtiez. Le journal d'audit vous nomme sur chaque modification faite entre-temps.
 
 dashboard-shop-description = L'état de la boutique, sur tous les clients et toutes les commandes. Une période compare ses ventes à autant de jours avant elle, et termine les graphiques sur son dernier jour.
 dashboard-hr-description = Les effectifs, leurs congés, leurs projets et leur coût.
@@ -67,8 +69,6 @@ resource-timesheet = Feuille de temps
     .plural = Feuilles de temps
 resource-expense = Note de frais
     .plural = Notes de frais
-resource-audit-entry = Entrée d'audit
-    .plural = Journal d'audit
 resource-expense-line = Ligne de frais
     .plural = Lignes de frais
 
@@ -198,6 +198,8 @@ section-timesheet-entry = Saisie de temps
 
 ## Libellés
 
+filter-phone-given = Avec un numéro de téléphone
+filter-phone-missing = Sans numéro de téléphone
 label-gallery = Galerie
 label-active = Actif
 label-email = E-mail
@@ -562,18 +564,6 @@ notice-comment-left = { $customer } a laissé un commentaire.
 notice-comment-left-unknown = Un commentaire a été laissé.
 notice-view = Voir
 
-## Journal d'audit
-
-audit-create = création
-audit-update = modification
-audit-delete = suppression
-audit-restore = restauration
-audit-force-delete = suppression définitive
-audit-action = action : { $name }
-audit-header-action = action d'en-tête : { $name }
-audit-attach = rattachement
-audit-detach = détachement
-
 ## Actions
 
 action-activate = Activer
@@ -659,7 +649,7 @@ page-partner-home = Accueil partenaire
 copy-partner-welcome = Connecté en tant que { $name } par l'application hôte.
 copy-partner-body = La déconnexion met fin à la session du panneau, puis à celle de l'application hôte. D'ici là, le panneau demande à l'application qui vous êtes à chaque requête.
 home-role-administrator = Administrateur
-home-role-administrator-about = Tout, journal d'audit compris
+home-role-administrator-about = Tout, journal d'audit compris, et agir en tant qu'un collègue
 home-role-shop-manager = Responsable boutique
 home-role-shop-manager-about = Gère la boutique et le blog ; lit les projets ; pas de RH
 home-role-hr-manager = Responsable RH
@@ -670,3 +660,10 @@ home-role-member = Membre de deux équipes
 home-role-member-about = Changer d'équipe, modifier le profil, activer la double authentification
 home-guide = Guide
 home-source = Code source
+
+## Personnel
+
+staff-name = Nom
+staff-email = E-mail
+staff-role = Rôle
+staff-act-as = Agir en tant que

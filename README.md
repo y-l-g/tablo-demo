@@ -22,11 +22,11 @@ The seed creates one account per staff role, each signing in with `password`;
 the welcome page signs in as any of them in one click, through the panel's own
 login form. What each role may do is [`src/access.rs`](src/access.rs): a policy per
 domain, field access on what employees are paid, and the dashboards and the
-audit trail gated to the roles that read them.
+audit log gated to the roles that read them.
 
 | Account              | Role          | In `/admin`                                                  |
 | -------------------- | ------------- | ------------------------------------------------------------ |
-| `admin@example.com`  | Administrator | everything, the audit trail included                         |
+| `admin@example.com`  | Administrator | everything, the audit log and acting as a colleague included |
 | `shop@example.com`   | Shop manager  | the shop and the blog; the projects read-only; no HR         |
 | `hr@example.com`     | HR manager    | HR and the projects, pay included; the blog read-only; no shop |
 | `viewer@example.com` | Viewer        | every domain read-only, without pay                          |
@@ -104,7 +104,9 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   tinted. The order and product lists count their records under the rows, the
   product filters wait for an Apply button, each brand links to its website, and
   order numbers, SKUs and emails copy with a click, and a long task title cuts to
-  forty characters, its whole text shown on hover.
+  forty characters, its whole text shown on hover. Products filter by a range of
+  stock, and customers by what their email contains, ends with or is, and by
+  whether they gave a phone number.
 - **Forms** with choice enums, relationship choices, a parent category chosen
   among the top-level ones only, required nullable fields, dependent choices,
   conditional fields, tabs, embedded values, `has_many` and `belongs_to` writes, a
@@ -131,9 +133,20 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   order pipeline, the leave requests by status, and the articles by publishing
   state, each counting the rows its list shows under the current tab, search and
   filters. The order and leave figures link to their list tabs.
-- **Theming** through Tablo's tokens: [`styles.css`](styles.css) gives both
+- **Theming** through Tablo's tokens: [`styles.css`](styles.css) gives the
   panels an indigo brand, in light and dark, with a logo that turns light on a
-  dark page.
+  dark page, and the `partners` panel's `Brand::color` paints it teal over that.
+  Every page, sign-in included, wears a "Demo" ribbon, and its tab title starts
+  with `[Demo]`.
+- **Numbers in the reader's locale**: amounts and counts in the lists and on the
+  dashboards read `$1,234.50` in English and `1 234,50 $` in French.
+- **An audit log**, Tablo's own, which administrators read at `/admin/audit-log`:
+  every write of the `admin` panel, in the write's transaction, with the fields
+  it changed before and after.
+- **Acting as a colleague**: the administrator's Staff page opens the `admin`
+  panel as the shop manager, the HR manager or the viewer sees it, for half an
+  hour or until Stop, and the audit log names the administrator on every change
+  made meanwhile.
 - **Navigation** that swaps the page in place, and an icon of its own for every
   sidebar entry, from a Lucide subset the build stages.
 - **Areas**: the `app` panel's settings live under `/app/settings`, one sidebar
@@ -160,9 +173,8 @@ menu entry is.
 | Module                                           | Holds                                                                  |
 | ------------------------------------------------ | ---------------------------------------------------------------------- |
 | [`src/shop/`](src/shop), [`src/blog/`](src/blog), [`src/hr/`](src/hr), [`src/projects/`](src/projects) | a domain: its models, its resources, its dashboard and its list widgets |
-| [`src/accounts/`](src/accounts)                  | the users and teams, sign-in, sign-up, the profile and the team pages  |
+| [`src/accounts/`](src/accounts)                  | the users and teams, sign-in, sign-up, the profile and the team pages, and the staff an administrator acts as |
 | [`src/access.rs`](src/access.rs)                 | what each staff role may do, domain by domain                          |
-| [`src/audit.rs`](src/audit.rs)                   | the audit trail: its model, the commit hook that writes it, its resource |
 | [`src/home.rs`](src/home.rs)                     | the dashboard the first two panels open on                                      |
 | [`src/panels/`](src/panels)                      | the three panels, built from the domains, and the brand they share       |
 | [`src/router.rs`](src/router.rs)                 | the routes: the welcome page, the panels and the assets                |
