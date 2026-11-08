@@ -16,6 +16,8 @@ page-welcome-description = A demo application built on Tablo.
 page-shop-dashboard = Shop dashboard
 page-hr-dashboard = HR dashboard
 page-settings = Settings
+page-staff = Staff
+page-staff-description = Open the panel as a colleague sees it, for half an hour or until you stop. The audit log names you on every change made meanwhile.
 
 dashboard-shop-description = How the shop is doing, over every customer and order. A period compares its sales with as many days before it, and ends the charts on its last day.
 dashboard-hr-description = The workforce, its leave, its projects and what they cost.
@@ -544,7 +546,7 @@ page-partner-home = Partner home
 copy-partner-welcome = Signed in as { $name } by the host app.
 copy-partner-body = Sign out ends the panel's session, then the host app's. Until then the panel asks the app who you are on every request.
 home-role-administrator = Administrator
-home-role-administrator-about = Everything, the audit trail included
+home-role-administrator-about = Everything, the audit log included, and acting as a colleague
 home-role-shop-manager = Shop manager
 home-role-shop-manager-about = Runs the shop and the blog; reads the projects; no HR
 home-role-hr-manager = HR manager
@@ -555,3 +557,10 @@ home-role-member = Member of two teams
 home-role-member-about = Switch teams, edit the profile, turn on two-factor
 home-guide = Guide
 home-source = Source
+
+## Staff
+
+staff-name = Name
+staff-email = Email
+staff-role = Role
+staff-act-as = Act as

@@ -13,3 +13,4 @@
 | Employee "view profile" slide-over | no slide-over; the detail page instead |
 | Extra dialog footer buttons (Ship and notify) | an action's dialog has one submit button |
 | Manage records in a list modal (Authors) | create and edit are pages, not dialogs on the list |
+| The `Impersonate` action on a staff list | it needs a resource over the panel's user type, which `SignedIn` is not; the Staff page posts to `/admin/impersonate` itself |

@@ -78,7 +78,7 @@ pub fn sees_pay(cx: &Cx) -> bool {
     )
 }
 
-/// Whether the user is an administrator, who alone reads the audit trail.
+/// Whether the user is an administrator, who alone reads the audit log and acts as a colleague.
 pub fn is_administrator(cx: &Cx) -> bool {
     role(cx) == Some(StaffRole::Administrator)
 }

@@ -26,7 +26,7 @@ audit log gated to the roles that read them.
 
 | Account              | Role          | In `/admin`                                                  |
 | -------------------- | ------------- | ------------------------------------------------------------ |
-| `admin@example.com`  | Administrator | everything, the audit trail included                         |
+| `admin@example.com`  | Administrator | everything, the audit log and acting as a colleague included |
 | `shop@example.com`   | Shop manager  | the shop and the blog; the projects read-only; no HR         |
 | `hr@example.com`     | HR manager    | HR and the projects, pay included; the blog read-only; no shop |
 | `viewer@example.com` | Viewer        | every domain read-only, without pay                          |
@@ -160,7 +160,7 @@ menu entry is.
 | Module                                           | Holds                                                                  |
 | ------------------------------------------------ | ---------------------------------------------------------------------- |
 | [`src/shop/`](src/shop), [`src/blog/`](src/blog), [`src/hr/`](src/hr), [`src/projects/`](src/projects) | a domain: its models, its resources, its dashboard and its list widgets |
-| [`src/accounts/`](src/accounts)                  | the users and teams, sign-in, sign-up, the profile and the team pages  |
+| [`src/accounts/`](src/accounts)                  | the users and teams, sign-in, sign-up, the profile and the team pages, and the staff an administrator acts as |
 | [`src/access.rs`](src/access.rs)                 | what each staff role may do, domain by domain                          |
 | [`src/home.rs`](src/home.rs)                     | the dashboard the first two panels open on                                      |
 | [`src/panels/`](src/panels)                      | the three panels, built from the domains, and the brand they share       |
