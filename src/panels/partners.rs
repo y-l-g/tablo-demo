@@ -17,6 +17,7 @@ use crate::partners::PartnerSignIn;
 /// nothing else: [`access`](crate::access) holds it to reading.
 pub fn partners_panel() -> Panel {
     super::shared(Panel::new("partners"))
+        .brand(super::brand::partner_brand())
         .auth(Auth::external(PartnerSignIn))
         .home::<PartnerHome>()
         .resource::<blog::PostCategoryResource>()

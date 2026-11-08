@@ -133,9 +133,20 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   order pipeline, the leave requests by status, and the articles by publishing
   state, each counting the rows its list shows under the current tab, search and
   filters. The order and leave figures link to their list tabs.
-- **Theming** through Tablo's tokens: [`styles.css`](styles.css) gives both
+- **Theming** through Tablo's tokens: [`styles.css`](styles.css) gives the
   panels an indigo brand, in light and dark, with a logo that turns light on a
-  dark page.
+  dark page, and the `partners` panel's `Brand::color` paints it teal over that.
+  Every page, sign-in included, wears a "Demo" ribbon, and its tab title starts
+  with `[Demo]`.
+- **Numbers in the reader's locale**: amounts and counts in the lists and on the
+  dashboards read `$1,234.50` in English and `1 234,50 $` in French.
+- **An audit log**, Tablo's own, which administrators read at `/admin/audit-log`:
+  every write of the `admin` panel, in the write's transaction, with the fields
+  it changed before and after.
+- **Acting as a colleague**: the administrator's Staff page opens the `admin`
+  panel as the shop manager, the HR manager or the viewer sees it, for half an
+  hour or until Stop, and the audit log names the administrator on every change
+  made meanwhile.
 - **Navigation** that swaps the page in place, and an icon of its own for every
   sidebar entry, from a Lucide subset the build stages.
 - **Areas**: the `app` panel's settings live under `/app/settings`, one sidebar
