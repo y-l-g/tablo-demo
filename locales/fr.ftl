@@ -198,6 +198,8 @@ section-timesheet-entry = Saisie de temps
 
 ## Libellés
 
+filter-phone-given = Avec un numéro de téléphone
+filter-phone-missing = Sans numéro de téléphone
 label-gallery = Galerie
 label-active = Actif
 label-email = E-mail

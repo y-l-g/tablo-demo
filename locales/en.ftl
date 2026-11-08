@@ -172,6 +172,8 @@ section-timesheet-entry = Timesheet entry
 
 ## Labels
 
+filter-phone-given = With a phone number
+filter-phone-missing = Without a phone number
 label-gallery = Gallery
 label-active = Active
 label-email = Email
