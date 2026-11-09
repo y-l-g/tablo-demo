@@ -153,9 +153,10 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
 - **Auth** on the `app` panel: sign-up, password reset, email verification, a
   profile page that changes the name, password and email (the new address
   confirmed by a mailed link), two-factor sign-in with an authenticator app or
-  mailed codes and recovery codes, and creating and renaming a team. The `partners`
-  panel has no login form: `Auth::external` trusts the demo's own session, from
-  [`src/partners.rs`](src/partners.rs), and Sign out ends both.
+  mailed codes and recovery codes, and creating and renaming a team. Tablo's own
+  messages call the tenant a team, through the catalogs' `-tenant` term. The
+  `partners` panel has no login form: `Auth::external` trusts the demo's own
+  session, from [`src/partners.rs`](src/partners.rs), and Sign out ends both.
 - **Global search** in the topbar, over every resource, with results that respect
   the list's tenancy, trash and field access and open the record's page.
 - **Translations** in English and French, the browser's `Accept-Language`

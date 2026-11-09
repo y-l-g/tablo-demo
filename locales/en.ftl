@@ -8,6 +8,16 @@ navigation-shop = Shop
 navigation-hr = HR
 navigation-projects = Projects
 
+## Tenants
+# The app panel calls its tenants teams: Tablo's messages that name a tenant read this one term.
+
+-tenant = { $form ->
+   *[lower] team
+    [upper] Team
+    [upper-plural] Teams
+    [indefinite] a team
+}
+
 ## Pages
 
 page-welcome = Welcome

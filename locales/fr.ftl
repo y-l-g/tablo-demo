@@ -8,6 +8,22 @@ navigation-shop = Boutique
 navigation-hr = RH
 navigation-projects = Projets
 
+## Espaces
+# Le panneau app appelle ses espaces des équipes : les messages de Tablo qui en nomment un lisent
+# ce seul terme, et s'accordent à son genre.
+
+-tenant = { $form ->
+   *[lower] équipe
+    [upper] Équipe
+    [upper-plural] Équipes
+    [indefinite] une équipe
+    [definite] l'équipe
+    [of] d'équipe
+    [of-definite] de l'équipe
+    [another] une autre équipe
+}
+    .gender = feminine
+
 ## Pages
 
 page-welcome = Bienvenue
