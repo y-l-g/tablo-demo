@@ -1,7 +1,10 @@
-//! Addresses, which a customer's or a brand's page lists.
+//! Addresses, which a customer's or a brand's page lists, each opening on a map of another site.
 
 use tablo::prelude::*;
-use topcoat::icon::iconify::iconify_icon;
+use topcoat::{
+    context::Cx,
+    icon::{IconData, iconify::iconify_icon},
+};
 
 use super::{Address, BrandResource, CountryCode, CustomerResource};
 use crate::access::{self, Domain};
@@ -56,7 +59,48 @@ impl Resource for AddressResource {
                     )),
                 )),
             ))
+            .action::<ShowOnMap>()
             .record_title(lens!(Address.street))
+    }
+}
+
+/// Where [`ShowOnMap`] lands, which the admin panel's `form-action` allows.
+pub const MAP_ORIGIN: &str = "https://www.openstreetmap.org";
+
+/// Opens the address on OpenStreetMap: an action that lands on another site, as a payment
+/// provider's checkout would once the action opened a session for it.
+pub struct ShowOnMap;
+
+impl Action<AddressResource> for ShowOnMap {
+    type Input = ();
+    const NAME: &'static str = "show-on-map";
+    const PLACES: Places = Places::RECORD;
+    const ICON: Option<IconData> = Some(iconify_icon!("lucide:map-pin"));
+
+    fn can_run(_cx: &Cx, address: &Address) -> bool {
+        address.street.is_some() || address.city.is_some()
+    }
+
+    async fn run(
+        _cx: &Cx,
+        addresses: &[Address],
+        (): (),
+        _ex: &mut dyn toasty::Executor,
+    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+        let Some(address) = addresses.first() else {
+            return Ok(Outcome::done());
+        };
+        let country = address
+            .country
+            .map(|country| format!("{country:?}").to_uppercase());
+        let query = [&address.street, &address.zip, &address.city, &country]
+            .into_iter()
+            .flatten()
+            .map(String::as_str)
+            .collect::<Vec<_>>()
+            .join(", ");
+        let query: String = form_urlencoded::byte_serialize(query.as_bytes()).collect();
+        Ok(Outcome::done().redirect_off_site(format!("{MAP_ORIGIN}/search?query={query}")))
     }
 }
 

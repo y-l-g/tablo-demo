@@ -37,19 +37,17 @@ registers a team of its own, and `/admin` refuses it.
 ## Running it
 
 Tablo comes from its [Git repository](https://github.com/y-l-g/tablo) at the
-last commit of its `master` branch. Topcoat comes from its
-[Git repository](https://github.com/tokio-rs/topcoat) at `6d95e1ee`, the commit
-Tablo's `master` builds against, through the `[patch.crates-io]` section of
-`Cargo.toml`. Toasty comes from crates.io, so no other checkout is needed.
+last commit of its `master` branch. Topcoat and Toasty come from crates.io, so
+no other checkout is needed.
 `Cargo.lock` records the commit a build uses; `cargo update -p tablo` moves
-Tablo to the newest one. The demo needs `can_access_panel` to receive the
-asking panel's prefix, so the commit cannot be older than Tablo's `424077a9`.
+Tablo to the newest one. The demo builds on Topcoat 0.12, so the commit cannot
+be older than Tablo's `0c43305e`.
 
-The asset bundle has to come from that same Topcoat commit, so install its CLI
-from there:
+The asset bundle has to come from the same Topcoat release, so install its CLI
+at that version:
 
 ```sh
-cargo install --git https://github.com/tokio-rs/topcoat --rev 6d95e1eeabecd5c82eb459ce96d5e55ad5d5b8a7 topcoat-cli --locked
+cargo install topcoat-cli --version 0.12.0 --locked
 ```
 
 ```sh
@@ -120,7 +118,8 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   notifications, and an icon and a warning tint on the price adjustment. An employee's
   activation button reads Activate or Deactivate, with its icon, for that employee.
   The leave list's header button approves every pending request, confirming first,
-  and shows how many wait.
+  and shows how many wait. An address's Show on map lands on OpenStreetMap, another
+  site the `admin` panel's content security policy lets a form reach.
 - **Dashboards** built from Tablo's widgets, each page a grid of them, the shop's
   under a period filter its sales follow: figures
   as stat tiles with trends and sparklines, linked to the lists they count and
@@ -139,14 +138,15 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   Every page, sign-in included, wears a "Demo" ribbon, and its tab title starts
   with `[Demo]`.
 - **Numbers in the reader's locale**: amounts and counts in the lists and on the
-  dashboards read `$1,234.50` in English and `1 234,50 $` in French.
+  dashboards read `$1,234.50` in English and `1 234,50 $` in French, and the
+  dashboards' percentages `12.5%` and `12,5 %`.
 - **An audit log**, Tablo's own, which administrators read at `/admin/audit-log`:
   every write of the `admin` panel, in the write's transaction, with the fields
   it changed before and after.
-- **Acting as a colleague**: the administrator's Staff page opens the `admin`
-  panel as the shop manager, the HR manager or the viewer sees it, for half an
-  hour or until Stop, and the audit log names the administrator on every change
-  made meanwhile.
+- **Acting as a colleague**: the administrator's Staff page, with Tablo's
+  impersonation button per colleague, opens the `admin` panel as the shop
+  manager, the HR manager or the viewer sees it, for half an hour or until Stop,
+  and the audit log names the administrator on every change made meanwhile.
 - **Navigation** that swaps the page in place, and an icon of its own for every
   sidebar entry, from a Lucide subset the build stages.
 - **Areas**: the `app` panel's settings live under `/app/settings`, one sidebar
@@ -155,15 +155,17 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
 - **Auth** on the `app` panel: sign-up, password reset, email verification, a
   profile page that changes the name, password and email (the new address
   confirmed by a mailed link), two-factor sign-in with an authenticator app or
-  mailed codes and recovery codes, and creating and renaming a team. The `partners`
-  panel has no login form: `Auth::external` trusts the demo's own session, from
-  [`src/partners.rs`](src/partners.rs), and Sign out ends both.
+  mailed codes and recovery codes, and creating and renaming a team. Tablo's own
+  messages call the tenant a team, through the catalogs' `-tenant` term. The
+  `partners` panel has no login form: `Auth::external` trusts the demo's own
+  session, from [`src/partners.rs`](src/partners.rs), and Sign out ends both.
 - **Global search** in the topbar, over every resource, with results that respect
   the list's tenancy, trash and field access and open the record's page.
 - **Translations** in English and French, the browser's `Accept-Language`
   choosing until a visitor picks the other from the language menu in the
-  sidebar footer. The demo's own words are in [`locales/`](locales/), beside Tablo's
-  catalog.
+  sidebar footer. A signed-in account keeps its pick, which follows it to
+  another browser and into its mail. The demo's own words are in
+  [`locales/`](locales/), beside Tablo's catalog.
 
 ## Layout
 

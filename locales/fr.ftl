@@ -8,6 +8,22 @@ navigation-shop = Boutique
 navigation-hr = RH
 navigation-projects = Projets
 
+## Espaces
+# Le panneau app appelle ses espaces des équipes : les messages de Tablo qui en nomment un lisent
+# ce seul terme, et s'accordent à son genre.
+
+-tenant = { $form ->
+   *[lower] équipe
+    [upper] Équipe
+    [upper-plural] Équipes
+    [indefinite] une équipe
+    [definite] l'équipe
+    [of] d'équipe
+    [of-definite] de l'équipe
+    [another] une autre équipe
+}
+    .gender = feminine
+
 ## Pages
 
 page-welcome = Bienvenue
@@ -599,6 +615,7 @@ action-move-up = Monter
 action-move-down = Descendre
 action-add-metadata = Ajouter une entrée
 action-ship = Expédier
+action-show-on-map = Voir sur la carte
 action-start = Démarrer
 action-submit = Soumettre
 action-toggle-active = Activer/désactiver
@@ -666,4 +683,3 @@ home-source = Code source
 staff-name = Nom
 staff-email = E-mail
 staff-role = Rôle
-staff-act-as = Agir en tant que

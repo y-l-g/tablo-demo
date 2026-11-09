@@ -5,11 +5,10 @@ use tablo::RouterBuilderPanelExt;
 use toasty::Db;
 use topcoat::{
     asset::{AssetBundle, RouterBuilderAssetExt},
-    cookie::RouterBuilderCookieExt,
+    cookie::CookieLayer,
     font::{Font, fontsource::fontsource_font},
-    mail::{MailConfig, RouterBuilderMailExt},
+    mail::Mailer,
     router::{Router, RouterBuilderDiscoverExt},
-    session::{RouterBuilderSessionExt, SessionConfig},
     tailwind,
 };
 
@@ -30,14 +29,10 @@ pub fn router(db: Db, config: &Config) -> Router {
         .discover()
         .with(db)
         .with(config.cookie_key.clone())
-        .cookies()
-        // The partner sign-in's, which the panels leave alone: theirs ride in a cookie of their own.
-        .sessions(SessionConfig::default())
-        .mail(
-            MailConfig::builder()
-                .transport(Postbox::new(config.smtp.as_ref()))
-                .build(),
-        )
+        // The partner sign-in's sessions ride in these cookies, at Topcoat's default lifetime; the
+        // panels keep theirs in a cookie of their own.
+        .layer(CookieLayer::new())
+        .with(Mailer::new(Postbox::new(config.smtp.as_ref())))
         .assets(bundle)
         .panel(admin_panel(config).shell_assets(tailwind::stylesheet!(), ALBERT_SANS))
         .expect("the admin panel mounts")

@@ -2,8 +2,8 @@
 //! leave and expenses waiting for a decision.
 
 use jiff::Zoned;
-use tablo::db::db;
 use tablo::prelude::*;
+use tablo::{Number, db::db};
 use topcoat::{Result, context::Cx, icon::iconify::iconify_icon, view::View};
 
 use super::{
@@ -88,14 +88,14 @@ impl Widget for WorkforceWidget {
             Some(
                 Stat::new(
                     tablo::text!("stat-avg-tenure"),
-                    tablo::t!(cx, "stat-years", years = format!("{tenure:.1}")),
+                    tablo::t!(cx, "stat-years", years = Number::format_in(cx, tenure, 1)),
                 )
                 .detail(tablo::text!("stat-detail-tenure")),
             ),
             Some(
                 Stat::new(
                     tablo::text!("stat-contractor-ratio"),
-                    percent(share(contractors as f64, active.len() as f64)),
+                    percent(cx, share(contractors as f64, active.len() as f64)),
                 )
                 .detail(tablo::text!(
                     "stat-detail-contractors",
@@ -153,19 +153,23 @@ impl Widget for TimeWidget {
         let weeks = weekly_sums(ago.iter().map(|(days, sheet)| (*days, sheet.hours)));
 
         let hours_tile = trended(
-            Stat::new(tablo::text!("stat-hours-booked"), format!("{hours:.1} h")).chart(weeks),
+            Stat::new(
+                tablo::text!("stat-hours-booked"),
+                format!("{} h", Number::format_in(cx, hours, 1)),
+            )
+            .chart(weeks),
             hours,
             previous,
             true,
         )
-        .detail(percent_change(hours, previous, MONTH));
+        .detail(percent_change(cx, hours, previous, MONTH));
         let billable_tile = Stat::new(
             tablo::text!("stat-billable-share"),
-            percent(share(billable, hours)),
+            percent(cx, share(billable, hours)),
         )
         .detail(tablo::text!(
             "stat-detail-billable",
-            hours = format!("{billable:.1}")
+            hours = Number::format_in(cx, billable, 1)
         ));
         let timesheets = record_tile::<TimesheetResource>(cx, |sheet: &Timesheet| sheet.created_at)
             .await?
@@ -177,7 +181,7 @@ impl Widget for TimeWidget {
         let budget: f64 = projects.iter().map(|project| float(project.budget)).sum();
         let spent: f64 = projects.iter().map(|project| float(project.spent)).sum();
         let used = share(spent, budget);
-        let budget_tile = Stat::new(tablo::text!("stat-project-budget"), percent(used))
+        let budget_tile = Stat::new(tablo::text!("stat-project-budget"), percent(cx, used))
             .detail(tablo::text!(
                 "stat-detail-budget",
                 spent = dollars(cx, spent),

@@ -39,7 +39,7 @@ impl Widget for PipelineWidget {
             let tile = Stat::new(option.label(), count.to_string())
                 .detail(tablo::text!(
                     "stat-detail-share",
-                    share = percent(share(count as f64, total as f64))
+                    share = percent(cx, share(count as f64, total as f64))
                 ))
                 .color(option.color().unwrap_or(Color::Gray));
             tiles.push(linked(
