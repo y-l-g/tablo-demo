@@ -2,16 +2,16 @@
 //! it, to check what their role reaches before they report it.
 //!
 //! Tablo's `Impersonate` action needs a resource over the panel's user type, and [`SignedIn`] is no
-//! model, so [`StaffPage`] posts the colleague's id to `/admin/impersonate` itself.
+//! model, so [`StaffPage`] renders `auth::impersonate_button` for each colleague instead.
 
 use std::time::Duration;
 
-use tablo::{Impersonation, Page, PageDef, auth, csrf, db::db};
+use tablo::{Impersonation, Page, PageDef, auth, db::db};
 use topcoat::{
     Result,
     context::Cx,
     icon::iconify::iconify_icon,
-    view::{View, attributes, view},
+    view::{View, view},
 };
 
 use super::{SignedIn, StaffRole, User};
@@ -55,17 +55,17 @@ impl Page for StaffPage {
                 .is_some_and(|role| role != StaffRole::Administrator)
         });
         staff.sort_by_key(|user| user.id);
-        let token = csrf::ensure_token(cx);
-        let rows: Vec<(String, String, String, String)> = staff
+        let rows: Vec<_> = staff
             .into_iter()
             .map(|user| {
-                let role = user.role.map(role_label).unwrap_or_default();
-                (
-                    user.id.to_string(),
-                    user.name,
-                    user.email,
-                    tablo::t!(cx, role),
-                )
+                let role = tablo::t!(cx, user.role.map(role_label).unwrap_or_default());
+                let (name, email) = (user.name.clone(), user.email.clone());
+                // The button asks the panel's rule, so it reads the colleague as the rule does.
+                let colleague = SignedIn {
+                    user,
+                    teams: Vec::new(),
+                };
+                (name, email, role, auth::impersonate_button(cx, &colleague))
             })
             .collect();
         Ok(view! {
@@ -85,23 +85,12 @@ impl Page for StaffPage {
                             )
                         )
                         tablo::ui::table_body(
-                            for (id, name, email, role) in rows {
+                            for (name, email, role, button) in rows {
                                 tablo::ui::table_row(
                                     tablo::ui::table_cell(<span class="font-medium">(name)</span>)
                                     tablo::ui::table_cell((email))
                                     tablo::ui::table_cell((role))
-                                    tablo::ui::table_cell(
-                                        <form method="post" action="/admin/impersonate" class="flex justify-end">
-                                            (csrf::field(cx, &token))
-                                            <input type="hidden" name=(auth::IMPERSONATE_FIELD) value=(id) />
-                                            tablo::ui::button(
-                                                variant: tablo::ui::ButtonVariant::Outline,
-                                                size: tablo::ui::ButtonSize::Sm,
-                                                attrs: attributes! { type="submit" },
-                                                (tablo::t!(cx, "staff-act-as"))
-                                            )
-                                        </form>
-                                    )
+                                    tablo::ui::table_cell(<div class="flex justify-end">(button)</div>)
                                 )
                             }
                         )

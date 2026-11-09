@@ -575,4 +575,3 @@ home-source = Source
 staff-name = Name
 staff-email = Email
 staff-role = Role
-staff-act-as = Act as

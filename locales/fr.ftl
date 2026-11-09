@@ -682,4 +682,3 @@ home-source = Code source
 staff-name = Nom
 staff-email = E-mail
 staff-role = Rôle
-staff-act-as = Agir en tant que
