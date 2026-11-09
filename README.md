@@ -162,8 +162,9 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   the list's tenancy, trash and field access and open the record's page.
 - **Translations** in English and French, the browser's `Accept-Language`
   choosing until a visitor picks the other from the language menu in the
-  sidebar footer. The demo's own words are in [`locales/`](locales/), beside Tablo's
-  catalog.
+  sidebar footer. A signed-in account keeps its pick, which follows it to
+  another browser and into its mail. The demo's own words are in
+  [`locales/`](locales/), beside Tablo's catalog.
 
 ## Layout
 

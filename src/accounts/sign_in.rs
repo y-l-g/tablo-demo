@@ -5,7 +5,7 @@ use tablo::{
     auth::{hash_password, new_password_errors, verify_password},
     db::db,
 };
-use topcoat::context::Cx;
+use topcoat::{context::Cx, l10n::Locale};
 
 use super::{PARTNER_EMAIL, User};
 
@@ -53,6 +53,10 @@ impl PanelUser for SignedIn {
 
     fn tenants(&self) -> &[Membership] {
         &self.teams
+    }
+
+    fn locale(&self) -> Option<Locale> {
+        self.user.locale.as_deref()?.parse().ok()
     }
 }
 
@@ -122,6 +126,17 @@ impl Authenticator for DemoAuth {
             Some(user) => Ok(Some(Self::signed_in(user, &mut db).await?)),
             None => Ok(None),
         }
+    }
+
+    /// Keeps the language picked from the menu on the account, so the next sign-in, in any
+    /// browser, reads it too.
+    async fn store_locale(&self, cx: &Cx, user: &SignedIn, locale: &Locale) -> topcoat::Result<()> {
+        User::filter_by_id(user.user.id)
+            .update()
+            .locale(Some(locale.to_string()))
+            .exec(&mut db(cx)?)
+            .await?;
+        Ok(())
     }
 }
 

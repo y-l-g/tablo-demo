@@ -19,6 +19,9 @@ pub struct User {
     /// What the account does as staff, which opens the `admin` panel and decides what it may do
     /// there. A sign-up writes none: only the seed hands roles out, since no page does.
     pub role: Option<StaffRole>,
+    /// The language picked from either panel's language menu, such as `fr`, which the account's
+    /// pages and mail read in every browser. None until a pick: the browser's language then.
+    pub locale: Option<String>,
     pub remember_token: Option<String>,
     #[default(Timestamp::now())]
     pub created_at: Timestamp,
