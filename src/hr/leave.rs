@@ -340,7 +340,7 @@ impl Widget for LeaveStatusWidget {
             let tile = Stat::new(status.label(), count.to_string())
                 .detail(tablo::text!(
                     "stat-detail-share-requests",
-                    share = percent(share(count as f64, total as f64))
+                    share = percent(cx, share(count as f64, total as f64))
                 ))
                 .color(status.color().unwrap_or(Color::Gray));
             tiles.push(linked(

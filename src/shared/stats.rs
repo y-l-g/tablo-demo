@@ -5,8 +5,8 @@ use std::cmp::Ordering;
 
 use jiff::{Timestamp, civil::Date};
 use rust_decimal::{Decimal, prelude::ToPrimitive};
-use tablo::db::db;
 use tablo::prelude::*;
+use tablo::{Number, db::db};
 use topcoat::{Result, context::Cx};
 
 /// The window the tiles compare, a month of days, against the month before it.
@@ -101,8 +101,9 @@ pub fn trended(stat: Stat, now: f64, before: f64, rising_is_good: bool) -> Stat 
     stat.trend(trend).color(color)
 }
 
-/// The line under a figure that moved from `before` to `now`: its change as a percentage.
-pub fn percent_change(now: f64, before: f64, days: i64) -> Text {
+/// The line under a figure that moved from `before` to `now`: its change as a percentage, signed,
+/// in the reader's locale: `+12.5%`, or `+12,5 %` in French.
+pub fn percent_change(cx: &Cx, now: f64, before: f64, days: i64) -> Text {
     let change = if before == 0.0 {
         0.0
     } else {
@@ -110,18 +111,25 @@ pub fn percent_change(now: f64, before: f64, days: i64) -> Text {
     };
     tablo::text!(
         "stat-detail-change",
-        change = format!("{change:+.1}%"),
+        change = format!("{}{}", plus(change), Number::percent_in(cx, change, 1)),
         days = days.to_string()
     )
 }
 
-/// The line under a percentage that moved from `before` to `now`: its change in points.
-pub fn points_change(now: f64, before: f64, days: i64) -> Text {
+/// The line under a percentage that moved from `before` to `now`: its change in points, signed,
+/// in the reader's locale.
+pub fn points_change(cx: &Cx, now: f64, before: f64, days: i64) -> Text {
+    let change = now - before;
     tablo::text!(
         "stat-detail-points",
-        change = format!("{:+.1}", now - before),
+        change = format!("{}{}", plus(change), Number::format_in(cx, change, 1)),
         days = days.to_string()
     )
+}
+
+/// The sign a rise is spelled with: a fall carries its own.
+fn plus(change: f64) -> &'static str {
+    if change > 0.0 { "+" } else { "" }
 }
 
 /// `color` while `count` is above zero, and muted while nothing waits.
@@ -156,9 +164,9 @@ pub fn dollars(cx: &Cx, amount: f64) -> String {
     Currency::USD.decimals(0).format_in(cx, amount)
 }
 
-/// A percentage, rounded to one decimal.
-pub fn percent(value: f64) -> String {
-    format!("{value:.1}%")
+/// A percentage, rounded to one decimal, in the reader's locale: `12.5%`, or `12,5 %` in French.
+pub fn percent(cx: &Cx, value: f64) -> String {
+    Number::percent_in(cx, value, 1)
 }
 
 /// A money amount as a float, for the dashboards' figures and charts.

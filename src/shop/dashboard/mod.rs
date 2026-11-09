@@ -5,8 +5,8 @@ mod sales;
 
 use std::collections::{HashMap, HashSet};
 
-use tablo::db::db;
 use tablo::prelude::*;
+use tablo::{Number, db::db};
 use topcoat::{Result, context::Cx, icon::iconify::iconify_icon, view::View};
 
 use self::sales::{Totals, load_sales, weeks_of};
@@ -75,7 +75,7 @@ impl Widget for SalesWidget {
             before.revenue,
             true,
         )
-        .detail(percent_change(last.revenue, before.revenue, days));
+        .detail(percent_change(cx, last.revenue, before.revenue, days));
         let placed = trended(
             Stat::new(
                 tablo::text!("stat-orders-placed", days = days.to_string()),
@@ -86,7 +86,7 @@ impl Widget for SalesWidget {
             before.placed,
             true,
         )
-        .detail(percent_change(last.placed, before.placed, days));
+        .detail(percent_change(cx, last.placed, before.placed, days));
         let average = trended(
             Stat::new(
                 tablo::text!("stat-average-order", days = days.to_string()),
@@ -97,12 +97,12 @@ impl Widget for SalesWidget {
             before.average(),
             true,
         )
-        .detail(percent_change(last.average(), before.average(), days));
+        .detail(percent_change(cx, last.average(), before.average(), days));
         // A cancellation rate is good when it falls.
         let cancellation = trended(
             Stat::new(
                 tablo::text!("stat-cancellation-rate", days = days.to_string()),
-                percent(last.cancellation()),
+                percent(cx, last.cancellation()),
             )
             .chart(weeks.iter().map(Totals::cancellation)),
             last.cancellation(),
@@ -110,6 +110,7 @@ impl Widget for SalesWidget {
             false,
         )
         .detail(points_change(
+            cx,
             last.cancellation(),
             before.cancellation(),
             days,
@@ -264,7 +265,7 @@ impl Widget for CustomersWidget {
             customer_tile.into_iter().chain([
                 Stat::new(
                     tablo::text!("stat-repeat-customer-rate"),
-                    percent(share(repeat as f64, customers.len() as f64)),
+                    percent(cx, share(repeat as f64, customers.len() as f64)),
                 )
                 .detail(tablo::text!(
                     "stat-detail-repeat",
@@ -273,12 +274,12 @@ impl Widget for CustomersWidget {
                 )),
                 Stat::new(
                     tablo::text!("stat-avg-items-per-order"),
-                    format!("{items_per_order:.1}"),
+                    Number::format_in(cx, items_per_order, 1),
                 )
                 .detail(tablo::text!(
                     "stat-detail-items",
-                    items = items.to_string(),
-                    orders = orders.len().to_string()
+                    items = Number::format_in(cx, items as f64, 0),
+                    orders = Number::format_in(cx, orders.len() as f64, 0)
                 )),
                 Stat::new(
                     tablo::text!("stat-revenue-per-customer"),

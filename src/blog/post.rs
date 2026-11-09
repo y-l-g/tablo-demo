@@ -189,7 +189,7 @@ impl Widget for PostStatusWidget {
         let detail = |count: u64| {
             tablo::text!(
                 "stat-detail-share-articles",
-                share = percent(share(count as f64, total as f64))
+                share = percent(cx, share(count as f64, total as f64))
             )
         };
         Ok(tablo::stats(

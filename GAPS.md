@@ -14,4 +14,4 @@
 | Extra dialog footer buttons (Ship and notify) | an action's dialog has one submit button |
 | Manage records in a list modal (Authors) | create and edit are pages, not dialogs on the list |
 | Price filters (`?f.price.min=..`) | `NumberFilter` takes integers and floats, not `Decimal`; the products filter by stock instead |
-| Percentages in the reader's locale (`12,5 %`) | Tablo's number spelling is crate-private, and `Currency` spells amounts alone |
+| A project's progress in the reader's locale (`45 %`) | a computed column's closure gets the record alone, not the request, so `Number::percent_in` cannot reach it; the dashboards spell their percentages in the reader's locale |
