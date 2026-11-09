@@ -118,7 +118,8 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   notifications, and an icon and a warning tint on the price adjustment. An employee's
   activation button reads Activate or Deactivate, with its icon, for that employee.
   The leave list's header button approves every pending request, confirming first,
-  and shows how many wait.
+  and shows how many wait. An address's Show on map lands on OpenStreetMap, another
+  site the `admin` panel's content security policy lets a form reach.
 - **Dashboards** built from Tablo's widgets, each page a grid of them, the shop's
   under a period filter its sales follow: figures
   as stat tiles with trends and sparklines, linked to the lists they count and

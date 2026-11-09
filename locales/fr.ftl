@@ -615,6 +615,7 @@ action-move-up = Monter
 action-move-down = Descendre
 action-add-metadata = Ajouter une entrée
 action-ship = Expédier
+action-show-on-map = Voir sur la carte
 action-start = Démarrer
 action-submit = Soumettre
 action-toggle-active = Activer/désactiver

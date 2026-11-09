@@ -508,6 +508,7 @@ action-move-up = Move up
 action-move-down = Move down
 action-add-metadata = Add entry
 action-ship = Ship
+action-show-on-map = Show on map
 action-start = Start
 action-submit = Submit
 action-toggle-active = Toggle active

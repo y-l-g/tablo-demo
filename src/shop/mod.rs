@@ -14,7 +14,7 @@ mod models;
 mod order;
 mod product;
 
-pub use address::{AddressResource, CITIES};
+pub use address::{AddressResource, CITIES, MAP_ORIGIN};
 pub use brand::BrandResource;
 pub use category::ProductCategoryResource;
 pub use customer::{CustomerResource, customer_name};

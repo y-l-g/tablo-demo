@@ -3811,6 +3811,7 @@ dependencies = [
 name = "tablo-demo"
 version = "0.1.0"
 dependencies = [
+ "form_urlencoded",
  "jiff",
  "rust_decimal",
  "serde",
@@ -4527,8 +4528,8 @@ dependencies = [
  "time",
  "topcoat-core",
  "topcoat-view",
-]
  "uuid",
+]
 
 [[package]]
 name = "topcoat-metadata"

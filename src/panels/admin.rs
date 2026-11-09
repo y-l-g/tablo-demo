@@ -15,6 +15,9 @@ use crate::{blog, hr, projects, shop};
 pub fn admin_panel(config: &Config) -> Panel {
     super::shared(Panel::new("admin"))
         .auth(Auth::custom(DemoAuth).impersonation(accounts::impersonation()))
+        // An address's "Show on map" lands on OpenStreetMap, which a form may follow only to an
+        // origin the policy's `form-action` names.
+        .content_security_policy_source("form-action", shop::MAP_ORIGIN)
         .notifications()
         // Every write of every resource below leaves an entry naming the fields it changed, and
         // a write made while acting as a colleague names the administrator behind it.
