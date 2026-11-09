@@ -18,8 +18,8 @@ blocks it, rather than working around Tablo.
 
 - Tablo comes from its `master` branch, at the commit `Cargo.lock` records. Move it with
   `cargo update -p tablo -p tablo-build`.
-- Topcoat is pinned in `[patch.crates-io]` to the commit Tablo builds against. Change it only
-  together with Tablo.
+- Topcoat comes from crates.io at the release Tablo builds against. Change it only together with
+  Tablo, and install the `topcoat-cli` of the same version.
 
 ## Checks
 

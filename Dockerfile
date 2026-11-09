@@ -2,17 +2,16 @@
 
 FROM rust:1.99-bookworm AS builder
 
-# The CLI bundles the assets the panel loads at runtime. It must come from the
-# same Topcoat commit as the `[patch.crates-io]` section of Cargo.toml, or the
-# bundle it writes is unreadable.
-ARG TOPCOAT_REV=6d95e1eeabecd5c82eb459ce96d5e55ad5d5b8a7
+# The CLI bundles the assets the panel loads at runtime. It must be the Topcoat
+# release Cargo.lock records, or the bundle it writes is unreadable.
+ARG TOPCOAT_VERSION=0.12.0
 
 WORKDIR /src/tablo-demo
 COPY . .
 
 # The Topcoat CLI builds the app and writes the asset bundle next to the
 # executable, which is where the panel looks for it.
-RUN cargo install --git https://github.com/tokio-rs/topcoat --rev "${TOPCOAT_REV}" topcoat-cli --locked
+RUN cargo install topcoat-cli --version "${TOPCOAT_VERSION}" --locked
 RUN topcoat asset bundle --release
 
 # Distroless keeps the runtime to the C library the binary needs.
