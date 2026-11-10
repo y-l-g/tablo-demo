@@ -48,3 +48,5 @@ Never pipe a command whose exit code you need. Report what you ran and what you 
 - One feature per commit: pull requests are merged with a merge commit, so each commit stays in
   `main`.
 - A PR description says what changed and which checks ran.
+
+This codebase is yours: what it's for and how it's built are your call, and you'll keep building on it.
