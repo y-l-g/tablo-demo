@@ -1,7 +1,7 @@
 # Tablo Demo — Agent Instructions
 
 This repository shows what [Tablo](https://github.com/y-l-g/tablo) does, through Tablo's public
-API alone. When a feature needs something Tablo lacks, record it in [`GAPS.md`](GAPS.md) with what
+API alone. When a feature needs something Tablo lacks, record it in [`ROADMAP.md`](ROADMAP.md) with what
 blocks it, rather than working around Tablo.
 
 ## Layout
@@ -40,7 +40,7 @@ Never pipe a command whose exit code you need. Report what you ran and what you 
 - Field access keeps employees' pay hidden from roles without it. Widgets read records through
   `scoped_query` or `list_query`, and a page that reads rows directly gates itself with `access`.
 - A comment explains why, never what the next line does.
-- Keep the README's "What it covers" and `GAPS.md` current with each feature added or gap closed.
+- Keep the README's "What it covers" and `ROADMAP.md` current with each feature added or gap closed.
 
 ## Commits and pull requests
 

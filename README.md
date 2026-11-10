@@ -198,4 +198,4 @@ A few conventions keep it that way:
 - **The seed imports the domains, and none imports it.**
 - **Icons inline**, as `iconify_icon!("lucide:…")` in each `declare()`.
 
-[GAPS.md](GAPS.md) lists the features this demo still lacks, and what blocks each.
+[ROADMAP.md](ROADMAP.md) lists the features this demo still lacks, and what blocks each.
