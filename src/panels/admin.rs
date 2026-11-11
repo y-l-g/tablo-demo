@@ -4,7 +4,7 @@ use tablo::{Auth, Panel, when};
 use topcoat::icon::iconify::iconify_icon;
 
 use crate::access;
-use crate::accounts::{self, DemoAuth, StaffPage};
+use crate::accounts::{self, StaffPage};
 use crate::config::Config;
 use crate::home::Dashboard;
 use crate::shared::uploads;
@@ -14,7 +14,7 @@ use crate::{blog, hr, projects, shop};
 /// audit log, then each domain's resources.
 pub fn admin_panel(config: &Config) -> Panel {
     super::shared(Panel::new("admin"))
-        .auth(Auth::custom(DemoAuth).impersonation(accounts::impersonation()))
+        .auth(Auth::custom(accounts::password_auth()).impersonation(accounts::impersonation()))
         // An address's "Show on map" lands on OpenStreetMap, which a form may follow only to an
         // origin the policy's `form-action` names.
         .content_security_policy_source("form-action", shop::MAP_ORIGIN)
