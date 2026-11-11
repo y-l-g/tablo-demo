@@ -5,7 +5,7 @@ use tablo::{
 };
 use topcoat::icon::iconify::iconify_icon;
 
-use crate::accounts::{DemoAuth, DemoResetter, DemoTenantRegistrar, DemoVerifier, SignedIn};
+use crate::accounts::{DemoSignUp, DemoTenantRegistrar, SignedIn, password_auth};
 use crate::config::Config;
 use crate::home::Dashboard;
 
@@ -38,15 +38,15 @@ fn settings() -> Area {
 /// email verification, the profile, two-factor sign-in, and creating and editing
 /// a team.
 fn app_auth(config: &Config) -> Auth<SignedIn> {
-    Auth::custom(DemoAuth)
-        .registration(DemoAuth)
+    Auth::custom(password_auth())
+        .registration(DemoSignUp)
         .mail(AuthMail::new(
             config.sender.clone(),
             config.base_url.clone(),
         ))
-        .password_reset(PasswordReset::new(DemoResetter))
-        .email_verification(EmailVerification::new(DemoVerifier))
-        .profile(DemoAuth)
+        .password_reset(PasswordReset::new(password_auth()))
+        .email_verification(EmailVerification::new(password_auth()))
+        .profile(password_auth())
         // An authenticator app, or codes mailed to the account's address.
         .two_factor(TwoFactor::new().email_codes())
         .tenant_registration(TenantRegistration::new(DemoTenantRegistrar).required())

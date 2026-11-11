@@ -1,19 +1,46 @@
-//! Signing in and signing up: the demo's user table, read through Tablo's authenticator.
+//! Signing in and signing up: the demo's user table, which Tablo's [`PasswordAuth`] signs in,
+//! and whose profile, password reset and email verification it serves.
 
+use jiff::Timestamp;
 use tablo::{
-    Authenticator, FieldErrors, Membership, PanelUser, Registrar,
-    auth::{hash_password, new_password_errors, verify_password},
+    FieldErrors, Lens, Membership, PanelUser, PasswordAccount, PasswordAuth, Profile, ProfileField,
+    Registrar,
+    auth::{hash_password, new_password_errors, normalize_email},
     db::db,
+    lens,
 };
 use topcoat::{context::Cx, l10n::Locale};
 
 use super::{PARTNER_EMAIL, User};
+
+/// Signs the demo's users in, and edits, resets and verifies their accounts.
+pub fn password_auth() -> PasswordAuth<User> {
+    PasswordAuth::default()
+}
 
 /// The signed-in user and the teams they may act for.
 #[derive(Debug)]
 pub struct SignedIn {
     pub user: User,
     pub teams: Vec<Membership>,
+}
+
+impl SignedIn {
+    /// Loads `user` with the teams they belong to, so a fresh account acts for no team until it
+    /// registers one.
+    ///
+    /// Runs on `ex` rather than on a fresh handle: sign-up calls this while its transaction holds
+    /// the connection, and a second one would wait forever.
+    pub(crate) async fn load(user: User, ex: &mut dyn toasty::Executor) -> topcoat::Result<Self> {
+        let teams = user
+            .teams()
+            .exec(ex)
+            .await?
+            .into_iter()
+            .map(|team| Membership::new(team.id.into(), team.name))
+            .collect();
+        Ok(Self { user, teams })
+    }
 }
 
 impl PanelUser for SignedIn {
@@ -60,77 +87,61 @@ impl PanelUser for SignedIn {
     }
 }
 
-/// Reads the demo's users and creates them from the sign-up page.
-pub struct DemoAuth;
-
-impl DemoAuth {
-    /// Loads `user` with the teams they belong to, so a fresh account acts for no team until it
-    /// registers one.
-    ///
-    /// Runs on `ex` rather than on a fresh handle: sign-up calls this while its transaction holds
-    /// the connection, and a second one would wait forever.
-    pub(crate) async fn signed_in(
-        user: User,
-        ex: &mut dyn toasty::Executor,
-    ) -> topcoat::Result<SignedIn> {
-        let teams = user
-            .teams()
-            .exec(ex)
-            .await?
-            .into_iter()
-            .map(|team| Membership::new(team.id.into(), team.name))
-            .collect();
-        Ok(SignedIn { user, teams })
-    }
-
-    /// Finds the account whose email address is `email`.
-    async fn by_email(cx: &Cx, email: &str) -> topcoat::Result<Option<User>> {
-        let mut db = db(cx)?;
-        Ok(User::filter(User::fields().email().eq(email.to_string()))
-            .first()
-            .exec(&mut db)
-            .await?)
-    }
-}
-
-impl Authenticator for DemoAuth {
+/// The columns [`password_auth`] reads, and what it signs in: the user with their teams.
+impl PasswordAccount for User {
     type User = SignedIn;
 
-    async fn verify(
-        &self,
-        cx: &Cx,
-        login: &str,
-        password: &str,
-    ) -> topcoat::Result<Option<SignedIn>> {
-        let user = Self::by_email(cx, login).await?;
-        // An unknown address costs the same work as a wrong password.
-        if !verify_password(password, user.as_ref().map(|user| user.password.as_str())).await {
-            return Ok(None);
-        }
-        match user {
-            Some(user) => {
-                let mut db = db(cx)?;
-                Ok(Some(Self::signed_in(user, &mut db).await?))
-            }
-            None => Ok(None),
-        }
+    fn name() -> Lens<Self, String> {
+        lens!(User.name)
     }
 
-    async fn find_by_id(&self, cx: &Cx, id: &str) -> topcoat::Result<Option<SignedIn>> {
-        let Ok(id) = id.parse::<u64>() else {
-            return Ok(None);
-        };
-        let mut db = db(cx)?;
-        let user = User::filter_by_id(id).first().exec(&mut db).await?;
-        match user {
-            Some(user) => Ok(Some(Self::signed_in(user, &mut db).await?)),
-            None => Ok(None),
+    fn email() -> Lens<Self, String> {
+        lens!(User.email)
+    }
+
+    fn password_hash() -> Lens<Self, String> {
+        lens!(User.password)
+    }
+
+    fn email_verified_at() -> Lens<Self, Option<Timestamp>> {
+        lens!(User.email_verified_at)
+    }
+
+    fn account(user: &SignedIn) -> &Self {
+        &user.user
+    }
+
+    async fn sign_in(
+        self,
+        _cx: &Cx,
+        ex: &mut dyn toasty::Executor,
+    ) -> topcoat::Result<Option<SignedIn>> {
+        Ok(Some(SignedIn::load(self, ex).await?))
+    }
+
+    /// Staff keep the sign-in details the seed gave them, which the admin panel signs in with.
+    fn profile_errors(user: &SignedIn, profile: &Profile) -> FieldErrors<ProfileField> {
+        let mut errors = FieldErrors::new();
+        if user.user.role.is_some() {
+            if normalize_email(&profile.email) != user.user.email {
+                errors.add(
+                    ProfileField::Email,
+                    tablo::text!("error-credentials-locked"),
+                );
+            }
+            if profile.password.is_some() {
+                errors.add(
+                    ProfileField::Password,
+                    tablo::text!("error-credentials-locked"),
+                );
+            }
         }
+        errors
     }
 
     /// Keeps the language picked from the menu on the account, so the next sign-in, in any
     /// browser, reads it too.
-    async fn store_locale(&self, cx: &Cx, user: &SignedIn, locale: &Locale) -> topcoat::Result<()> {
+    async fn store_locale(cx: &Cx, user: &SignedIn, locale: &Locale) -> topcoat::Result<()> {
         User::filter_by_id(user.user.id)
             .update()
             .locale(Some(locale.to_string()))
@@ -152,7 +163,11 @@ pub struct SignUp {
     pub password_confirmation: String,
 }
 
-impl Registrar for DemoAuth {
+/// Creates an account from the `app` panel's sign-up page, its email spelled as
+/// [`password_auth`] looks it up.
+pub struct DemoSignUp;
+
+impl Registrar for DemoSignUp {
     type Input = SignUp;
     type User = SignedIn;
 
@@ -163,7 +178,7 @@ impl Registrar for DemoAuth {
         ex: &mut dyn toasty::Executor,
     ) -> topcoat::Result<FieldErrors> {
         let mut errors = new_password_errors(&sign_up.password, &sign_up.password_confirmation);
-        let taken = User::filter(User::fields().email().eq(sign_up.email.clone()))
+        let taken = User::filter(User::fields().email().eq(normalize_email(&sign_up.email)))
             .first()
             .exec(ex)
             .await?;
@@ -181,11 +196,11 @@ impl Registrar for DemoAuth {
     ) -> topcoat::Result<SignedIn> {
         let user = toasty::create!(User {
             name: sign_up.name,
-            email: sign_up.email,
+            email: normalize_email(&sign_up.email),
             password: hash_password(&sign_up.password).await?,
         })
         .exec(&mut *ex)
         .await?;
-        Self::signed_in(user, ex).await
+        SignedIn::load(user, ex).await
     }
 }

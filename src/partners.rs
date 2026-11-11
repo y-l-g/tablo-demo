@@ -17,7 +17,7 @@ use topcoat::{
     view::{View, view},
 };
 
-use crate::accounts::{DemoAuth, PARTNER_EMAIL, SignedIn, User};
+use crate::accounts::{PARTNER_EMAIL, SignedIn, User};
 use crate::welcome::AdminPanel;
 
 /// Where a request with no session of the demo's goes.
@@ -69,7 +69,7 @@ impl ExternalAuth for PartnerSignIn {
             .exec(&mut db)
             .await?;
         match user {
-            Some(user) => Ok(Some(DemoAuth::signed_in(user, &mut db).await?)),
+            Some(user) => Ok(Some(SignedIn::load(user, &mut db).await?)),
             None => Ok(None),
         }
     }
