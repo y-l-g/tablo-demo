@@ -4,7 +4,7 @@ use jiff::Timestamp;
 use toasty::Deferred;
 
 /// A user of either panel.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct User {
     #[key]
     #[auto]
@@ -34,7 +34,7 @@ pub struct User {
 }
 
 /// The `app` panel's tenant: a team a user acts for.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct Team {
     #[key]
     #[auto]
@@ -51,7 +51,7 @@ pub struct Team {
 }
 
 /// One user's membership of one team, where Laravel's `team_user` pivot lives.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 #[key(team_id, user_id)]
 pub struct TeamUser {
     #[index]

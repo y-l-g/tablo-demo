@@ -13,7 +13,7 @@ use topcoat::icon::{IconData, iconify::iconify_icon};
 use crate::blog::Comment;
 
 /// A maker of products.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct Brand {
     #[key]
     #[auto]
@@ -43,7 +43,7 @@ pub struct Brand {
 }
 
 /// A product category, which may sit under another one.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct ProductCategory {
     #[key]
     #[auto]
@@ -75,7 +75,7 @@ pub struct ProductCategory {
 }
 
 /// A product.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct Product {
     #[key]
     #[auto]
@@ -154,7 +154,7 @@ pub struct Product {
 }
 
 /// Files a product under a category: the join model of the two.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 #[key(product_id, product_category_id)]
 pub struct ProductCategoryLink {
     #[index]
@@ -168,7 +168,7 @@ pub struct ProductCategoryLink {
 }
 
 /// Someone who buys from the shop.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct Customer {
     #[key]
     #[auto]
@@ -197,7 +197,7 @@ pub struct Customer {
 ///
 /// Toasty has no polymorphic relation, so `customer_id` and `brand_id` are two
 /// nullable keys, one per owner.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct Address {
     #[key]
     #[auto]
@@ -222,7 +222,7 @@ pub struct Address {
 }
 
 /// One line of an order.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct OrderItem {
     #[key]
     #[auto]
@@ -247,7 +247,7 @@ pub struct OrderItem {
 }
 
 /// Where an order ships.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct OrderAddress {
     #[key]
     #[auto]
@@ -268,7 +268,7 @@ pub struct OrderAddress {
 }
 
 /// A customer's order.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct Order {
     #[key]
     #[auto]
@@ -300,7 +300,7 @@ pub struct Order {
 }
 
 /// A payment against an order.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct Payment {
     #[key]
     #[auto]

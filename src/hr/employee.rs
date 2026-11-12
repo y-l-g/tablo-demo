@@ -1,13 +1,8 @@
 //! Employees: who they are, where they work, and what they are paid, which few may see.
 
 use rust_decimal::Decimal;
-use tablo::ListColumn;
 use tablo::prelude::*;
-use topcoat::{
-    Result,
-    context::Cx,
-    icon::{IconData, iconify::iconify_icon},
-};
+use topcoat::{Result, context::Cx, icon::iconify::iconify_icon};
 
 use super::{
     DepartmentResource, Employee, EmploymentType, LeaveRequest, LeaveRequestResource, MetadataEntry,
@@ -61,6 +56,7 @@ impl Resource for EmployeeResource {
     type Form = EmployeeForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = Employee::columns();
         let c = EmployeeForm::controls();
         let salary = c
             .salary
@@ -93,23 +89,23 @@ impl Resource for EmployeeResource {
                 Tab::new(tablo::text!("tab-personal"))
                     .icon(iconify_icon!("lucide:id-card"))
                     .columns(Grid::new(2).columns((
-                        TextColumn::new(lens!(Employee.name)),
-                        TextColumn::new(lens!(Employee.email)),
-                        TextColumn::new(lens!(Employee.phone)),
-                        DateColumn::new(lens!(Employee.date_of_birth)),
-                        ColorColumn::new(lens!(Employee.team_color)),
+                        col.name.text(),
+                        col.email.text(),
+                        col.phone.text(),
+                        col.date_of_birth.date(),
+                        col.team_color.color(),
                     ))),
                 Tab::new(tablo::text!("tab-employment"))
                     .icon(iconify_icon!("lucide:briefcase"))
                     .columns(Grid::new(2).columns((
                         RelationColumn::of::<DepartmentResource>(relation!(Employee.department)),
-                        TextColumn::new(lens!(Employee.job_title)),
-                        TextColumn::new(lens!(Employee.employment_type)).badge(),
-                        DateColumn::new(lens!(Employee.hire_date)),
-                        TextColumn::new(lens!(Employee.salary)).money(Currency::USD),
-                        ListColumn::new(lens!(Employee.skills)),
-                        RepeaterColumn::new(lens!(Employee.metadata)),
-                        BooleanColumn::new(lens!(Employee.is_active)),
+                        col.job_title.text(),
+                        col.employment_type.text().badge(),
+                        col.hire_date.date(),
+                        col.salary.text().money(Currency::USD),
+                        col.skills.list(),
+                        col.metadata.repeater(),
+                        col.is_active.boolean(),
                     ))),
             ])))
             .form(Schema::new(Tabs::new([
@@ -159,30 +155,17 @@ impl Resource for EmployeeResource {
 
 /// The employee list.
 fn employee_table() -> Table<Employee> {
+    let col = Employee::columns();
     Table::new((
-        TextColumn::new(lens!(Employee.name))
-            .searchable()
-            .sortable(),
-        TextColumn::new(lens!(Employee.email))
-            .searchable()
-            .sortable()
-            .copyable(),
+        col.name.text().searchable().sortable(),
+        col.email.text().searchable().sortable().copyable(),
         RelationColumn::of::<DepartmentResource>(relation!(Employee.department)).toggleable(),
-        TextColumn::new(lens!(Employee.job_title))
-            .searchable()
-            .sortable()
-            .toggleable(),
-        TextColumn::new(lens!(Employee.employment_type)).badge(),
-        TextColumn::new(lens!(Employee.salary))
-            .money(Currency::USD)
-            .toggleable(),
-        ColorColumn::new(lens!(Employee.team_color))
-            .toggleable()
-            .hidden_by_default(),
-        DateColumn::new(lens!(Employee.hire_date))
-            .sortable()
-            .toggleable(),
-        BooleanColumn::new(lens!(Employee.is_active)).sortable(),
+        col.job_title.text().searchable().sortable().toggleable(),
+        col.employment_type.text().badge(),
+        col.salary.text().money(Currency::USD).toggleable(),
+        col.team_color.color().toggleable().hidden_by_default(),
+        col.hire_date.date().sortable().toggleable(),
+        col.is_active.boolean().sortable(),
     ))
     .default_sort(lens!(Employee.name))
     .action_layout(ActionLayout::Menu)
@@ -223,23 +206,25 @@ pub struct ToggleEmployeeActive;
 impl Action<EmployeeResource> for ToggleEmployeeActive {
     type Input = ();
     const NAME: &'static str = "toggle-active";
-    const PLACES: Places = Places::ROW;
-    const CONFIRM: bool = true;
 
-    fn label_for(_cx: &Cx, employee: &Employee) -> Text {
-        if employee.is_active {
-            tablo::text!("action-deactivate")
-        } else {
-            tablo::text!("action-activate")
-        }
-    }
-
-    fn icon_for(_cx: &Cx, employee: &Employee) -> Option<IconData> {
-        if employee.is_active {
-            Some(iconify_icon!("lucide:user-minus"))
-        } else {
-            Some(iconify_icon!("lucide:user-plus"))
-        }
+    fn declare() -> ActionDef<EmployeeResource> {
+        ActionDef::new()
+            .places(Places::ROW)
+            .confirm()
+            .label_for(|_, employee: &Employee| {
+                if employee.is_active {
+                    tablo::text!("action-deactivate")
+                } else {
+                    tablo::text!("action-activate")
+                }
+            })
+            .icon_for(|_, employee: &Employee| {
+                if employee.is_active {
+                    Some(iconify_icon!("lucide:user-minus"))
+                } else {
+                    Some(iconify_icon!("lucide:user-plus"))
+                }
+            })
     }
 
     async fn run(
@@ -247,7 +232,7 @@ impl Action<EmployeeResource> for ToggleEmployeeActive {
         employees: &[Employee],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         for employee in employees {
             Employee::filter_by_id(employee.id)
                 .update()
@@ -271,24 +256,25 @@ pub struct ChangeEmployeeDepartment;
 impl Action<EmployeeResource> for ChangeEmployeeDepartment {
     type Input = DepartmentChoice;
     const NAME: &'static str = "change-department";
-    const PLACES: Places = Places::ROW.with(Places::BULK);
+
+    fn declare() -> ActionDef<EmployeeResource> {
+        ActionDef::new()
+            .places(Places::ROW.with(Places::BULK))
+            .success(|count| tablo::text!("flash-employees-moved", count = count))
+    }
 
     async fn run(
         _cx: &Cx,
         employees: &[Employee],
         choice: DepartmentChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<DepartmentChoiceField>> {
+    ) -> Result<Outcome, WriteError<DepartmentChoice>> {
         Employee::filter(filter_keys(employees))
             .update()
             .department_id(choice.department_id)
             .exec(ex)
             .await?;
         Ok(Outcome::done())
-    }
-
-    fn success(count: usize) -> Text {
-        tablo::text!("flash-employees-moved", count = count)
     }
 }
 
@@ -317,10 +303,12 @@ pub struct BulkSetEmployeeActive;
 impl Action<EmployeeResource> for BulkSetEmployeeActive {
     type Input = ActiveChoice;
     const NAME: &'static str = "bulk-set-active";
-    const PLACES: Places = Places::BULK;
 
-    fn label() -> Text {
-        tablo::text!("action-bulk-set-active")
+    fn declare() -> ActionDef<EmployeeResource> {
+        ActionDef::new()
+            .places(Places::BULK)
+            .label(tablo::text!("action-bulk-set-active"))
+            .success(|count| tablo::text!("flash-employees-updated", count = count))
     }
 
     async fn run(
@@ -328,16 +316,12 @@ impl Action<EmployeeResource> for BulkSetEmployeeActive {
         employees: &[Employee],
         choice: ActiveChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<ActiveChoiceField>> {
+    ) -> Result<Outcome, WriteError<ActiveChoice>> {
         Employee::filter(filter_keys(employees))
             .update()
             .is_active(choice.is_active)
             .exec(ex)
             .await?;
         Ok(Outcome::done())
-    }
-
-    fn success(count: usize) -> Text {
-        tablo::text!("flash-employees-updated", count = count)
     }
 }

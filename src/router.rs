@@ -25,7 +25,7 @@ const ALBERT_SANS: Font = fontsource_font!(ALBERT_SANS, host: Asset);
 /// handles for the welcome page at `/`.
 pub fn router(db: Db, config: &Config) -> Router {
     let bundle = AssetBundle::load().expect("load the asset bundle beside the executable");
-    let builder = Router::builder()
+    let mut builder = Router::builder()
         .discover()
         .with(db)
         .with(config.cookie_key.clone())
@@ -33,16 +33,16 @@ pub fn router(db: Db, config: &Config) -> Router {
         // panels keep theirs in a cookie of their own.
         .layer(CookieLayer::new())
         .with(Mailer::new(Postbox::new(config.smtp.as_ref())))
-        .assets(bundle)
+        .assets(bundle);
+    let admin = builder
         .panel(admin_panel(config).shell_assets(tailwind::stylesheet!(), ALBERT_SANS))
-        .expect("the admin panel mounts")
+        .expect("the admin panel mounts");
+    let app = builder
         .panel(app_panel(config).shell_assets(tailwind::stylesheet!(), ALBERT_SANS))
-        .expect("the app panel mounts")
+        .expect("the app panel mounts");
+    let partners = builder
         .panel(partners_panel().shell_assets(tailwind::stylesheet!(), ALBERT_SANS))
         .expect("the partner panel mounts");
-    let admin = builder.panel_handle("admin").expect("mounted above");
-    let app = builder.panel_handle("app").expect("mounted above");
-    let partners = builder.panel_handle("partners").expect("mounted above");
     builder
         .with(AdminPanel(admin))
         .with(AppPanel(app))

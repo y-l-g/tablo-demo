@@ -14,6 +14,8 @@ impl Resource for ProductCategoryResource {
     type Form = ProductCategoryForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = ProductCategory::columns();
+        let shown = ProductCategory::columns();
         let c = ProductCategoryForm::controls();
         ResourceDef::new()
             .icon(iconify_icon!("lucide:tag"))
@@ -23,15 +25,14 @@ impl Resource for ProductCategoryResource {
             .policy(access::policy(Domain::Shop))
             .table(
                 Table::new((
-                    TextColumn::new(lens!(ProductCategory.name))
-                        .searchable()
-                        .sortable(),
+                    col.name.text().searchable().sortable(),
                     RelationColumn::of::<ProductCategoryResource>(relation!(
                         ProductCategory.parent
                     ))
                     .toggleable(),
-                    ToggleColumn::new(lens!(ProductCategory.is_visible)),
-                    DateColumn::new(lens!(ProductCategory.updated_at))
+                    col.is_visible.toggle(),
+                    col.updated_at
+                        .date()
                         .sortable()
                         .toggleable()
                         .hidden_by_default(),
@@ -41,14 +42,14 @@ impl Resource for ProductCategoryResource {
             )
             .detail(Detail::new(
                 Section::new(tablo::text!("section-category")).columns((
-                    TextColumn::new(lens!(ProductCategory.name)),
-                    TextColumn::new(lens!(ProductCategory.slug)),
+                    shown.name.text(),
+                    shown.slug.text(),
                     RelationColumn::of::<ProductCategoryResource>(relation!(
                         ProductCategory.parent
                     )),
-                    BooleanColumn::new(lens!(ProductCategory.is_visible)),
-                    TextColumn::new(lens!(ProductCategory.description)),
-                    DateColumn::new(lens!(ProductCategory.updated_at)),
+                    shown.is_visible.boolean(),
+                    shown.description.text(),
+                    shown.updated_at.date(),
                 )),
             ))
             .form(Schema::new(

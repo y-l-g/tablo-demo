@@ -16,6 +16,8 @@ impl Resource for PaymentResource {
     type Form = PaymentForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = Payment::columns();
+        let shown = Payment::columns();
         let c = PaymentForm::controls();
         ResourceDef::new()
             .icon(iconify_icon!("lucide:credit-card"))
@@ -24,19 +26,19 @@ impl Resource for PaymentResource {
             .without_global_search()
             .table(Table::new((
                 RelationColumn::of::<OrderResource>(relation!(Payment.order)),
-                TextColumn::new(lens!(Payment.reference)).searchable(),
-                TextColumn::new(lens!(Payment.amount)).money(Currency::USD),
-                TextColumn::new(lens!(Payment.provider)).sortable(),
-                TextColumn::new(lens!(Payment.method)).sortable(),
+                col.reference.text().searchable(),
+                col.amount.text().money(Currency::USD),
+                col.provider.text().sortable(),
+                col.method.text().sortable(),
             )))
             .detail(Detail::new(
                 Section::new(tablo::text!("section-payment")).columns((
                     RelationColumn::of::<OrderResource>(relation!(Payment.order)),
-                    TextColumn::new(lens!(Payment.reference)),
-                    TextColumn::new(lens!(Payment.amount)).money(Currency::USD),
-                    TextColumn::new(lens!(Payment.currency)),
-                    TextColumn::new(lens!(Payment.provider)),
-                    TextColumn::new(lens!(Payment.method)),
+                    shown.reference.text(),
+                    shown.amount.text().money(Currency::USD),
+                    shown.currency.text(),
+                    shown.provider.text(),
+                    shown.method.text(),
                 )),
             ))
             .form(Schema::new(

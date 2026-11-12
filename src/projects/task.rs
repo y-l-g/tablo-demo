@@ -1,7 +1,6 @@
 //! Tasks: the list grouped by status, and the actions that move a task through its workflow.
 
 use jiff::Timestamp;
-use tablo::ListColumn;
 use tablo::prelude::*;
 use topcoat::{Result, context::Cx, icon::iconify::iconify_icon};
 
@@ -39,6 +38,8 @@ impl Resource for TaskResource {
     type Form = TaskForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = Task::columns();
+        let shown = Task::columns();
         let c = TaskForm::controls();
         let completed_at = c.completed_at.visible_when(&c.status, ["completed"]);
         ResourceDef::new()
@@ -49,22 +50,18 @@ impl Resource for TaskResource {
             .policy(access::policy(Domain::Projects))
             .table(
                 Table::new((
-                    TextColumn::new(lens!(Task.title))
-                        .searchable()
-                        .sortable()
-                        .limit(40),
+                    col.title.text().searchable().sortable().limit(40),
                     RelationColumn::of::<ProjectResource>(relation!(Task.project)),
                     RelationColumn::of::<EmployeeResource>(relation!(Task.assignee)).toggleable(),
-                    TextColumn::new(lens!(Task.status)).badge(),
-                    TextColumn::new(lens!(Task.priority)).badge(),
-                    ListColumn::new(lens!(Task.labels)).toggleable(),
-                    TextColumn::new(lens!(Task.estimated_hours))
+                    col.status.text().badge(),
+                    col.priority.text().badge(),
+                    col.labels.list().toggleable(),
+                    col.estimated_hours
+                        .text()
                         .numeric(1)
                         .sortable()
                         .toggleable(),
-                    DateColumn::new(lens!(Task.due_date))
-                        .sortable()
-                        .toggleable(),
+                    col.due_date.date().sortable().toggleable(),
                 ))
                 .action_layout(ActionLayout::Menu)
                 .filters((
@@ -78,18 +75,18 @@ impl Resource for TaskResource {
             .detail(Detail::new(
                 Section::new(tablo::text!("section-task")).columns((
                     Grid::new(2).columns((
-                        TextColumn::new(lens!(Task.title)),
+                        shown.title.text(),
                         RelationColumn::of::<ProjectResource>(relation!(Task.project)),
                         RelationColumn::of::<EmployeeResource>(relation!(Task.assignee)),
-                        TextColumn::new(lens!(Task.status)).badge(),
-                        TextColumn::new(lens!(Task.priority)).badge(),
-                        TextColumn::new(lens!(Task.estimated_hours)),
-                        TextColumn::new(lens!(Task.actual_hours)),
-                        DateColumn::new(lens!(Task.due_date)),
-                        DateColumn::new(lens!(Task.completed_at)),
-                        ListColumn::new(lens!(Task.labels)),
+                        shown.status.text().badge(),
+                        shown.priority.text().badge(),
+                        shown.estimated_hours.text(),
+                        shown.actual_hours.text(),
+                        shown.due_date.date(),
+                        shown.completed_at.date(),
+                        shown.labels.list(),
                     )),
-                    TextColumn::new(lens!(Task.description)),
+                    shown.description.text(),
                 )),
             ))
             .form(Schema::new(
@@ -144,10 +141,12 @@ pub struct StartTask;
 impl Action<TaskResource> for StartTask {
     type Input = ();
     const NAME: &'static str = "start";
-    const PLACES: Places = Places::ROW;
 
-    fn can_run(_cx: &Cx, task: &Task) -> bool {
-        matches!(task.status, TaskStatus::Backlog | TaskStatus::Todo)
+    fn declare() -> ActionDef<TaskResource> {
+        ActionDef::new()
+            .places(Places::ROW)
+            .can_run(|_, task: &Task| matches!(task.status, TaskStatus::Backlog | TaskStatus::Todo))
+            .success(|_| tablo::text!("flash-task-started"))
     }
 
     async fn run(
@@ -155,12 +154,8 @@ impl Action<TaskResource> for StartTask {
         tasks: &[Task],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         set_task_status(tasks, TaskStatus::InProgress, ex).await
-    }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-task-started")
     }
 }
 
@@ -170,10 +165,12 @@ pub struct SendTaskToReview;
 impl Action<TaskResource> for SendTaskToReview {
     type Input = ();
     const NAME: &'static str = "send-to-review";
-    const PLACES: Places = Places::ROW;
 
-    fn can_run(_cx: &Cx, task: &Task) -> bool {
-        task.status == TaskStatus::InProgress
+    fn declare() -> ActionDef<TaskResource> {
+        ActionDef::new()
+            .places(Places::ROW)
+            .can_run(|_, task: &Task| task.status == TaskStatus::InProgress)
+            .success(|_| tablo::text!("flash-task-sent-to-review"))
     }
 
     async fn run(
@@ -181,12 +178,8 @@ impl Action<TaskResource> for SendTaskToReview {
         tasks: &[Task],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         set_task_status(tasks, TaskStatus::InReview, ex).await
-    }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-task-sent-to-review")
     }
 }
 
@@ -202,10 +195,14 @@ pub struct CompleteTask;
 impl Action<TaskResource> for CompleteTask {
     type Input = TaskCompletion;
     const NAME: &'static str = "complete";
-    const PLACES: Places = Places::ROW;
 
-    fn can_run(_cx: &Cx, task: &Task) -> bool {
-        matches!(task.status, TaskStatus::InProgress | TaskStatus::InReview)
+    fn declare() -> ActionDef<TaskResource> {
+        ActionDef::new()
+            .places(Places::ROW)
+            .can_run(|_, task: &Task| {
+                matches!(task.status, TaskStatus::InProgress | TaskStatus::InReview)
+            })
+            .success(|_| tablo::text!("flash-task-completed"))
     }
 
     async fn run(
@@ -213,7 +210,7 @@ impl Action<TaskResource> for CompleteTask {
         tasks: &[Task],
         completion: TaskCompletion,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<TaskCompletionField>> {
+    ) -> Result<Outcome, WriteError<TaskCompletion>> {
         for task in tasks {
             Task::filter_by_id(task.id)
                 .update()
@@ -224,10 +221,6 @@ impl Action<TaskResource> for CompleteTask {
                 .await?;
         }
         Ok(Outcome::done())
-    }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-task-completed")
     }
 }
 
@@ -243,24 +236,25 @@ pub struct AssignTask;
 impl Action<TaskResource> for AssignTask {
     type Input = AssigneeChoice;
     const NAME: &'static str = "assign";
-    const PLACES: Places = Places::ROW.with(Places::BULK);
+
+    fn declare() -> ActionDef<TaskResource> {
+        ActionDef::new()
+            .places(Places::ROW.with(Places::BULK))
+            .success(|count| tablo::text!("flash-tasks-assigned", count = count))
+    }
 
     async fn run(
         _cx: &Cx,
         tasks: &[Task],
         choice: AssigneeChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<AssigneeChoiceField>> {
+    ) -> Result<Outcome, WriteError<AssigneeChoice>> {
         Task::filter(filter_keys(tasks))
             .update()
             .assigned_to(choice.assigned_to)
             .exec(ex)
             .await?;
         Ok(Outcome::done())
-    }
-
-    fn success(count: usize) -> Text {
-        tablo::text!("flash-tasks-assigned", count = count)
     }
 }
 
@@ -277,14 +271,17 @@ pub struct SetTaskPriority;
 impl Action<TaskResource> for SetTaskPriority {
     type Input = PriorityChange;
     const NAME: &'static str = "set-priority";
-    const PLACES: Places = Places::ROW;
+
+    fn declare() -> ActionDef<TaskResource> {
+        ActionDef::new().places(Places::ROW)
+    }
 
     async fn run(
         _cx: &Cx,
         tasks: &[Task],
         change: PriorityChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<PriorityChangeField>> {
+    ) -> Result<Outcome, WriteError<PriorityChange>> {
         Task::filter(filter_keys(tasks))
             .update()
             .priority(change.priority)
@@ -307,10 +304,12 @@ pub struct BulkSetTaskStatus;
 impl Action<TaskResource> for BulkSetTaskStatus {
     type Input = TaskStatusChange;
     const NAME: &'static str = "bulk-set-status";
-    const PLACES: Places = Places::BULK;
 
-    fn label() -> Text {
-        tablo::text!("action-bulk-set-status")
+    fn declare() -> ActionDef<TaskResource> {
+        ActionDef::new()
+            .places(Places::BULK)
+            .label(tablo::text!("action-bulk-set-status"))
+            .success(|count| tablo::text!("flash-tasks-updated", count = count))
     }
 
     async fn run(
@@ -318,12 +317,8 @@ impl Action<TaskResource> for BulkSetTaskStatus {
         tasks: &[Task],
         change: TaskStatusChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<TaskStatusChangeField>> {
+    ) -> Result<Outcome, WriteError<TaskStatusChange>> {
         set_task_status(tasks, change.status, ex).await
-    }
-
-    fn success(count: usize) -> Text {
-        tablo::text!("flash-tasks-updated", count = count)
     }
 }
 
@@ -333,15 +328,20 @@ pub struct ReplicateTask;
 impl Action<TaskResource> for ReplicateTask {
     type Input = ();
     const NAME: &'static str = "replicate";
-    const PLACES: Places = Places::ROW;
-    const CONFIRM: bool = true;
+
+    fn declare() -> ActionDef<TaskResource> {
+        ActionDef::new()
+            .places(Places::ROW)
+            .confirm()
+            .success(|_| tablo::text!("flash-task-replicated"))
+    }
 
     async fn run(
         _cx: &Cx,
         tasks: &[Task],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         for task in tasks {
             toasty::create!(Task {
                 project_id: task.project_id,
@@ -359,14 +359,10 @@ impl Action<TaskResource> for ReplicateTask {
         }
         Ok(Outcome::done())
     }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-task-replicated")
-    }
 }
 
 /// Moves every task of `tasks` to `status`.
-async fn set_task_status<K>(
+async fn set_task_status<K: tablo::FormFields>(
     tasks: &[Task],
     status: TaskStatus,
     ex: &mut dyn toasty::Executor,

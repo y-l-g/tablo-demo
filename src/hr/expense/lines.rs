@@ -16,6 +16,8 @@ impl Resource for ExpenseLineResource {
     type Form = ExpenseLineForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = ExpenseLine::columns();
+        let shown = ExpenseLine::columns();
         let c = ExpenseLineForm::controls();
         ResourceDef::new()
             .icon(iconify_icon!("lucide:receipt"))
@@ -24,20 +26,20 @@ impl Resource for ExpenseLineResource {
             .without_global_search()
             .table(Table::new((
                 RelationColumn::of::<ExpenseResource>(relation!(ExpenseLine.expense)),
-                TextColumn::new(lens!(ExpenseLine.description)).searchable(),
-                TextColumn::new(lens!(ExpenseLine.quantity)).numeric(0),
-                TextColumn::new(lens!(ExpenseLine.unit_price)).money(Currency::USD),
-                TextColumn::new(lens!(ExpenseLine.amount)).money(Currency::USD),
-                TextColumn::new(lens!(ExpenseLine.date)),
+                col.description.text().searchable(),
+                col.quantity.text().numeric(0),
+                col.unit_price.text().money(Currency::USD),
+                col.amount.text().money(Currency::USD),
+                col.date.text(),
             )))
             .detail(Detail::new(
                 Section::new(tablo::text!("section-expense-line")).columns((
                     RelationColumn::of::<ExpenseResource>(relation!(ExpenseLine.expense)),
-                    TextColumn::new(lens!(ExpenseLine.description)),
-                    TextColumn::new(lens!(ExpenseLine.quantity)).numeric(0),
-                    TextColumn::new(lens!(ExpenseLine.unit_price)).money(Currency::USD),
-                    TextColumn::new(lens!(ExpenseLine.amount)).money(Currency::USD),
-                    TextColumn::new(lens!(ExpenseLine.date)),
+                    shown.description.text(),
+                    shown.quantity.text().numeric(0),
+                    shown.unit_price.text().money(Currency::USD),
+                    shown.amount.text().money(Currency::USD),
+                    shown.date.text(),
                 )),
             ))
             .form(Schema::new(
@@ -57,7 +59,7 @@ impl Resource for ExpenseLineResource {
         _cx: &Cx,
         form: ExpenseLineForm,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<ExpenseLine, WriteError<ExpenseLineFormField>> {
+    ) -> Result<ExpenseLine, WriteError<ExpenseLineForm>> {
         let amount = ExpenseLine::amount_of(form.quantity, form.unit_price);
         let line = form.into_create().amount(amount).exec(&mut *ex).await?;
         refresh_expense_total(line.expense_id, ex).await?;
@@ -70,7 +72,7 @@ impl Resource for ExpenseLineResource {
         record: ExpenseLine,
         posted: tablo::Posted<ExpenseLineForm>,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<ExpenseLine, WriteError<ExpenseLineFormField>> {
+    ) -> Result<ExpenseLine, WriteError<ExpenseLineForm>> {
         let previous = record.expense_id;
         let mut record = tablo::write_update::<Self>(cx, record, posted, ex).await?;
         let amount = ExpenseLine::amount_of(record.quantity, record.unit_price);

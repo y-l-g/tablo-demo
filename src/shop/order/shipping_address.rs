@@ -15,6 +15,8 @@ impl Resource for OrderAddressResource {
     type Form = OrderAddressForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = OrderAddress::columns();
+        let shown = OrderAddress::columns();
         let c = OrderAddressForm::controls();
         ResourceDef::new()
             .icon(iconify_icon!("lucide:truck"))
@@ -23,19 +25,19 @@ impl Resource for OrderAddressResource {
             .without_global_search()
             .table(Table::new((
                 RelationColumn::of::<OrderResource>(relation!(OrderAddress.order)),
-                TextColumn::new(lens!(OrderAddress.street)),
-                TextColumn::new(lens!(OrderAddress.city)),
-                TextColumn::new(lens!(OrderAddress.zip)),
-                TextColumn::new(lens!(OrderAddress.country)).width(ColumnWidth::Auto),
+                col.street.text(),
+                col.city.text(),
+                col.zip.text(),
+                col.country.text().width(ColumnWidth::Auto),
             )))
             .detail(Detail::new(
                 Section::new(tablo::text!("section-order-address")).columns((
                     RelationColumn::of::<OrderResource>(relation!(OrderAddress.order)),
-                    TextColumn::new(lens!(OrderAddress.street)),
-                    TextColumn::new(lens!(OrderAddress.city)),
-                    TextColumn::new(lens!(OrderAddress.state)),
-                    TextColumn::new(lens!(OrderAddress.zip)),
-                    TextColumn::new(lens!(OrderAddress.country)),
+                    shown.street.text(),
+                    shown.city.text(),
+                    shown.state.text(),
+                    shown.zip.text(),
+                    shown.country.text(),
                 )),
             ))
             .form(Schema::new(

@@ -23,6 +23,8 @@ impl Resource for ExpenseResource {
     type Form = ExpenseForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = Expense::columns();
+        let shown = Expense::columns();
         let c = ExpenseForm::controls();
         ResourceDef::new()
             .icon(iconify_icon!("lucide:banknote"))
@@ -32,20 +34,16 @@ impl Resource for ExpenseResource {
             .policy(access::policy(Domain::Hr))
             .table(
                 Table::new((
-                    TextColumn::new(lens!(Expense.expense_number))
-                        .searchable()
-                        .sortable(),
+                    col.expense_number.text().searchable().sortable(),
                     RelationColumn::of::<EmployeeResource>(relation!(Expense.employee)),
-                    TextColumn::new(lens!(Expense.category)).badge(),
-                    TextColumn::new(lens!(Expense.status)).badge(),
-                    TextColumn::new(lens!(Expense.total_amount)).money(Currency::USD),
+                    col.category.text().badge(),
+                    col.status.text().badge(),
+                    col.total_amount.text().money(Currency::USD),
                     RelationColumn::of::<ProjectResource>(relation!(Expense.project)).toggleable(),
-                    DateColumn::new(lens!(Expense.submitted_at))
-                        .sortable()
-                        .toggleable(),
+                    col.submitted_at.date().sortable().toggleable(),
                 ))
                 .action_layout(ActionLayout::Menu)
-                .row_color(|expense: &Expense| match expense.status {
+                .row_color(|_, expense: &Expense| match expense.status {
                     ExpenseStatus::Submitted => Some(Color::Warning),
                     ExpenseStatus::Rejected => Some(Color::Danger),
                     _ => None,
@@ -60,21 +58,20 @@ impl Resource for ExpenseResource {
             .detail(Detail::new((
                 Section::new(tablo::text!("section-expense-details")).columns(
                     Grid::new(3).columns((
-                        TextColumn::new(lens!(Expense.expense_number)),
+                        shown.expense_number.text(),
                         RelationColumn::of::<EmployeeResource>(relation!(Expense.employee)),
-                        TextColumn::new(lens!(Expense.category)).badge(),
-                        TextColumn::new(lens!(Expense.status)).badge(),
-                        TextColumn::new(lens!(Expense.total_amount)).money(Currency::USD),
-                        TextColumn::new(lens!(Expense.currency)),
+                        shown.category.text().badge(),
+                        shown.status.text().badge(),
+                        shown.total_amount.text().money(Currency::USD),
+                        shown.currency.text(),
                         RelationColumn::of::<ProjectResource>(relation!(Expense.project)),
-                        DateColumn::new(lens!(Expense.submitted_at)),
-                        DateColumn::new(lens!(Expense.approved_at)),
-                        TextColumn::new(lens!(Expense.description)),
-                        TextColumn::new(lens!(Expense.notes)),
+                        shown.submitted_at.date(),
+                        shown.approved_at.date(),
+                        shown.description.text(),
+                        shown.notes.text(),
                     )),
                 ),
-                Section::new(tablo::text!("section-receipt"))
-                    .columns(FileColumn::new(lens!(Expense.receipt_path))),
+                Section::new(tablo::text!("section-receipt")).columns(shown.receipt_path.file()),
             )))
             // Who spent what on what first, then the amount, the receipt and the status.
             .form(Schema::new(Wizard::new([

@@ -3,13 +3,8 @@
 
 use jiff::Timestamp;
 use tablo::prelude::*;
-use tablo::{FormScalar, SelectColumn, db};
-use topcoat::{
-    Result,
-    context::Cx,
-    icon::{IconData, iconify::iconify_icon},
-    view::View,
-};
+use tablo::{FormScalar, db};
+use topcoat::{Result, context::Cx, icon::iconify::iconify_icon, view::View};
 
 use super::{EmployeeResource, LeaveRequest, LeaveStatus, LeaveType};
 use crate::access::{self, Domain};
@@ -23,6 +18,8 @@ impl Resource for LeaveRequestResource {
     type Form = LeaveRequestForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = LeaveRequest::columns();
+        let shown = LeaveRequest::columns();
         let c = LeaveRequestForm::controls();
         let start_date = c.start_date;
         let end_date = c.end_date.gte(&start_date);
@@ -35,13 +32,11 @@ impl Resource for LeaveRequestResource {
             .table(
                 Table::new((
                     RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.employee)),
-                    TextColumn::new(lens!(LeaveRequest.kind)).badge(),
-                    SelectColumn::new(lens!(LeaveRequest.status)),
-                    DateColumn::new(lens!(LeaveRequest.start_date)).sortable(),
-                    DateColumn::new(lens!(LeaveRequest.end_date)).sortable(),
-                    TextColumn::new(lens!(LeaveRequest.days_requested))
-                        .numeric(1)
-                        .sortable(),
+                    col.kind.text().badge(),
+                    col.status.select(),
+                    col.start_date.date().sortable(),
+                    col.end_date.date().sortable(),
+                    col.days_requested.text().numeric(1).sortable(),
                     RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.approver))
                         .toggleable()
                         .hidden_by_default(),
@@ -50,7 +45,7 @@ impl Resource for LeaveRequestResource {
                 .action_layout(ActionLayout::Menu)
                 // The colour reads only the request's status, so it reads a copy without the
                 // employee the first column loads, and their pay stays out of its reach.
-                .row_color(|leave: &LeaveRequest| match leave.status {
+                .row_color(|_, leave: &LeaveRequest| match leave.status {
                     LeaveStatus::Pending => Some(Color::Warning),
                     LeaveStatus::Rejected => Some(Color::Danger),
                     _ => None,
@@ -63,22 +58,22 @@ impl Resource for LeaveRequestResource {
                 Section::new(tablo::text!("section-leave-details")).columns(Grid::new(3).columns(
                     (
                         RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.employee)),
-                        TextColumn::new(lens!(LeaveRequest.kind)).badge(),
-                        TextColumn::new(lens!(LeaveRequest.status)).badge(),
-                        DateColumn::new(lens!(LeaveRequest.start_date)),
-                        DateColumn::new(lens!(LeaveRequest.end_date)),
-                        TextColumn::new(lens!(LeaveRequest.days_requested)).format(|days| {
+                        shown.kind.text().badge(),
+                        shown.status.text().badge(),
+                        shown.start_date.date(),
+                        shown.end_date.date(),
+                        shown.days_requested.text().format(|_, days| {
                             tablo::text!("value-days", value = format!("{days:.1}"))
                         }),
-                        TextColumn::new(lens!(LeaveRequest.start_time)),
-                        TextColumn::new(lens!(LeaveRequest.end_time)),
-                        TextColumn::new(lens!(LeaveRequest.reason)),
+                        shown.start_time.text(),
+                        shown.end_time.text(),
+                        shown.reason.text(),
                     ),
                 )),
                 Section::new(tablo::text!("section-review")).columns((
                     RelationColumn::of::<EmployeeResource>(relation!(LeaveRequest.approver)),
-                    DateColumn::new(lens!(LeaveRequest.reviewed_at)),
-                    TextColumn::new(lens!(LeaveRequest.reviewer_notes)),
+                    shown.reviewed_at.date(),
+                    shown.reviewer_notes.text(),
                 )),
             )))
             .form(Schema::new((
@@ -113,7 +108,7 @@ impl Resource for LeaveRequestResource {
         _cx: &Cx,
         form: LeaveRequestForm,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<LeaveRequest, WriteError<LeaveRequestFormField>> {
+    ) -> Result<LeaveRequest, WriteError<LeaveRequestForm>> {
         refuse_overlap(
             &mut *ex,
             form.employee_id,
@@ -133,7 +128,7 @@ impl Resource for LeaveRequestResource {
         record: LeaveRequest,
         posted: tablo::Posted<LeaveRequestForm>,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<LeaveRequest, WriteError<LeaveRequestFormField>> {
+    ) -> Result<LeaveRequest, WriteError<LeaveRequestForm>> {
         let mut record = tablo::write_update::<Self>(cx, record, posted, ex).await?;
         refuse_overlap(
             &mut *ex,
@@ -161,7 +156,7 @@ async fn refuse_overlap(
     start: jiff::civil::Date,
     end: jiff::civil::Date,
     except: Option<u64>,
-) -> Result<(), WriteError<LeaveRequestFormField>> {
+) -> Result<(), WriteError<LeaveRequestForm>> {
     let fields = LeaveRequest::fields();
     let overlapping = LeaveRequest::filter(
         fields
@@ -175,8 +170,8 @@ async fn refuse_overlap(
     .exec(&mut *ex)
     .await?;
     if overlapping.iter().any(|leave| Some(leave.id) != except) {
-        return Err(WriteError::field(
-            LeaveRequestFormField::StartDate,
+        return Err(WriteError::<LeaveRequestForm>::field(
+            |f| f.start_date,
             tablo::text!("error-leave-overlap"),
         ));
     }
@@ -216,11 +211,13 @@ pub struct ApproveLeaveRequest;
 impl Action<LeaveRequestResource> for ApproveLeaveRequest {
     type Input = ();
     const NAME: &'static str = "approve";
-    const PLACES: Places = Places::ROW.with(Places::DETAIL).with(Places::BULK);
-    const CONFIRM: bool = true;
 
-    fn can_run(_cx: &Cx, request: &LeaveRequest) -> bool {
-        request.status == LeaveStatus::Pending
+    fn declare() -> ActionDef<LeaveRequestResource> {
+        ActionDef::new()
+            .places(Places::ROW.with(Places::DETAIL).with(Places::BULK))
+            .confirm()
+            .can_run(|_, request: &LeaveRequest| request.status == LeaveStatus::Pending)
+            .success(|count| tablo::text!("flash-leaves-approved", count = count))
     }
 
     async fn run(
@@ -228,12 +225,8 @@ impl Action<LeaveRequestResource> for ApproveLeaveRequest {
         requests: &[LeaveRequest],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         review(requests, LeaveStatus::Approved, None, ex).await
-    }
-
-    fn success(count: usize) -> Text {
-        tablo::text!("flash-leaves-approved", count = count)
     }
 }
 
@@ -243,10 +236,12 @@ pub struct RejectLeaveRequest;
 impl Action<LeaveRequestResource> for RejectLeaveRequest {
     type Input = Rejection;
     const NAME: &'static str = "reject";
-    const PLACES: Places = Places::ROW.with(Places::DETAIL).with(Places::BULK);
 
-    fn can_run(_cx: &Cx, request: &LeaveRequest) -> bool {
-        request.status == LeaveStatus::Pending
+    fn declare() -> ActionDef<LeaveRequestResource> {
+        ActionDef::new()
+            .places(Places::ROW.with(Places::DETAIL).with(Places::BULK))
+            .can_run(|_, request: &LeaveRequest| request.status == LeaveStatus::Pending)
+            .success(|count| tablo::text!("flash-leaves-rejected", count = count))
     }
 
     async fn run(
@@ -254,7 +249,7 @@ impl Action<LeaveRequestResource> for RejectLeaveRequest {
         requests: &[LeaveRequest],
         rejection: Rejection,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<RejectionField>> {
+    ) -> Result<Outcome, WriteError<Rejection>> {
         review(
             requests,
             LeaveStatus::Rejected,
@@ -262,10 +257,6 @@ impl Action<LeaveRequestResource> for RejectLeaveRequest {
             ex,
         )
         .await
-    }
-
-    fn success(count: usize) -> Text {
-        tablo::text!("flash-leaves-rejected", count = count)
     }
 }
 
@@ -276,19 +267,20 @@ pub struct ApprovePendingLeave;
 impl HeaderAction for ApprovePendingLeave {
     type Input = ();
     const NAME: &'static str = "approve-pending";
-    const CONFIRM: bool = true;
-    const ICON: Option<IconData> = Some(iconify_icon!("lucide:list-checks"));
-    const COLOR: Color = Color::Success;
 
-    fn can_run(cx: &Cx) -> bool {
-        access::may_write(cx, Domain::Hr)
+    fn declare() -> HeaderActionDef {
+        HeaderActionDef::new()
+            .confirm()
+            .icon(iconify_icon!("lucide:list-checks"))
+            .color(Color::Success)
+            .can_run(|cx| access::may_write(cx, Domain::Hr))
     }
 
     async fn run(
         cx: &Cx,
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         let pending = scoped_query::<LeaveRequestResource>(cx)?
             .filter(LeaveRequest::fields().status().eq(LeaveStatus::Pending))
             .exec(&mut *ex)
@@ -298,7 +290,7 @@ impl HeaderAction for ApprovePendingLeave {
 }
 
 /// Records `status` and the review time on every pending request, with the reviewer's notes.
-async fn review<K>(
+async fn review<K: tablo::FormFields>(
     requests: &[LeaveRequest],
     status: LeaveStatus,
     notes: Option<String>,

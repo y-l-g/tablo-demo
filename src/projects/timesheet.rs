@@ -16,6 +16,8 @@ impl Resource for TimesheetResource {
     type Form = TimesheetForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = Timesheet::columns();
+        let shown = Timesheet::columns();
         let c = TimesheetForm::controls();
         let task_id = c
             .task_id
@@ -31,15 +33,11 @@ impl Resource for TimesheetResource {
                     RelationColumn::of::<EmployeeResource>(relation!(Timesheet.employee)),
                     RelationColumn::of::<ProjectResource>(relation!(Timesheet.project)),
                     RelationColumn::of::<TaskResource>(relation!(Timesheet.task)).toggleable(),
-                    TextColumn::new(lens!(Timesheet.date)).sortable(),
-                    TextColumn::new(lens!(Timesheet.hours))
-                        .numeric(1)
-                        .sortable(),
-                    BooleanColumn::new(lens!(Timesheet.is_billable)).toggleable(),
-                    TextColumn::new(lens!(Timesheet.hourly_rate))
-                        .money(Currency::USD)
-                        .toggleable(),
-                    TextColumn::new(lens!(Timesheet.total_cost)).money(Currency::USD),
+                    col.date.text().sortable(),
+                    col.hours.text().numeric(1).sortable(),
+                    col.is_billable.boolean().toggleable(),
+                    col.hourly_rate.text().money(Currency::USD).toggleable(),
+                    col.total_cost.text().money(Currency::USD),
                 ))
                 .default_sort_desc(lens!(Timesheet.date))
                 .action_layout(ActionLayout::Menu)
@@ -56,13 +54,13 @@ impl Resource for TimesheetResource {
                     RelationColumn::of::<EmployeeResource>(relation!(Timesheet.employee)),
                     RelationColumn::of::<ProjectResource>(relation!(Timesheet.project)),
                     RelationColumn::of::<TaskResource>(relation!(Timesheet.task)),
-                    TextColumn::new(lens!(Timesheet.date)),
-                    TextColumn::new(lens!(Timesheet.hours)),
-                    TextColumn::new(lens!(Timesheet.minutes)),
-                    BooleanColumn::new(lens!(Timesheet.is_billable)),
-                    TextColumn::new(lens!(Timesheet.hourly_rate)).money(Currency::USD),
-                    TextColumn::new(lens!(Timesheet.total_cost)).money(Currency::USD),
-                    TextColumn::new(lens!(Timesheet.description)),
+                    shown.date.text(),
+                    shown.hours.text(),
+                    shown.minutes.text(),
+                    shown.is_billable.boolean(),
+                    shown.hourly_rate.text().money(Currency::USD),
+                    shown.total_cost.text().money(Currency::USD),
+                    shown.description.text(),
                 )),
             ))
             .form(Schema::new(
@@ -91,7 +89,7 @@ impl Resource for TimesheetResource {
         _cx: &Cx,
         form: TimesheetForm,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Timesheet, WriteError<TimesheetFormField>> {
+    ) -> Result<Timesheet, WriteError<TimesheetForm>> {
         let total_cost = Timesheet::cost(form.hours, form.hourly_rate);
         Ok(form.into_create().total_cost(total_cost).exec(ex).await?)
     }
@@ -102,7 +100,7 @@ impl Resource for TimesheetResource {
         record: Timesheet,
         posted: tablo::Posted<TimesheetForm>,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Timesheet, WriteError<TimesheetFormField>> {
+    ) -> Result<Timesheet, WriteError<TimesheetForm>> {
         let mut record = tablo::write_update::<Self>(cx, record, posted, ex).await?;
         let total_cost = Timesheet::cost(record.hours, record.hourly_rate);
         if record.total_cost != total_cost {
@@ -141,17 +139,17 @@ pub struct ToggleTimesheetBillable;
 impl Action<TimesheetResource> for ToggleTimesheetBillable {
     type Input = ();
     const NAME: &'static str = "toggle-billable";
-    const PLACES: Places = Places::ROW;
 
-    /// Only the last week's entries may change; an older one shows the button disabled.
-    fn can_run(_cx: &Cx, timesheet: &Timesheet) -> bool {
-        !timesheet.is_locked()
-    }
-
-    fn disabled_reason(_cx: &Cx, timesheet: &Timesheet) -> Option<Text> {
-        timesheet
-            .is_locked()
-            .then(|| tablo::text!("reason-timesheet-locked"))
+    fn declare() -> ActionDef<TimesheetResource> {
+        ActionDef::new()
+            .places(Places::ROW)
+            // Only the last week's entries may change; an older one shows the button disabled.
+            .can_run(|_, timesheet: &Timesheet| !timesheet.is_locked())
+            .disabled_reason(|_, timesheet: &Timesheet| {
+                timesheet
+                    .is_locked()
+                    .then(|| tablo::text!("reason-timesheet-locked"))
+            })
     }
 
     async fn run(
@@ -159,7 +157,7 @@ impl Action<TimesheetResource> for ToggleTimesheetBillable {
         timesheets: &[Timesheet],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         for timesheet in timesheets {
             Timesheet::filter_by_id(timesheet.id)
                 .update()
@@ -177,20 +175,21 @@ pub struct BulkMarkBillable;
 impl Action<TimesheetResource> for BulkMarkBillable {
     type Input = ();
     const NAME: &'static str = "mark-billable";
-    const PLACES: Places = Places::BULK;
-    const CONFIRM: bool = true;
+
+    fn declare() -> ActionDef<TimesheetResource> {
+        ActionDef::new()
+            .places(Places::BULK)
+            .confirm()
+            .success(|count| tablo::text!("flash-timesheets-billable", count = count))
+    }
 
     async fn run(
         _cx: &Cx,
         timesheets: &[Timesheet],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         set_billable(timesheets, true, ex).await
-    }
-
-    fn success(count: usize) -> Text {
-        tablo::text!("flash-timesheets-billable", count = count)
     }
 }
 
@@ -200,20 +199,21 @@ pub struct BulkMarkNonBillable;
 impl Action<TimesheetResource> for BulkMarkNonBillable {
     type Input = ();
     const NAME: &'static str = "mark-non-billable";
-    const PLACES: Places = Places::BULK;
-    const CONFIRM: bool = true;
+
+    fn declare() -> ActionDef<TimesheetResource> {
+        ActionDef::new()
+            .places(Places::BULK)
+            .confirm()
+            .success(|count| tablo::text!("flash-timesheets-not-billable", count = count))
+    }
 
     async fn run(
         _cx: &Cx,
         timesheets: &[Timesheet],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         set_billable(timesheets, false, ex).await
-    }
-
-    fn success(count: usize) -> Text {
-        tablo::text!("flash-timesheets-not-billable", count = count)
     }
 }
 
@@ -222,7 +222,7 @@ async fn set_billable(
     timesheets: &[Timesheet],
     billable: bool,
     ex: &mut dyn toasty::Executor,
-) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+) -> Result<Outcome, WriteError<()>> {
     Timesheet::filter(filter_keys(timesheets))
         .update()
         .is_billable(billable)

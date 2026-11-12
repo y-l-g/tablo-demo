@@ -16,6 +16,8 @@ impl Resource for DepartmentResource {
     type Form = DepartmentForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = Department::columns();
+        let shown = Department::columns();
         let c = DepartmentForm::controls();
         ResourceDef::new()
             .icon(iconify_icon!("lucide:building"))
@@ -24,30 +26,28 @@ impl Resource for DepartmentResource {
             .policy(access::policy(Domain::Hr))
             .table(
                 Table::new((
-                    TextColumn::new(lens!(Department.name))
-                        .searchable()
-                        .sortable(),
+                    col.name.text().searchable().sortable(),
                     RelationColumn::of::<DepartmentResource>(relation!(Department.parent))
                         .toggleable(),
                     CountColumn::of::<EmployeeResource>(relation!(Department.employees))
                         .label(tablo::text!("label-headcount")),
-                    TextColumn::new(lens!(Department.budget)).money(Currency::USD),
-                    ColorColumn::new(lens!(Department.color)).toggleable(),
-                    BooleanColumn::new(lens!(Department.is_active)),
+                    col.budget.text().money(Currency::USD),
+                    col.color.color().toggleable(),
+                    col.is_active.boolean(),
                 ))
                 .default_sort(lens!(Department.name))
                 .action_layout(ActionLayout::Menu),
             )
             .detail(Detail::new(
                 Section::new(tablo::text!("section-department")).columns((
-                    TextColumn::new(lens!(Department.name)),
-                    TextColumn::new(lens!(Department.slug)),
+                    shown.name.text(),
+                    shown.slug.text(),
                     RelationColumn::of::<DepartmentResource>(relation!(Department.parent)),
-                    TextColumn::new(lens!(Department.description)),
-                    TextColumn::new(lens!(Department.budget)).money(Currency::USD),
-                    TextColumn::new(lens!(Department.headcount_limit)).numeric(0),
-                    ColorColumn::new(lens!(Department.color)),
-                    BooleanColumn::new(lens!(Department.is_active)),
+                    shown.description.text(),
+                    shown.budget.text().money(Currency::USD),
+                    shown.headcount_limit.text().numeric(0),
+                    shown.color.color(),
+                    shown.is_active.boolean(),
                 )),
             ))
             .form(Schema::new(
@@ -97,24 +97,25 @@ pub struct AdjustDepartmentBudget;
 impl Action<DepartmentResource> for AdjustDepartmentBudget {
     type Input = BudgetChange;
     const NAME: &'static str = "adjust-budget";
-    const PLACES: Places = Places::ROW;
+
+    fn declare() -> ActionDef<DepartmentResource> {
+        ActionDef::new()
+            .places(Places::ROW)
+            .success(|_| tablo::text!("flash-budget-saved"))
+    }
 
     async fn run(
         _cx: &Cx,
         departments: &[Department],
         change: BudgetChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<BudgetChangeField>> {
+    ) -> Result<Outcome, WriteError<BudgetChange>> {
         Department::filter(filter_keys(departments))
             .update()
             .budget(change.budget)
             .exec(ex)
             .await?;
         Ok(Outcome::done())
-    }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-budget-saved")
     }
 }
 
@@ -124,15 +125,20 @@ pub struct ReplicateDepartment;
 impl Action<DepartmentResource> for ReplicateDepartment {
     type Input = ();
     const NAME: &'static str = "replicate";
-    const PLACES: Places = Places::ROW;
-    const CONFIRM: bool = true;
+
+    fn declare() -> ActionDef<DepartmentResource> {
+        ActionDef::new()
+            .places(Places::ROW)
+            .confirm()
+            .success(|_| tablo::text!("flash-department-replicated"))
+    }
 
     async fn run(
         _cx: &Cx,
         departments: &[Department],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         for department in departments {
             toasty::create!(Department {
                 parent_id: department.parent_id,
@@ -149,10 +155,6 @@ impl Action<DepartmentResource> for ReplicateDepartment {
         }
         Ok(Outcome::done())
     }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-department-replicated")
-    }
 }
 
 /// Activates or deactivates a department.
@@ -161,14 +163,17 @@ pub struct ToggleDepartmentActive;
 impl Action<DepartmentResource> for ToggleDepartmentActive {
     type Input = ();
     const NAME: &'static str = "toggle-active";
-    const PLACES: Places = Places::ROW;
+
+    fn declare() -> ActionDef<DepartmentResource> {
+        ActionDef::new().places(Places::ROW)
+    }
 
     async fn run(
         _cx: &Cx,
         departments: &[Department],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         for department in departments {
             Department::filter_by_id(department.id)
                 .update()
