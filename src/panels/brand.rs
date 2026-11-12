@@ -1,7 +1,7 @@
-//! The demo's brand on both panels: its name, and a logo for light pages and one for dark ones,
-//! served by the app itself.
+//! The demo's brand on every panel: its name, a logo for light pages and one for dark ones,
+//! served by the app itself, and the theme each panel wears.
 
-use tablo::Brand;
+use tablo::{Brand, Theme};
 use topcoat::{
     Result,
     context::Cx,
@@ -18,24 +18,17 @@ pub const LOGO_URL: &str = "/brand/logo.svg";
 /// The URL of the logo shown while a page renders dark.
 pub const DARK_LOGO_URL: &str = "/brand/logo-dark.svg";
 
-/// The demo's brand on both panels: its name, and a mark that turns light on a dark page.
-pub(super) fn brand() -> Brand {
+/// The demo's brand in `theme`: its name, and an ink mark that turns light on a dark page, which
+/// sits beside any theme's primary.
+pub(super) fn brand(theme: Theme) -> Brand {
     Brand::new("Tablo Demo")
         .logo(LOGO_URL)
         .dark_logo(DARK_LOGO_URL)
         .favicon(LOGO_URL)
+        .theme(theme)
 }
 
-/// The brand of the `partners` panel: the demo's, painted teal over the indigo `styles.css` gives
-/// the others, so a partner never mistakes it for the staff's panel. The text on the color stays
-/// the stylesheet's, near-white on light pages and dark on dark ones.
-pub(super) fn partner_brand() -> Brand {
-    brand()
-        .color("oklch(0.52 0.11 190)")
-        .dark_color("oklch(0.74 0.11 190)")
-}
-
-/// `GET /brand/logo.svg` — the indigo mark.
+/// `GET /brand/logo.svg` — the ink mark.
 #[route(GET "/brand/logo.svg")]
 async fn logo(cx: &Cx) -> Result<(HeaderMap, &'static str)> {
     svg(include_str!("../../assets/brand/logo.svg"))
