@@ -1,8 +1,10 @@
 //! Customers, with their addresses and the email the demo pretends to send them.
 
-use tablo::ColumnToggle;
+use std::sync::Arc;
+
 use tablo::extend::{Column, Includes};
 use tablo::prelude::*;
+use tablo::{ColumnToggle, IntoColumns};
 use topcoat::{Result, context::Cx, icon::iconify::iconify_icon};
 
 use super::{Address, AddressResource, CountryCode, Customer};
@@ -16,6 +18,8 @@ impl Resource for CustomerResource {
     type Form = CustomerForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = Customer::columns();
+        let shown = Customer::columns();
         let c = CustomerForm::controls();
         ResourceDef::new()
             .icon(iconify_icon!("lucide:users"))
@@ -24,18 +28,10 @@ impl Resource for CustomerResource {
             .policy(access::policy(Domain::Shop))
             .table(
                 Table::new((
-                    TextColumn::new(lens!(Customer.name))
-                        .searchable()
-                        .sortable(),
-                    TextColumn::new(lens!(Customer.email))
-                        .searchable()
-                        .sortable()
-                        .copyable(),
+                    col.name.text().searchable().sortable(),
+                    col.email.text().searchable().sortable().copyable(),
                     CustomerCountryColumn::new(),
-                    TextColumn::new(lens!(Customer.phone))
-                        .searchable()
-                        .sortable()
-                        .toggleable(),
+                    col.phone.text().searchable().sortable().toggleable(),
                 ))
                 .default_sort(lens!(Customer.name))
                 .action_layout(ActionLayout::Menu)
@@ -54,10 +50,10 @@ impl Resource for CustomerResource {
             )
             .detail(Detail::new(
                 Section::new(tablo::text!("section-customer")).columns((
-                    TextColumn::new(lens!(Customer.name)),
-                    TextColumn::new(lens!(Customer.email)),
-                    TextColumn::new(lens!(Customer.phone)),
-                    TextColumn::new(lens!(Customer.birthday)),
+                    shown.name.text(),
+                    shown.email.text(),
+                    shown.phone.text(),
+                    shown.birthday.text(),
                 )),
             ))
             .form(Schema::new(
@@ -101,6 +97,12 @@ impl CustomerCountryColumn {
         Self {
             includes: Includes::new().with(Customer::fields().addresses()),
         }
+    }
+}
+
+impl IntoColumns<Customer> for CustomerCountryColumn {
+    fn into_columns(self) -> Vec<Arc<dyn Column<Customer>>> {
+        vec![Arc::new(self)]
     }
 }
 
@@ -152,19 +154,20 @@ pub struct SendCustomerEmail;
 impl Action<CustomerResource> for SendCustomerEmail {
     type Input = EmailDraft;
     const NAME: &'static str = "send-email";
-    const PLACES: Places = Places::ROW.with(Places::DETAIL).with(Places::EDIT);
+
+    fn declare() -> ActionDef<CustomerResource> {
+        ActionDef::new()
+            .places(Places::ROW.with(Places::DETAIL).with(Places::EDIT))
+            .success(|count| tablo::text!("flash-email-sent", count = count))
+    }
 
     async fn run(
         _cx: &Cx,
         _customers: &[Customer],
         _draft: EmailDraft,
         _ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<EmailDraftField>> {
+    ) -> Result<Outcome, WriteError<EmailDraft>> {
         Ok(Outcome::done())
-    }
-
-    fn success(count: usize) -> Text {
-        tablo::text!("flash-email-sent", count = count)
     }
 }
 

@@ -14,6 +14,8 @@ impl Resource for TagResource {
     type Form = TagForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = Tag::columns();
+        let shown = Tag::columns();
         let c = TagForm::controls();
         ResourceDef::new()
             .icon(iconify_icon!("lucide:tag"))
@@ -22,15 +24,14 @@ impl Resource for TagResource {
             .policy(access::policy(Domain::Blog))
             .table(
                 Table::new((
-                    TextColumn::new(lens!(Tag.name)).searchable().sortable(),
+                    col.name.text().searchable().sortable(),
                     CountColumn::of::<PostResource>(relation!(Tag.posts)),
                 ))
                 .default_sort(lens!(Tag.name))
                 .action_layout(ActionLayout::Menu),
             )
             .detail(Detail::new(
-                Section::new(tablo::text!("section-tag"))
-                    .columns((TextColumn::new(lens!(Tag.name)),)),
+                Section::new(tablo::text!("section-tag")).columns((shown.name.text(),)),
             ))
             .form(Schema::new(
                 Section::new(tablo::text!("section-tag")).schema(c.name.unique()),

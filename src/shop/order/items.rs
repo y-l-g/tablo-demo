@@ -16,6 +16,8 @@ impl Resource for OrderItemResource {
     type Form = OrderItemForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = OrderItem::columns();
+        let shown = OrderItem::columns();
         let c = OrderItemForm::controls();
         ResourceDef::new()
             .icon(iconify_icon!("lucide:clipboard-list"))
@@ -24,15 +26,15 @@ impl Resource for OrderItemResource {
             .without_global_search()
             .table(Table::new((
                 RelationColumn::of::<ProductResource>(relation!(OrderItem.product)),
-                TextColumn::new(lens!(OrderItem.qty)).numeric(0),
-                TextColumn::new(lens!(OrderItem.unit_price)).money(Currency::USD),
+                col.qty.text().numeric(0),
+                col.unit_price.text().money(Currency::USD),
             )))
             .detail(Detail::new(
                 Section::new(tablo::text!("section-order-item")).columns((
                     RelationColumn::of::<OrderResource>(relation!(OrderItem.order)),
                     RelationColumn::of::<ProductResource>(relation!(OrderItem.product)),
-                    TextColumn::new(lens!(OrderItem.qty)).numeric(0),
-                    TextColumn::new(lens!(OrderItem.unit_price)).money(Currency::USD),
+                    shown.qty.text().numeric(0),
+                    shown.unit_price.text().money(Currency::USD),
                 )),
             ))
             .form(Schema::new(

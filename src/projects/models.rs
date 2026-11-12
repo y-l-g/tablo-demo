@@ -13,7 +13,7 @@ use toasty::{Deferred, Json};
 use crate::hr::{Department, Employee, Expense};
 
 /// A body of work.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct Project {
     #[key]
     #[auto]
@@ -71,7 +71,7 @@ impl Project {
 }
 
 /// One piece of a project.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct Task {
     #[key]
     #[auto]
@@ -109,7 +109,7 @@ pub struct Task {
 }
 
 /// Time an employee booked to a project.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct Timesheet {
     #[key]
     #[auto]

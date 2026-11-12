@@ -1,7 +1,7 @@
 //! The `app` panel's tenants: creating a team, and renaming the one the session acts for.
 
 use jiff::Timestamp;
-use tablo::{FieldErrors, Membership, auth::TenantEditor};
+use tablo::{FieldErrors, Membership, TenantEditor};
 use topcoat::context::Cx;
 
 use super::{SignedIn, Team, TeamUser};
@@ -17,7 +17,7 @@ impl NewTeam {
     fn errors(&self) -> FieldErrors {
         let mut errors = FieldErrors::new();
         if self.name.trim().is_empty() {
-            errors.add("name", tablo::text!("error-team-name-required"));
+            errors.add_field("name", tablo::text!("error-team-name-required"));
         }
         errors
     }
@@ -26,7 +26,7 @@ impl NewTeam {
 /// Creates a team for a signed-in user.
 pub struct DemoTenantRegistrar;
 
-impl tablo::auth::TenantRegistrar for DemoTenantRegistrar {
+impl tablo::TenantRegistrar for DemoTenantRegistrar {
     type User = SignedIn;
     type Input = NewTeam;
 

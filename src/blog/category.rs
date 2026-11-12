@@ -14,6 +14,8 @@ impl Resource for PostCategoryResource {
     type Form = PostCategoryForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = PostCategory::columns();
+        let shown = PostCategory::columns();
         let c = PostCategoryForm::controls();
         ResourceDef::new()
             .icon(iconify_icon!("lucide:tags"))
@@ -23,15 +25,11 @@ impl Resource for PostCategoryResource {
             .policy(access::policy(Domain::Blog))
             .table(
                 Table::new((
-                    TextColumn::new(lens!(PostCategory.name))
-                        .searchable()
-                        .sortable(),
-                    TextColumn::new(lens!(PostCategory.slug))
-                        .searchable()
-                        .sortable()
-                        .toggleable(),
-                    ToggleColumn::new(lens!(PostCategory.is_visible)),
-                    DateColumn::new(lens!(PostCategory.updated_at))
+                    col.name.text().searchable().sortable(),
+                    col.slug.text().searchable().sortable().toggleable(),
+                    col.is_visible.toggle(),
+                    col.updated_at
+                        .date()
                         .sortable()
                         .toggleable()
                         .hidden_by_default(),
@@ -41,11 +39,11 @@ impl Resource for PostCategoryResource {
             )
             .detail(Detail::new(
                 Section::new(tablo::text!("section-category")).columns((
-                    TextColumn::new(lens!(PostCategory.name)),
-                    TextColumn::new(lens!(PostCategory.slug)),
-                    TextColumn::new(lens!(PostCategory.description)),
-                    BooleanColumn::new(lens!(PostCategory.is_visible)),
-                    DateColumn::new(lens!(PostCategory.updated_at)),
+                    shown.name.text(),
+                    shown.slug.text(),
+                    shown.description.text(),
+                    shown.is_visible.boolean(),
+                    shown.updated_at.date(),
                 )),
             ))
             .form(Schema::new(

@@ -2,7 +2,6 @@
 
 use jiff::Zoned;
 use tablo::db;
-use tablo::extend::{Column, Includes};
 use tablo::prelude::*;
 use topcoat::{Result, context::Cx, icon::iconify::iconify_icon, view::View};
 
@@ -51,48 +50,33 @@ impl Resource for PostResource {
     }
 }
 
-/// The post list's status: published or draft, spelled in the request's locale.
-struct PostStatusColumn;
-
-impl Column<Post> for PostStatusColumn {
-    fn name(&self) -> &str {
-        "status"
-    }
-
-    fn label(&self) -> Text {
-        tablo::text!("label-status")
-    }
-
-    fn text(&self, cx: &Cx, post: &Post) -> String {
-        if post.is_published() {
-            tablo::t!(cx, "status-published")
-        } else {
-            tablo::t!(cx, "status-draft")
-        }
-    }
-
-    fn includes(&self) -> Includes<Post> {
-        Includes::new()
-    }
-}
-
 /// The post list.
 fn post_table() -> Table<Post> {
+    let col = Post::columns();
     Table::new((
-        ImageColumn::new(lens!(Post.image)),
-        TextColumn::new(lens!(Post.title)).searchable().sortable(),
-        TextColumn::new(lens!(Post.slug))
+        col.image.image(),
+        col.title.text().searchable().sortable(),
+        col.slug
+            .text()
             .searchable()
             .sortable()
             .toggleable()
             .hidden_by_default(),
         RelationColumn::of::<AuthorResource>(relation!(Post.author)).toggleable(),
-        PostStatusColumn,
+        // Published or draft, spelled in the reader's locale.
+        ComputedColumn::new(tablo::text!("label-status"), |cx, post: &Post| {
+            if post.is_published() {
+                tablo::t!(cx, "status-published")
+            } else {
+                tablo::t!(cx, "status-draft")
+            }
+        })
+        .reading(Reads::of(lens!(Post.published_at))),
         RelationColumn::list::<TagResource>(relation!(Post.tags)).toggleable(),
         RelationColumn::of::<PostCategoryResource>(relation!(Post.post_category))
             .toggleable()
             .hidden_by_default(),
-        DateColumn::new(lens!(Post.published_at)).sortable(),
+        col.published_at.date().sortable(),
     ))
     .default_sort_desc(lens!(Post.published_at))
     .action_layout(ActionLayout::Menu)
@@ -101,20 +85,20 @@ fn post_table() -> Table<Post> {
 
 /// The post's detail page.
 fn post_detail() -> Detail<Post> {
+    let col = Post::columns();
     Detail::new((
         Section::new(tablo::text!("section-post")).columns((
             Grid::new(2).columns((
-                TextColumn::new(lens!(Post.title)),
-                TextColumn::new(lens!(Post.slug)),
-                DateColumn::new(lens!(Post.published_at)),
+                col.title.text(),
+                col.slug.text(),
+                col.published_at.date(),
                 RelationColumn::of::<AuthorResource>(relation!(Post.author)),
                 RelationColumn::of::<PostCategoryResource>(relation!(Post.post_category)),
                 RelationColumn::list::<TagResource>(relation!(Post.tags)),
             )),
-            ImageColumn::new(lens!(Post.image)),
+            col.image.image(),
         )),
-        Section::new(tablo::text!("section-content"))
-            .columns(RichTextColumn::new(lens!(Post.content))),
+        Section::new(tablo::text!("section-content")).columns(col.content.rich_text()),
     ))
 }
 
@@ -142,14 +126,17 @@ pub struct TogglePostPublish;
 impl Action<PostResource> for TogglePostPublish {
     type Input = ();
     const NAME: &'static str = "toggle-publish";
-    const PLACES: Places = Places::ROW.with(Places::DETAIL);
+
+    fn declare() -> ActionDef<PostResource> {
+        ActionDef::new().places(Places::ROW.with(Places::DETAIL))
+    }
 
     async fn run(
         _cx: &Cx,
         posts: &[Post],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         for post in posts {
             let published_at = if post.is_published() {
                 None

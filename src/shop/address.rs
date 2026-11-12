@@ -1,10 +1,7 @@
 //! Addresses, which a customer's or a brand's page lists, each opening on a map of another site.
 
 use tablo::prelude::*;
-use topcoat::{
-    context::Cx,
-    icon::{IconData, iconify::iconify_icon},
-};
+use topcoat::{context::Cx, icon::iconify::iconify_icon};
 
 use super::{Address, BrandResource, CountryCode, CustomerResource};
 use crate::access::{self, Domain};
@@ -22,6 +19,8 @@ impl Resource for AddressResource {
     type Form = AddressForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = Address::columns();
+        let shown = Address::columns();
         let c = AddressForm::controls();
         ResourceDef::new()
             .icon(iconify_icon!("lucide:map-pin"))
@@ -30,20 +29,20 @@ impl Resource for AddressResource {
             .without_global_search()
             .table(
                 Table::new((
-                    TextColumn::new(lens!(Address.street)),
-                    TextColumn::new(lens!(Address.zip)),
-                    TextColumn::new(lens!(Address.city)).sortable(),
-                    TextColumn::new(lens!(Address.country)).width(ColumnWidth::Auto),
+                    col.street.text(),
+                    col.zip.text(),
+                    col.city.text().sortable(),
+                    col.country.text().width(ColumnWidth::Auto),
                 ))
                 .default_sort(lens!(Address.city)),
             )
             .detail(Detail::new(
                 Section::new(tablo::text!("section-address")).columns((
-                    TextColumn::new(lens!(Address.street)),
-                    TextColumn::new(lens!(Address.city)),
-                    TextColumn::new(lens!(Address.state)),
-                    TextColumn::new(lens!(Address.zip)),
-                    TextColumn::new(lens!(Address.country)),
+                    shown.street.text(),
+                    shown.city.text(),
+                    shown.state.text(),
+                    shown.zip.text(),
+                    shown.country.text(),
                 )),
             ))
             .form(Schema::new(
@@ -74,11 +73,12 @@ pub struct ShowOnMap;
 impl Action<AddressResource> for ShowOnMap {
     type Input = ();
     const NAME: &'static str = "show-on-map";
-    const PLACES: Places = Places::RECORD;
-    const ICON: Option<IconData> = Some(iconify_icon!("lucide:map-pin"));
 
-    fn can_run(_cx: &Cx, address: &Address) -> bool {
-        address.street.is_some() || address.city.is_some()
+    fn declare() -> ActionDef<AddressResource> {
+        ActionDef::new()
+            .places(Places::RECORD)
+            .icon(iconify_icon!("lucide:map-pin"))
+            .can_run(|_, address: &Address| address.street.is_some() || address.city.is_some())
     }
 
     async fn run(
@@ -86,7 +86,7 @@ impl Action<AddressResource> for ShowOnMap {
         addresses: &[Address],
         (): (),
         _ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         let Some(address) = addresses.first() else {
             return Ok(Outcome::done());
         };

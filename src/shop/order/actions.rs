@@ -13,10 +13,12 @@ pub struct ProcessOrder;
 impl Action<OrderResource> for ProcessOrder {
     type Input = ();
     const NAME: &'static str = "process";
-    const PLACES: Places = Places::ROW;
 
-    fn can_run(_cx: &Cx, order: &Order) -> bool {
-        order.status == OrderStatus::New
+    fn declare() -> ActionDef<OrderResource> {
+        ActionDef::new()
+            .places(Places::ROW)
+            .can_run(|_, order: &Order| order.status == OrderStatus::New)
+            .success(|_| tablo::text!("flash-order-processing"))
     }
 
     async fn run(
@@ -24,12 +26,8 @@ impl Action<OrderResource> for ProcessOrder {
         orders: &[Order],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         set_status(orders, OrderStatus::Processing, ex).await
-    }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-order-processing")
     }
 }
 
@@ -46,10 +44,12 @@ pub struct ShipOrder;
 impl Action<OrderResource> for ShipOrder {
     type Input = ShippingNotes;
     const NAME: &'static str = "ship";
-    const PLACES: Places = Places::ROW;
 
-    fn can_run(_cx: &Cx, order: &Order) -> bool {
-        order.status == OrderStatus::Processing
+    fn declare() -> ActionDef<OrderResource> {
+        ActionDef::new()
+            .places(Places::ROW)
+            .can_run(|_, order: &Order| order.status == OrderStatus::Processing)
+            .success(|_| tablo::text!("flash-order-shipped"))
     }
 
     async fn run(
@@ -57,7 +57,7 @@ impl Action<OrderResource> for ShipOrder {
         orders: &[Order],
         shipping: ShippingNotes,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<ShippingNotesField>> {
+    ) -> Result<Outcome, WriteError<ShippingNotes>> {
         Order::filter(filter_keys(orders))
             .update()
             .status(OrderStatus::Shipped)
@@ -67,10 +67,6 @@ impl Action<OrderResource> for ShipOrder {
         count_sold(orders, ex).await?;
         Ok(Outcome::done())
     }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-order-shipped")
-    }
 }
 
 /// Marks a shipped order delivered, confirming first.
@@ -79,11 +75,13 @@ pub struct DeliverOrder;
 impl Action<OrderResource> for DeliverOrder {
     type Input = ();
     const NAME: &'static str = "deliver";
-    const PLACES: Places = Places::ROW;
-    const CONFIRM: bool = true;
 
-    fn can_run(_cx: &Cx, order: &Order) -> bool {
-        order.status == OrderStatus::Shipped
+    fn declare() -> ActionDef<OrderResource> {
+        ActionDef::new()
+            .places(Places::ROW)
+            .confirm()
+            .can_run(|_, order: &Order| order.status == OrderStatus::Shipped)
+            .success(|_| tablo::text!("flash-order-delivered"))
     }
 
     async fn run(
@@ -91,12 +89,8 @@ impl Action<OrderResource> for DeliverOrder {
         orders: &[Order],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         set_status(orders, OrderStatus::Delivered, ex).await
-    }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-order-delivered")
     }
 }
 
@@ -106,15 +100,20 @@ pub struct ReplicateOrder;
 impl Action<OrderResource> for ReplicateOrder {
     type Input = ();
     const NAME: &'static str = "replicate";
-    const PLACES: Places = Places::EDIT;
-    const CONFIRM: bool = true;
+
+    fn declare() -> ActionDef<OrderResource> {
+        ActionDef::new()
+            .places(Places::EDIT)
+            .confirm()
+            .success(|_| tablo::text!("flash-order-replicated"))
+    }
 
     async fn run(
         _cx: &Cx,
         orders: &[Order],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         let date = jiff::Zoned::now().strftime("%Y%m%d").to_string();
         for order in orders {
             toasty::create!(Order {
@@ -130,10 +129,6 @@ impl Action<OrderResource> for ReplicateOrder {
         }
         Ok(Outcome::done())
     }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-order-replicated")
-    }
 }
 
 /// Cancels an order that is neither delivered nor already cancelled.
@@ -142,14 +137,18 @@ pub struct CancelOrder;
 impl Action<OrderResource> for CancelOrder {
     type Input = ();
     const NAME: &'static str = "cancel";
-    const PLACES: Places = Places::ROW;
-    const CONFIRM: bool = true;
 
-    fn can_run(_cx: &Cx, order: &Order) -> bool {
-        !matches!(
-            order.status,
-            OrderStatus::Delivered | OrderStatus::Cancelled
-        )
+    fn declare() -> ActionDef<OrderResource> {
+        ActionDef::new()
+            .places(Places::ROW)
+            .confirm()
+            .can_run(|_, order: &Order| {
+                !matches!(
+                    order.status,
+                    OrderStatus::Delivered | OrderStatus::Cancelled
+                )
+            })
+            .success(|_| tablo::text!("flash-order-cancelled"))
     }
 
     async fn run(
@@ -157,17 +156,13 @@ impl Action<OrderResource> for CancelOrder {
         orders: &[Order],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         set_status(orders, OrderStatus::Cancelled, ex).await
-    }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-order-cancelled")
     }
 }
 
 /// Moves every order of `orders` to `status`.
-async fn set_status<K>(
+async fn set_status<K: tablo::FormFields>(
     orders: &[Order],
     status: OrderStatus,
     ex: &mut dyn toasty::Executor,

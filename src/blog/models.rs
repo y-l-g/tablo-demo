@@ -6,7 +6,7 @@ use toasty::Deferred;
 use crate::shop::{Customer, Product};
 
 /// Someone who writes posts.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct Author {
     #[key]
     #[auto]
@@ -27,7 +27,7 @@ pub struct Author {
 }
 
 /// A topic posts are filed under.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct PostCategory {
     #[key]
     #[auto]
@@ -48,7 +48,7 @@ pub struct PostCategory {
 }
 
 /// A label posts share.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct Tag {
     #[key]
     #[auto]
@@ -66,7 +66,7 @@ pub struct Tag {
 }
 
 /// Files a post under a tag: the join model of the two.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 #[key(post_id, tag_id)]
 pub struct PostTag {
     #[index]
@@ -80,7 +80,7 @@ pub struct PostTag {
 }
 
 /// A published or drafted article.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct Post {
     #[key]
     #[auto]
@@ -127,7 +127,7 @@ impl Post {
 ///
 /// Toasty has no polymorphic relation, so each of the two nullable keys below
 /// links a comment to one owner, and each side keeps its own relation.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct Comment {
     #[key]
     #[auto]

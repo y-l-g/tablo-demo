@@ -3,11 +3,7 @@
 
 use rust_decimal::Decimal;
 use tablo::prelude::*;
-use topcoat::{
-    Result,
-    context::Cx,
-    icon::{IconData, iconify::iconify_icon},
-};
+use topcoat::{Result, context::Cx, icon::iconify::iconify_icon};
 
 use super::{BrandResource, Product, ProductCategoryResource};
 use crate::access::{self, Domain};
@@ -22,6 +18,7 @@ impl Resource for ProductResource {
     type Form = ProductForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = Product::columns();
         let c = ProductForm::controls();
         ResourceDef::new()
             .icon(iconify_icon!("lucide:package"))
@@ -88,23 +85,21 @@ impl Resource for ProductResource {
                     Section::new(tablo::text!("section-product"))
                         .span(2)
                         .columns((
-                            TextColumn::new(lens!(Product.name)),
-                            TextColumn::new(lens!(Product.slug)),
-                            ImageColumn::new(lens!(Product.image)),
+                            col.name.text(),
+                            col.slug.text(),
+                            col.image.image(),
                             ComputedColumn::new(
                                 tablo::text!("label-gallery"),
-                                |product: &Product| product.gallery.len().to_string(),
+                                |_, product: &Product| product.gallery.len().to_string(),
                             ),
-                            TextColumn::new(lens!(Product.price)).money(Currency::USD),
-                            TextColumn::new(lens!(Product.sku)),
-                            TextColumn::new(lens!(Product.qty)).numeric(0),
-                            RichTextColumn::new(lens!(Product.description)),
+                            col.price.text().money(Currency::USD),
+                            col.sku.text(),
+                            col.qty.text().numeric(0),
+                            col.description.rich_text(),
                         )),
                     Group::new().columns((
-                        Section::new(tablo::text!("section-status")).columns((
-                            BooleanColumn::new(lens!(Product.is_visible)),
-                            DateColumn::new(lens!(Product.published_at)),
-                        )),
+                        Section::new(tablo::text!("section-status"))
+                            .columns((col.is_visible.boolean(), col.published_at.date())),
                         Section::new(tablo::text!("section-associations")).columns((
                             RelationColumn::of::<BrandResource>(relation!(Product.brand)),
                             RelationColumn::list::<ProductCategoryResource>(relation!(
@@ -129,33 +124,33 @@ impl Resource for ProductResource {
 
 /// The product list.
 fn product_table() -> Table<Product> {
+    let col = Product::columns();
     Table::new((
-        ImageColumn::new(lens!(Product.image)),
-        TextColumn::new(lens!(Product.name))
+        col.image.image(),
+        col.name
+            .text()
             .weight(FontWeight::Medium)
             .searchable()
             .sortable(),
         RelationColumn::of::<BrandResource>(relation!(Product.brand)).toggleable(),
-        ToggleColumn::new(lens!(Product.is_visible)).toggleable(),
-        TextColumn::new(lens!(Product.price)).money(Currency::USD),
-        TextColumn::new(lens!(Product.sku))
+        col.is_visible.toggle().toggleable(),
+        col.price.text().money(Currency::USD),
+        col.sku
+            .text()
             .searchable()
             .sortable()
             .copyable()
             .toggleable(),
-        TextColumn::new(lens!(Product.qty))
-            .numeric(0)
-            .sortable()
-            .toggleable(),
-        TextColumn::new(lens!(Product.security_stock))
+        col.qty.text().numeric(0).sortable().toggleable(),
+        col.security_stock
+            .text()
             .numeric(0)
             .sortable()
             .toggleable()
             .hidden_by_default(),
-        TextColumn::new(lens!(Product.units_sold))
-            .numeric(0)
-            .sortable(),
-        DateColumn::new(lens!(Product.published_at))
+        col.units_sold.text().numeric(0).sortable(),
+        col.published_at
+            .date()
             .sortable()
             .toggleable()
             .hidden_by_default(),
@@ -236,24 +231,25 @@ pub struct BulkSetProductVisibility;
 impl Action<ProductResource> for BulkSetProductVisibility {
     type Input = VisibilityChoice;
     const NAME: &'static str = "set-visibility";
-    const PLACES: Places = Places::BULK;
+
+    fn declare() -> ActionDef<ProductResource> {
+        ActionDef::new()
+            .places(Places::BULK)
+            .label(tablo::text!("action-set-visibility"))
+    }
 
     async fn run(
         _cx: &Cx,
         products: &[Product],
         choice: VisibilityChoice,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<VisibilityChoiceField>> {
+    ) -> Result<Outcome, WriteError<VisibilityChoice>> {
         Product::filter(filter_keys(products))
             .update()
             .is_visible(choice.is_visible)
             .exec(ex)
             .await?;
         Ok(Outcome::done())
-    }
-
-    fn label() -> Text {
-        tablo::text!("action-set-visibility")
     }
 }
 
@@ -270,16 +266,20 @@ pub struct AdjustProductPrice;
 impl Action<ProductResource> for AdjustProductPrice {
     type Input = PriceChange;
     const NAME: &'static str = "adjust-price";
-    const PLACES: Places = Places::ROW;
-    const ICON: Option<IconData> = Some(iconify_icon!("lucide:tag"));
-    const COLOR: Color = Color::Warning;
+
+    fn declare() -> ActionDef<ProductResource> {
+        ActionDef::new()
+            .places(Places::ROW)
+            .icon(iconify_icon!("lucide:tag"))
+            .color(Color::Warning)
+    }
 
     async fn run(
         _cx: &Cx,
         products: &[Product],
         change: PriceChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<PriceChangeField>> {
+    ) -> Result<Outcome, WriteError<PriceChange>> {
         Product::filter(filter_keys(products))
             .update()
             .price(Some(change.price))
@@ -302,15 +302,15 @@ pub struct AdjustProductStock;
 impl Action<ProductResource> for AdjustProductStock {
     type Input = StockChange;
     const NAME: &'static str = "adjust-stock";
-    const PLACES: Places = Places::ROW;
 
-    fn validate_input(_cx: &Cx, input: &StockChange) -> FieldErrors<StockChangeField> {
-        let mut errors = FieldErrors::new();
+    fn declare() -> ActionDef<ProductResource> {
+        ActionDef::new().places(Places::ROW)
+    }
+
+    fn validate_input(_cx: &Cx, input: &StockChange) -> FieldErrors<StockChange> {
+        let mut errors = FieldErrors::<StockChange>::new();
         if input.qty < 0 {
-            errors.add(
-                StockChangeField::Qty,
-                tablo::text!("error-quantity-negative"),
-            );
+            errors.add(|f| f.qty, tablo::text!("error-quantity-negative"));
         }
         errors
     }
@@ -320,7 +320,7 @@ impl Action<ProductResource> for AdjustProductStock {
         products: &[Product],
         change: StockChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<StockChangeField>> {
+    ) -> Result<Outcome, WriteError<StockChange>> {
         Product::filter(filter_keys(products))
             .update()
             .qty(change.qty.max(0) as u64)

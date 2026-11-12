@@ -14,17 +14,20 @@ pub struct SubmitExpense;
 impl Action<ExpenseResource> for SubmitExpense {
     type Input = ();
     const NAME: &'static str = "submit";
-    const PLACES: Places = Places::ROW.with(Places::DETAIL);
-    const CONFIRM: bool = true;
 
-    /// A draft with an amount; a draft without one shows the button disabled, saying why.
-    fn can_run(_cx: &Cx, expense: &Expense) -> bool {
-        expense.status == ExpenseStatus::Draft && expense.total_amount > Decimal::ZERO
-    }
-
-    fn disabled_reason(_cx: &Cx, expense: &Expense) -> Option<Text> {
-        (expense.status == ExpenseStatus::Draft && expense.total_amount <= Decimal::ZERO)
-            .then(|| tablo::text!("reason-expense-no-amount"))
+    fn declare() -> ActionDef<ExpenseResource> {
+        ActionDef::new()
+            .places(Places::ROW.with(Places::DETAIL))
+            .confirm()
+            // A draft with an amount; a draft without one shows the button disabled, saying why.
+            .can_run(|_, expense: &Expense| {
+                expense.status == ExpenseStatus::Draft && expense.total_amount > Decimal::ZERO
+            })
+            .disabled_reason(|_, expense: &Expense| {
+                (expense.status == ExpenseStatus::Draft && expense.total_amount <= Decimal::ZERO)
+                    .then(|| tablo::text!("reason-expense-no-amount"))
+            })
+            .success(|count| tablo::text!("flash-expenses-submitted", count = count))
     }
 
     async fn run(
@@ -32,7 +35,7 @@ impl Action<ExpenseResource> for SubmitExpense {
         expenses: &[Expense],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         Expense::filter(filter_keys(expenses))
             .update()
             .status(ExpenseStatus::Submitted)
@@ -40,10 +43,6 @@ impl Action<ExpenseResource> for SubmitExpense {
             .exec(ex)
             .await?;
         Ok(Outcome::done())
-    }
-
-    fn success(count: usize) -> Text {
-        tablo::text!("flash-expenses-submitted", count = count)
     }
 }
 
@@ -53,11 +52,13 @@ pub struct ApproveExpense;
 impl Action<ExpenseResource> for ApproveExpense {
     type Input = ();
     const NAME: &'static str = "approve";
-    const PLACES: Places = Places::ROW.with(Places::DETAIL);
-    const CONFIRM: bool = true;
 
-    fn can_run(_cx: &Cx, expense: &Expense) -> bool {
-        expense.status == ExpenseStatus::Submitted
+    fn declare() -> ActionDef<ExpenseResource> {
+        ActionDef::new()
+            .places(Places::ROW.with(Places::DETAIL))
+            .confirm()
+            .can_run(|_, expense: &Expense| expense.status == ExpenseStatus::Submitted)
+            .success(|_| tablo::text!("flash-expense-approved"))
     }
 
     async fn run(
@@ -65,7 +66,7 @@ impl Action<ExpenseResource> for ApproveExpense {
         expenses: &[Expense],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         Expense::filter(filter_keys(expenses))
             .update()
             .status(ExpenseStatus::Approved)
@@ -73,10 +74,6 @@ impl Action<ExpenseResource> for ApproveExpense {
             .exec(ex)
             .await?;
         Ok(Outcome::done())
-    }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-expense-approved")
     }
 }
 
@@ -93,10 +90,12 @@ pub struct RejectExpense;
 impl Action<ExpenseResource> for RejectExpense {
     type Input = RejectionReason;
     const NAME: &'static str = "reject";
-    const PLACES: Places = Places::ROW.with(Places::DETAIL);
 
-    fn can_run(_cx: &Cx, expense: &Expense) -> bool {
-        expense.status == ExpenseStatus::Submitted
+    fn declare() -> ActionDef<ExpenseResource> {
+        ActionDef::new()
+            .places(Places::ROW.with(Places::DETAIL))
+            .can_run(|_, expense: &Expense| expense.status == ExpenseStatus::Submitted)
+            .success(|_| tablo::text!("flash-expense-rejected"))
     }
 
     async fn run(
@@ -104,7 +103,7 @@ impl Action<ExpenseResource> for RejectExpense {
         expenses: &[Expense],
         rejection: RejectionReason,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<RejectionReasonField>> {
+    ) -> Result<Outcome, WriteError<RejectionReason>> {
         Expense::filter(filter_keys(expenses))
             .update()
             .status(ExpenseStatus::Rejected)
@@ -112,10 +111,6 @@ impl Action<ExpenseResource> for RejectExpense {
             .exec(ex)
             .await?;
         Ok(Outcome::done())
-    }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-expense-rejected")
     }
 }
 
@@ -125,11 +120,13 @@ pub struct ReimburseExpense;
 impl Action<ExpenseResource> for ReimburseExpense {
     type Input = ();
     const NAME: &'static str = "reimburse";
-    const PLACES: Places = Places::ROW.with(Places::DETAIL);
-    const CONFIRM: bool = true;
 
-    fn can_run(_cx: &Cx, expense: &Expense) -> bool {
-        expense.status == ExpenseStatus::Approved
+    fn declare() -> ActionDef<ExpenseResource> {
+        ActionDef::new()
+            .places(Places::ROW.with(Places::DETAIL))
+            .confirm()
+            .can_run(|_, expense: &Expense| expense.status == ExpenseStatus::Approved)
+            .success(|_| tablo::text!("flash-expense-reimbursed"))
     }
 
     async fn run(
@@ -137,17 +134,13 @@ impl Action<ExpenseResource> for ReimburseExpense {
         expenses: &[Expense],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         Expense::filter(filter_keys(expenses))
             .update()
             .status(ExpenseStatus::Reimbursed)
             .exec(ex)
             .await?;
         Ok(Outcome::done())
-    }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-expense-reimbursed")
     }
 }
 
@@ -157,14 +150,19 @@ pub struct FlagExpense;
 impl Action<ExpenseResource> for FlagExpense {
     type Input = RejectionReason;
     const NAME: &'static str = "flag";
-    const PLACES: Places = Places::ROW.with(Places::DETAIL);
+
+    fn declare() -> ActionDef<ExpenseResource> {
+        ActionDef::new()
+            .places(Places::ROW.with(Places::DETAIL))
+            .success(|_| tablo::text!("flash-expense-flagged"))
+    }
 
     async fn run(
         _cx: &Cx,
         expenses: &[Expense],
         flag: RejectionReason,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<RejectionReasonField>> {
+    ) -> Result<Outcome, WriteError<RejectionReason>> {
         Expense::filter(filter_keys(expenses))
             .update()
             .status(ExpenseStatus::Draft)
@@ -172,9 +170,5 @@ impl Action<ExpenseResource> for FlagExpense {
             .exec(ex)
             .await?;
         Ok(Outcome::done())
-    }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-expense-flagged")
     }
 }

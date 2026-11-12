@@ -15,7 +15,7 @@ use toasty::Deferred;
 use crate::projects::{Project, Task, Timesheet};
 
 /// A part of the company, which may sit under another one.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct Department {
     #[key]
     #[auto]
@@ -55,7 +55,7 @@ pub struct MetadataEntry {
 }
 
 /// Someone the company employs.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct Employee {
     #[key]
     #[auto]
@@ -103,7 +103,7 @@ pub struct Employee {
 }
 
 /// A request for time off.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct LeaveRequest {
     #[key]
     #[auto]
@@ -143,7 +143,7 @@ impl LeaveRequest {
 }
 
 /// A line of an expense claim.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct ExpenseLine {
     #[key]
     #[auto]
@@ -172,7 +172,7 @@ impl ExpenseLine {
 }
 
 /// An employee's claim for money they spent.
-#[derive(Debug, Clone, toasty::Model, tablo::ModelColumns)]
+#[derive(Debug, Clone, toasty::Model, tablo::PanelModel)]
 pub struct Expense {
     #[key]
     #[auto]

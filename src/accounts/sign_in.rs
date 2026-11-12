@@ -3,7 +3,7 @@
 
 use jiff::Timestamp;
 use tablo::{
-    FieldErrors, Lens, Membership, PanelUser, PasswordAccount, PasswordAuth, Profile, ProfileField,
+    FieldErrors, Lens, Membership, PanelId, PanelUser, PasswordAccount, PasswordAuth, Profile,
     Registrar,
     auth::{hash_password, new_password_errors, normalize_email},
     db::db,
@@ -69,12 +69,15 @@ impl PanelUser for SignedIn {
     ///
     /// Each panel is named and the rest refused, so a panel added or renamed
     /// later admits nobody until it has a rule here.
-    fn can_access_panel(&self, panel: &str) -> bool {
-        match panel {
-            "/admin" => self.user.role.is_some(),
-            "/app" => true,
-            "/partners" => self.user.email == PARTNER_EMAIL,
-            _ => false,
+    fn can_access_panel(&self, panel: &PanelId) -> bool {
+        if panel == "admin" {
+            self.user.role.is_some()
+        } else if panel == "app" {
+            true
+        } else if panel == "partners" {
+            self.user.email == PARTNER_EMAIL
+        } else {
+            false
         }
     }
 
@@ -120,20 +123,14 @@ impl PasswordAccount for User {
     }
 
     /// Staff keep the sign-in details the seed gave them, which the admin panel signs in with.
-    fn profile_errors(user: &SignedIn, profile: &Profile) -> FieldErrors<ProfileField> {
-        let mut errors = FieldErrors::new();
+    fn profile_errors(user: &SignedIn, profile: &Profile) -> FieldErrors<Profile> {
+        let mut errors = FieldErrors::<Profile>::new();
         if user.user.role.is_some() {
             if normalize_email(&profile.email) != user.user.email {
-                errors.add(
-                    ProfileField::Email,
-                    tablo::text!("error-credentials-locked"),
-                );
+                errors.add(|f| f.email, tablo::text!("error-credentials-locked"));
             }
             if profile.password.is_some() {
-                errors.add(
-                    ProfileField::Password,
-                    tablo::text!("error-credentials-locked"),
-                );
+                errors.add(|f| f.password, tablo::text!("error-credentials-locked"));
             }
         }
         errors
@@ -183,7 +180,7 @@ impl Registrar for DemoSignUp {
             .exec(ex)
             .await?;
         if taken.is_some() {
-            errors.add("email", tablo::text!("error-email-taken"));
+            errors.add_field("email", tablo::text!("error-email-taken"));
         }
         Ok(errors)
     }

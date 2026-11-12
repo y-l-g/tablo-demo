@@ -19,6 +19,8 @@ impl Resource for CommentResource {
     type Form = CommentForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = Comment::columns();
+        let shown = Comment::columns();
         let c = CommentForm::controls();
         ResourceDef::new()
             .icon(iconify_icon!("lucide:message-square"))
@@ -27,22 +29,23 @@ impl Resource for CommentResource {
             // every role that reaches the shop holds as well.
             .policy(access::policy(Domain::Blog))
             .table(Table::new((
-                TextColumn::new(lens!(Comment.title))
-                    .searchable()
-                    .sortable(),
+                col.title.text().searchable().sortable(),
                 RelationColumn::of::<crate::shop::CustomerResource>(relation!(Comment.customer)),
-                BooleanColumn::new(lens!(Comment.is_visible))
+                col.is_visible
+                    .boolean()
                     .label(tablo::text!("label-public-visibility")),
             )))
             .detail(Detail::new(
                 Section::new(tablo::text!("section-comment")).columns((
-                    TextColumn::new(lens!(Comment.title)),
+                    shown.title.text(),
                     RelationColumn::of::<crate::shop::CustomerResource>(relation!(
                         Comment.customer
                     )),
-                    BooleanColumn::new(lens!(Comment.is_visible))
+                    shown
+                        .is_visible
+                        .boolean()
                         .label(tablo::text!("label-public-visibility")),
-                    RichTextColumn::new(lens!(Comment.content)),
+                    shown.content.rich_text(),
                 )),
             ))
             .form(Schema::new(

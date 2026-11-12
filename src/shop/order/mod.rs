@@ -30,6 +30,7 @@ impl Resource for OrderResource {
     type Form = OrderForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = Order::columns();
         let c = OrderForm::controls();
         ResourceDef::new()
             .icon(iconify_icon!("lucide:shopping-cart"))
@@ -41,17 +42,18 @@ impl Resource for OrderResource {
             .detail(Detail::new(
                 Section::new(tablo::text!("section-order")).columns((
                     Grid::new(2).columns((
-                        TextColumn::new(lens!(Order.number)),
+                        col.number.text(),
                         RelationColumn::of::<CustomerResource>(relation!(Order.customer)),
-                        TextColumn::new(lens!(Order.status)).badge(),
-                        TextColumn::new(lens!(Order.total_price)).money(Currency::USD),
-                        TextColumn::new(lens!(Order.shipping_price)).money(Currency::USD),
-                        DateColumn::new(lens!(Order.created_at))
+                        col.status.text().badge(),
+                        col.total_price.text().money(Currency::USD),
+                        col.shipping_price.text().money(Currency::USD),
+                        col.created_at
+                            .date()
                             .label(tablo::text!("label-order-date")),
                         RelationColumn::of::<OrderAddressResource>(relation!(Order.address))
                             .label(tablo::text!("label-shipping-address")),
                     )),
-                    RichTextColumn::new(lens!(Order.notes)),
+                    col.notes.rich_text(),
                 )),
             ))
             // The order's number, customer and status first, then its notes.
@@ -112,26 +114,27 @@ impl Resource for OrderResource {
 
 /// The order list.
 fn order_table() -> Table<Order> {
+    let col = Order::columns();
     Table::new((
-        TextColumn::new(lens!(Order.number))
+        col.number
+            .text()
             .weight(FontWeight::Medium)
             .searchable()
             .sortable()
             .copyable(),
         RelationColumn::of::<CustomerResource>(relation!(Order.customer)).toggleable(),
-        TextColumn::new(lens!(Order.status)).badge(),
-        TextColumn::new(lens!(Order.total_price)).money(Currency::USD),
-        TextColumn::new(lens!(Order.shipping_price))
-            .money(Currency::USD)
-            .toggleable(),
-        DateColumn::new(lens!(Order.created_at))
+        col.status.text().badge(),
+        col.total_price.text().money(Currency::USD),
+        col.shipping_price.text().money(Currency::USD).toggleable(),
+        col.created_at
+            .date()
             .label(tablo::text!("label-order-date"))
             .sortable()
             .toggleable(),
     ))
     .default_sort_desc(lens!(Order.created_at))
     .action_layout(ActionLayout::Menu)
-    .row_color(|order: &Order| (order.status == OrderStatus::Cancelled).then_some(Color::Danger))
+    .row_color(|_, order: &Order| (order.status == OrderStatus::Cancelled).then_some(Color::Danger))
     .row_color_reading(Reads::of(lens!(Order.status)))
     .option_tabs(lens!(Order.status))
     .filters((DateFilter::new(lens!(Order.created_at))

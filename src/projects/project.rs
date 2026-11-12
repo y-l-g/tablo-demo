@@ -2,6 +2,7 @@
 
 use jiff::Zoned;
 use rust_decimal::Decimal;
+use tablo::Number;
 use tablo::prelude::*;
 use topcoat::{Result, context::Cx, icon::iconify::iconify_icon};
 
@@ -20,6 +21,8 @@ impl Resource for ProjectResource {
     type Form = ProjectForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = Project::columns();
+        let shown = Project::columns();
         let c = ProjectForm::controls();
         let start_date = c.start_date;
         let end_date = c.end_date.gte(&start_date);
@@ -31,22 +34,19 @@ impl Resource for ProjectResource {
             .policy(access::policy(Domain::Projects))
             .table(
                 Table::new((
-                    TextColumn::new(lens!(Project.name)).searchable().sortable(),
-                    TextColumn::new(lens!(Project.status)).badge(),
-                    TextColumn::new(lens!(Project.priority)).badge(),
+                    col.name.text().searchable().sortable(),
+                    col.status.text().badge(),
+                    col.priority.text().badge(),
                     RelationColumn::of::<DepartmentResource>(relation!(Project.department))
                         .toggleable(),
-                    TextColumn::new(lens!(Project.budget)).money(Currency::USD),
-                    TextColumn::new(lens!(Project.spent)).money(Currency::USD),
-                    ComputedColumn::new(tablo::text!("label-progress"), |project: &Project| {
-                        format!("{:.0}%", project.progress())
+                    col.budget.text().money(Currency::USD),
+                    col.spent.text().money(Currency::USD),
+                    // The reader's locale spells it: `45%`, or `45 %` in French.
+                    ComputedColumn::new(tablo::text!("label-progress"), |cx, project: &Project| {
+                        Number::percent_in(cx, project.progress(), 0)
                     }),
-                    DateColumn::new(lens!(Project.start_date))
-                        .sortable()
-                        .toggleable(),
-                    DateColumn::new(lens!(Project.end_date))
-                        .sortable()
-                        .toggleable(),
+                    col.start_date.date().sortable().toggleable(),
+                    col.end_date.date().sortable().toggleable(),
                 ))
                 .default_sort_desc(lens!(Project.start_date))
                 .action_layout(ActionLayout::Menu)
@@ -60,26 +60,26 @@ impl Resource for ProjectResource {
                 Tab::new(tablo::text!("tab-overview"))
                     .icon(iconify_icon!("lucide:folder"))
                     .columns(Grid::new(2).columns((
-                        TextColumn::new(lens!(Project.name)),
-                        TextColumn::new(lens!(Project.slug)),
+                        shown.name.text(),
+                        shown.slug.text(),
                         RelationColumn::of::<DepartmentResource>(relation!(Project.department)),
-                        TextColumn::new(lens!(Project.status)).badge(),
-                        TextColumn::new(lens!(Project.priority)).badge(),
-                        ColorColumn::new(lens!(Project.color)),
-                        DateColumn::new(lens!(Project.start_date)),
-                        DateColumn::new(lens!(Project.end_date)),
-                        TextColumn::new(lens!(Project.description)),
+                        shown.status.text().badge(),
+                        shown.priority.text().badge(),
+                        shown.color.color(),
+                        shown.start_date.date(),
+                        shown.end_date.date(),
+                        shown.description.text(),
                     ))),
                 Tab::new(tablo::text!("tab-budget"))
                     .icon(iconify_icon!("lucide:banknote"))
                     .badge("USD")
                     .columns(Grid::new(2).columns((
-                        TextColumn::new(lens!(Project.budget)).money(Currency::USD),
-                        TextColumn::new(lens!(Project.spent)).money(Currency::USD),
-                        TextColumn::new(lens!(Project.estimated_hours)).format(|hours| {
+                        shown.budget.text().money(Currency::USD),
+                        shown.spent.text().money(Currency::USD),
+                        shown.estimated_hours.text().format(|_, hours| {
                             tablo::text!("value-hours", value = format!("{hours:.1}"))
                         }),
-                        TextColumn::new(lens!(Project.actual_hours)).format(|hours| {
+                        shown.actual_hours.text().format(|_, hours| {
                             tablo::text!("value-hours", value = format!("{hours:.1}"))
                         }),
                     ))),
@@ -158,19 +158,20 @@ pub struct ChangeProjectStatus;
 impl Action<ProjectResource> for ChangeProjectStatus {
     type Input = StatusChange;
     const NAME: &'static str = "change-status";
-    const PLACES: Places = Places::ROW.with(Places::DETAIL);
+
+    fn declare() -> ActionDef<ProjectResource> {
+        ActionDef::new()
+            .places(Places::ROW.with(Places::DETAIL))
+            .success(|_| tablo::text!("flash-project-saved"))
+    }
 
     async fn run(
         _cx: &Cx,
         projects: &[Project],
         change: StatusChange,
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<StatusChangeField>> {
+    ) -> Result<Outcome, WriteError<StatusChange>> {
         set_project_status(projects, change.status, ex).await
-    }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-project-saved")
     }
 }
 
@@ -180,11 +181,13 @@ pub struct HoldProject;
 impl Action<ProjectResource> for HoldProject {
     type Input = ();
     const NAME: &'static str = "put-on-hold";
-    const PLACES: Places = Places::ROW.with(Places::DETAIL);
-    const CONFIRM: bool = true;
 
-    fn can_run(_cx: &Cx, project: &Project) -> bool {
-        project.status == ProjectStatus::Active
+    fn declare() -> ActionDef<ProjectResource> {
+        ActionDef::new()
+            .places(Places::ROW.with(Places::DETAIL))
+            .confirm()
+            .can_run(|_, project: &Project| project.status == ProjectStatus::Active)
+            .success(|_| tablo::text!("flash-project-on-hold"))
     }
 
     async fn run(
@@ -192,12 +195,8 @@ impl Action<ProjectResource> for HoldProject {
         projects: &[Project],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         set_project_status(projects, ProjectStatus::OnHold, ex).await
-    }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-project-on-hold")
     }
 }
 
@@ -207,10 +206,12 @@ pub struct ResumeProject;
 impl Action<ProjectResource> for ResumeProject {
     type Input = ();
     const NAME: &'static str = "resume";
-    const PLACES: Places = Places::ROW.with(Places::DETAIL);
 
-    fn can_run(_cx: &Cx, project: &Project) -> bool {
-        project.status == ProjectStatus::OnHold
+    fn declare() -> ActionDef<ProjectResource> {
+        ActionDef::new()
+            .places(Places::ROW.with(Places::DETAIL))
+            .can_run(|_, project: &Project| project.status == ProjectStatus::OnHold)
+            .success(|_| tablo::text!("flash-project-resumed"))
     }
 
     async fn run(
@@ -218,12 +219,8 @@ impl Action<ProjectResource> for ResumeProject {
         projects: &[Project],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         set_project_status(projects, ProjectStatus::Active, ex).await
-    }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-project-resumed")
     }
 }
 
@@ -233,14 +230,18 @@ pub struct CompleteProject;
 impl Action<ProjectResource> for CompleteProject {
     type Input = ();
     const NAME: &'static str = "complete";
-    const PLACES: Places = Places::ROW.with(Places::DETAIL);
-    const CONFIRM: bool = true;
 
-    fn can_run(_cx: &Cx, project: &Project) -> bool {
-        matches!(
-            project.status,
-            ProjectStatus::Active | ProjectStatus::OnHold
-        )
+    fn declare() -> ActionDef<ProjectResource> {
+        ActionDef::new()
+            .places(Places::ROW.with(Places::DETAIL))
+            .confirm()
+            .can_run(|_, project: &Project| {
+                matches!(
+                    project.status,
+                    ProjectStatus::Active | ProjectStatus::OnHold
+                )
+            })
+            .success(|_| tablo::text!("flash-project-completed"))
     }
 
     async fn run(
@@ -248,7 +249,7 @@ impl Action<ProjectResource> for CompleteProject {
         projects: &[Project],
         (): (),
         ex: &mut dyn toasty::Executor,
-    ) -> Result<Outcome, WriteError<std::convert::Infallible>> {
+    ) -> Result<Outcome, WriteError<()>> {
         Project::filter(filter_keys(projects))
             .update()
             .status(ProjectStatus::Completed)
@@ -257,14 +258,10 @@ impl Action<ProjectResource> for CompleteProject {
             .await?;
         Ok(Outcome::done())
     }
-
-    fn success(_count: usize) -> Text {
-        tablo::text!("flash-project-completed")
-    }
 }
 
 /// Moves every project of `projects` to `status`.
-async fn set_project_status<K>(
+async fn set_project_status<K: tablo::FormFields>(
     projects: &[Project],
     status: ProjectStatus,
     ex: &mut dyn toasty::Executor,

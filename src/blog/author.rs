@@ -14,6 +14,8 @@ impl Resource for AuthorResource {
     type Form = AuthorForm;
 
     fn declare() -> ResourceDef<Self> {
+        let col = Author::columns();
+        let shown = Author::columns();
         let c = AuthorForm::controls();
         ResourceDef::new()
             .icon(iconify_icon!("lucide:pen-line"))
@@ -22,20 +24,20 @@ impl Resource for AuthorResource {
             .policy(access::policy(Domain::Blog))
             .table(
                 Table::new((
-                    TextColumn::new(lens!(Author.name)).searchable().sortable(),
-                    TextColumn::new(lens!(Author.email)).searchable().sortable(),
-                    TextColumn::new(lens!(Author.github_handle)),
-                    TextColumn::new(lens!(Author.twitter_handle)),
+                    col.name.text().searchable().sortable(),
+                    col.email.text().searchable().sortable(),
+                    col.github_handle.text(),
+                    col.twitter_handle.text(),
                 ))
                 .default_sort(lens!(Author.name)),
             )
             .detail(Detail::new(
                 Section::new(tablo::text!("section-author")).columns((
-                    TextColumn::new(lens!(Author.name)),
-                    TextColumn::new(lens!(Author.email)),
-                    TextColumn::new(lens!(Author.bio)),
-                    TextColumn::new(lens!(Author.github_handle)),
-                    TextColumn::new(lens!(Author.twitter_handle)),
+                    shown.name.text(),
+                    shown.email.text(),
+                    shown.bio.text(),
+                    shown.github_handle.text(),
+                    shown.twitter_handle.text(),
                 )),
             ))
             .form(Schema::new(
