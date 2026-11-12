@@ -6,7 +6,7 @@ publish = false
 description = "The Tablo demo."
 
 [dependencies]
-tablo = { git = "https://github.com/y-l-g/tablo.git", rev = "9931d2798b7cb9f14f865d20c609bb1315da9db6", features = ["sqlite", "rust_decimal"] }
+tablo = { git = "https://github.com/y-l-g/tablo.git", rev = "5c9e26f7995147f0f833aaf11b3315db610875d7", features = ["sqlite", "rust_decimal"] }
 form_urlencoded = "1"
 jiff = "0.2"
 rust_decimal = "1"
@@ -19,7 +19,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = "1.23"
 
 [build-dependencies]
-tablo-build = { git = "https://github.com/y-l-g/tablo.git", rev = "9931d2798b7cb9f14f865d20c609bb1315da9db6" }
+tablo-build = { git = "https://github.com/y-l-g/tablo.git", rev = "5c9e26f7995147f0f833aaf11b3315db610875d7" }
 topcoat = { version = "0.12", features = ["icon-iconify"] }
 
 [lints.rust]
