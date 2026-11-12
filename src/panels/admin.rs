@@ -1,6 +1,6 @@
 //! The `admin` panel: every resource of the demo, for staff alone.
 
-use tablo::{Auth, Panel, when};
+use tablo::{Auth, Panel, Theme, when};
 use topcoat::icon::iconify::iconify_icon;
 
 use crate::access;
@@ -13,7 +13,7 @@ use crate::{blog, hr, projects, shop};
 /// The admin panel: the home, the domains' dashboards, the staff an administrator acts as, the
 /// audit log, then each domain's resources.
 pub fn admin_panel(config: &Config) -> Panel {
-    super::shared(Panel::new("admin"))
+    super::shared(Panel::new("admin"), Theme::Jade)
         .auth(Auth::custom(accounts::password_auth()).impersonation(accounts::impersonation()))
         // An address's "Show on map" lands on OpenStreetMap, which a form may follow only to an
         // origin the policy's `form-action` names.

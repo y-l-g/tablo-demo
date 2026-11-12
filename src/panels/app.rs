@@ -1,7 +1,8 @@
 //! The `app` panel: where an account signs up, acts for a team, and edits its profile.
 
 use tablo::{
-    Area, Auth, AuthMail, EmailVerification, Panel, PasswordReset, TenantRegistration, TwoFactor,
+    Area, Auth, AuthMail, EmailVerification, Panel, PasswordReset, TenantRegistration, Theme,
+    TwoFactor,
 };
 use topcoat::icon::iconify::iconify_icon;
 
@@ -11,7 +12,7 @@ use crate::home::Dashboard;
 
 /// The tenant panel: sign-up, a tenant switcher and a settings area.
 pub fn app_panel(config: &Config) -> Panel {
-    super::shared(Panel::new("app"))
+    super::shared(Panel::new("app"), Theme::Iris)
         .auth(app_auth(config))
         .home::<Dashboard>()
         .area(settings())
