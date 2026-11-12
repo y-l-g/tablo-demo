@@ -6,7 +6,7 @@ publish = false
 description = "The Tablo demo."
 
 [dependencies]
-tablo = { git = "https://github.com/y-l-g/tablo.git", features = ["sqlite", "rust_decimal"] }
+tablo = { git = "https://github.com/y-l-g/tablo.git", features = ["sqlite", "rust_decimal", "audit"] }
 form_urlencoded = "1"
 jiff = "0.2"
 rust_decimal = "1"

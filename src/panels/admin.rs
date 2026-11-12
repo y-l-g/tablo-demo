@@ -1,6 +1,6 @@
 //! The `admin` panel: every resource of the demo, for staff alone.
 
-use tablo::{Auth, Panel, Theme, when};
+use tablo::{Auth, Panel, Theme, audit::PanelAuditExt, when};
 use topcoat::icon::iconify::iconify_icon;
 
 use crate::access;
