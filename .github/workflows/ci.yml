@@ -1,0 +1,42 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+env:
+  CARGO_TERM_COLOR: always
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.99
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Fetch the Tailwind CLI
+        run: .github/scripts/fetch-tailwind.sh linux-x64 target/topcoat/cache/tailwind
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets --locked -- -D warnings
+  # The demo has no tests: its panels refuse an unsafe declaration when they mount, so it is
+  # checked by starting it.
+  boot:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.99
+      - uses: Swatinem/rust-cache@v2
+      - name: Fetch the Tailwind CLI
+        run: .github/scripts/fetch-tailwind.sh linux-x64 target/topcoat/cache/tailwind
+        env:
+          GH_TOKEN: ${{ github.token }}
+      # The bundle must come from the Topcoat release Cargo.lock records.
+      - name: Install the Topcoat CLI
+        run: |
+          version=$(grep -A1 '^name = "topcoat"$' Cargo.lock | sed -n 's/^version = "\(.*\)"$/\1/p')
+          cargo install topcoat-cli --version "$version" --locked
+      - run: topcoat asset bundle
+      - name: Start the demo and open its panels
+        run: .github/scripts/smoke.sh

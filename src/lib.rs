@@ -52,6 +52,7 @@ pub fn models() -> toasty::ModelSet {
         hr::ExpenseLine,
         projects::Project,
         projects::Task,
-        projects::Timesheet
+        projects::Timesheet,
+        tablo::audit::AuditEntry
     )
 }

@@ -23,7 +23,8 @@ blocks it, rather than working around Tablo.
 
 ## Checks
 
-The demo has no tests, and CI only publishes the image, so run these yourself:
+The demo has no tests. CI (`.github/workflows/ci.yml`) runs the lints, then starts the demo and
+opens each panel (`.github/scripts/smoke.sh`). Run the same before you push:
 
 ```sh
 cargo fmt --check
