@@ -124,14 +124,16 @@ impl Resource for EmployeeResource {
                         Grid::new(2).schema((
                             c.department_id.searchable(),
                             job_title,
-                            c.employment_type.radio(),
+                            c.employment_type.buttons(),
                             c.hire_date,
-                            c.skills,
                             salary,
                             hourly_rate,
+                            c.skills,
                             c.is_active.switch(),
                         )),
-                        c.metadata.add_label(tablo::text!("action-add-metadata")),
+                        c.metadata
+                            .table()
+                            .add_label(tablo::text!("action-add-metadata")),
                     )),
             ])))
             .record_title(lens!(Employee.name))

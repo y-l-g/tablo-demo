@@ -79,7 +79,7 @@ impl Resource for ExpenseResource {
                     c.expense_number.disabled_on_edit(),
                     c.employee_id.searchable(),
                     c.project_id.searchable(),
-                    c.category.radio().span_full(),
+                    c.category.buttons().span_full(),
                     c.description.multiline(3).span_full(),
                 ))),
                 Step::new(tablo::text!("step-review")).schema(

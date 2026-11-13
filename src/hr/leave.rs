@@ -79,7 +79,7 @@ impl Resource for LeaveRequestResource {
             .form(Schema::new((
                 Section::new(tablo::text!("section-leave-details")).schema(Grid::new(2).schema((
                     c.employee_id.searchable(),
-                    c.kind.radio(),
+                    c.kind.buttons().span_full(),
                     start_date,
                     end_date,
                     c.start_time,

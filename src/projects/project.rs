@@ -93,7 +93,7 @@ impl Resource for ProjectResource {
                         c.description.multiline(4),
                         c.department_id.searchable(),
                         c.status.buttons(),
-                        c.priority.radio(),
+                        c.priority.buttons(),
                         c.color.custom(ColorInput),
                         start_date,
                         end_date,
