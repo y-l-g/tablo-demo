@@ -26,23 +26,32 @@ impl Resource for PostResource {
             .policy(access::policy(Domain::Blog))
             .table(post_table())
             .detail(post_detail())
-            .form(Schema::new((
-                Section::new(tablo::text!("section-post")).schema(Grid::new(2).schema((
-                    c.title.placeholder(tablo::text!("hint-post-title")),
-                    c.slug.disabled_on_edit(),
-                    c.content.rich_text(),
-                    c.author_id.searchable(),
-                    c.post_category_id.searchable(),
-                    c.published_at,
-                    c.tags.searchable(),
-                ))),
-                Section::new(tablo::text!("section-image")).schema(
-                    c.image
-                        .image()
-                        .extensions(IMAGE_EXTENSIONS)
-                        .max_bytes(IMAGE_MAX_BYTES),
-                ),
-            )))
+            // The writing beside what files and dates it, as Filament's blog demo lays a post out.
+            .form(Schema::new(
+                Grid::new(3).schema((
+                    Section::new(tablo::text!("section-post")).span(2).schema((
+                        Grid::new(2).schema((
+                            c.title.placeholder(tablo::text!("hint-post-title")),
+                            c.slug.disabled_on_edit(),
+                        )),
+                        c.content.rich_text(),
+                    )),
+                    Group::new().schema((
+                        Section::new(tablo::text!("section-status")).schema(c.published_at),
+                        Section::new(tablo::text!("section-associations")).schema((
+                            c.author_id.searchable(),
+                            c.post_category_id.searchable(),
+                            c.tags.searchable(),
+                        )),
+                        Section::new(tablo::text!("section-image")).schema(
+                            c.image
+                                .image()
+                                .extensions(IMAGE_EXTENSIONS)
+                                .max_bytes(IMAGE_MAX_BYTES),
+                        ),
+                    )),
+                )),
+            ))
             .record_title(lens!(Post.title))
             .relation(Relation::has_many::<CommentResource>(Comment::fields().post_id()).tab())
             .action::<TogglePostPublish>()

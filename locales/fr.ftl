@@ -202,6 +202,7 @@ section-pricing = Prix
 section-product = Produit
 section-receipt = Justificatif
 section-review = Relecture
+section-schedule = Planning
 section-shipping = Expédition
 section-status = Statut
 section-task = Tâche
