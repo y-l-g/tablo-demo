@@ -161,44 +161,58 @@ impl Timesheet {
 /// Where a project sits in its lifecycle.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, toasty::Embed, tablo::Options)]
 pub enum ProjectStatus {
-    #[option(color = "gray")]
+    #[option(color = "gray", icon = icons::DASHED)]
     Planning,
-    #[option(color = "success")]
+    #[option(color = "success", icon = icons::PLAY)]
     Active,
-    #[option(color = "warning")]
+    #[option(color = "warning", icon = icons::PAUSE)]
     OnHold,
-    #[option(color = "info")]
+    #[option(color = "info", icon = tablo::ui::icons::CIRCLE_CHECK)]
     Completed,
-    #[option(color = "danger")]
+    #[option(color = "danger", icon = tablo::ui::icons::CIRCLE_X)]
     Cancelled,
 }
 
 /// How urgent a task or a project is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, toasty::Embed, tablo::Options)]
 pub enum TaskPriority {
-    #[option(color = "gray")]
+    #[option(color = "gray", icon = tablo::ui::icons::ARROW_DOWN)]
     Low,
-    #[option(color = "info")]
+    #[option(color = "info", icon = icons::EQUAL)]
     Medium,
-    #[option(color = "warning")]
+    #[option(color = "warning", icon = tablo::ui::icons::ARROW_UP)]
     High,
-    #[option(color = "danger")]
+    #[option(color = "danger", icon = icons::FLAME)]
     Critical,
 }
 
 /// Where a task sits in its workflow.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, toasty::Embed, tablo::Options)]
 pub enum TaskStatus {
-    #[option(color = "gray")]
+    #[option(color = "gray", icon = icons::DASHED)]
     Backlog,
-    #[option(color = "info")]
+    #[option(color = "info", icon = icons::CIRCLE)]
     Todo,
-    #[option(color = "warning")]
+    #[option(color = "warning", icon = icons::DOT)]
     InProgress,
-    #[option(color = "primary")]
+    #[option(color = "primary", icon = icons::REVIEW)]
     InReview,
-    #[option(color = "success")]
+    #[option(color = "success", icon = tablo::ui::icons::CIRCLE_CHECK)]
     Completed,
-    #[option(color = "danger")]
+    #[option(color = "danger", icon = tablo::ui::icons::CIRCLE_X)]
     Cancelled,
+}
+
+/// The icons of the project and task statuses and priorities that have none in Tablo's own set.
+mod icons {
+    use topcoat::icon::{IconData, iconify::iconify_icon};
+
+    pub(super) const DASHED: IconData = iconify_icon!("lucide:circle-dashed");
+    pub(super) const PLAY: IconData = iconify_icon!("lucide:circle-play");
+    pub(super) const PAUSE: IconData = iconify_icon!("lucide:circle-pause");
+    pub(super) const CIRCLE: IconData = iconify_icon!("lucide:circle");
+    pub(super) const DOT: IconData = iconify_icon!("lucide:circle-dot");
+    pub(super) const REVIEW: IconData = iconify_icon!("lucide:scan-eye");
+    pub(super) const EQUAL: IconData = iconify_icon!("lucide:equal");
+    pub(super) const FLAME: IconData = iconify_icon!("lucide:flame");
 }
