@@ -49,16 +49,18 @@ impl Resource for CommentResource {
                 )),
             ))
             .form(Schema::new(
-                Section::new(tablo::text!("section-comment")).schema((
-                    c.title,
-                    c.customer_id.searchable(),
-                    c.post_id.searchable(),
-                    c.product_id.searchable(),
-                    c.is_visible
-                        .switch()
-                        .label(tablo::text!("label-public-visibility")),
-                    c.content.rich_text(),
-                )),
+                Section::new(tablo::text!("section-comment")).schema(
+                    Grid::new(2).schema((
+                        c.title,
+                        c.customer_id.searchable(),
+                        c.post_id.searchable(),
+                        c.product_id.searchable(),
+                        c.content.rich_text(),
+                        c.is_visible
+                            .switch()
+                            .label(tablo::text!("label-public-visibility")),
+                    )),
+                ),
             ))
             .record_title(lens!(Comment.title))
     }

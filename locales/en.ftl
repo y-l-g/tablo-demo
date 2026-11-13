@@ -173,6 +173,7 @@ section-pricing = Pricing
 section-product = Product
 section-receipt = Receipt
 section-review = Review
+section-schedule = Schedule
 section-shipping = Shipping
 section-status = Status
 section-task = Task

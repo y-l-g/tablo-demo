@@ -72,36 +72,53 @@ impl Resource for TaskResource {
                 ))
                 .group_by(lens!(Task.status)),
             )
-            .detail(Detail::new(
-                Section::new(tablo::text!("section-task")).columns((
+            // The task itself beside where it stands and when it is due, as its form lays them.
+            .detail(Detail::new(Grid::new(3).columns((
+                Section::new(tablo::text!("section-task")).span(2).columns((
+                    shown.title.text(),
                     Grid::new(2).columns((
-                        shown.title.text(),
                         RelationColumn::of::<ProjectResource>(relation!(Task.project)),
                         RelationColumn::of::<EmployeeResource>(relation!(Task.assignee)),
-                        shown.status.text().badge(),
-                        shown.priority.text().badge(),
-                        shown.estimated_hours.text(),
-                        shown.actual_hours.text(),
-                        shown.due_date.date(),
-                        shown.completed_at.date(),
-                        shown.labels.list(),
                     )),
                     shown.description.text(),
+                    shown.labels.list(),
                 )),
-            ))
+                Group::new().columns((
+                    Section::new(tablo::text!("section-status")).columns((
+                        shown.status.text().badge(),
+                        shown.priority.text().badge(),
+                        shown.completed_at.date(),
+                    )),
+                    Section::new(tablo::text!("section-schedule")).columns((
+                        shown.due_date.date(),
+                        shown.estimated_hours.text(),
+                        shown.actual_hours.text(),
+                    )),
+                )),
+            ))))
             .form(Schema::new(
-                Section::new(tablo::text!("section-task-details")).schema(Grid::new(2).schema((
-                    c.title,
-                    c.project_id.searchable(),
-                    c.assigned_to.searchable(),
-                    c.status.buttons(),
-                    c.priority.radio(),
-                    c.estimated_hours.suffix(tablo::text!("unit-hours")),
-                    c.due_date,
-                    c.labels,
-                    c.description.multiline(4),
-                    completed_at,
-                ))),
+                Grid::new(3).schema((
+                    Section::new(tablo::text!("section-task-details"))
+                        .span(2)
+                        .schema((
+                            c.title,
+                            Grid::new(2)
+                                .schema((c.project_id.searchable(), c.assigned_to.searchable())),
+                            c.description.multiline(6),
+                            c.labels,
+                        )),
+                    Group::new().schema((
+                        Section::new(tablo::text!("section-status")).schema((
+                            c.status.buttons(),
+                            c.priority.buttons(),
+                            completed_at,
+                        )),
+                        Section::new(tablo::text!("section-schedule")).schema((
+                            c.due_date,
+                            c.estimated_hours.suffix(tablo::text!("unit-hours")),
+                        )),
+                    )),
+                )),
             ))
             .record_title(lens!(Task.title))
             .action::<StartTask>()

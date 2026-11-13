@@ -244,31 +244,42 @@ pub enum ExpenseCategory {
 /// Where an expense sits in its approval flow.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, toasty::Embed, tablo::Options)]
 pub enum ExpenseStatus {
-    #[option(color = "gray")]
+    #[option(color = "gray", icon = tablo::ui::icons::PENCIL)]
     Draft,
-    #[option(color = "info")]
+    #[option(color = "info", icon = icons::SEND)]
     Submitted,
-    #[option(color = "success")]
+    #[option(color = "success", icon = tablo::ui::icons::CIRCLE_CHECK)]
     Approved,
-    #[option(color = "danger")]
+    #[option(color = "danger", icon = tablo::ui::icons::CIRCLE_X)]
     Rejected,
-    #[option(color = "primary")]
+    #[option(color = "primary", icon = icons::BANKNOTE)]
     Reimbursed,
 }
 
 /// Where a leave request sits in its approval flow.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, toasty::Embed, tablo::Options)]
 pub enum LeaveStatus {
-    #[option(color = "warning")]
+    #[option(color = "warning", icon = icons::HOURGLASS)]
     Pending,
-    #[option(color = "success")]
+    #[option(color = "success", icon = tablo::ui::icons::CIRCLE_CHECK)]
     Approved,
-    #[option(color = "danger")]
+    #[option(color = "danger", icon = tablo::ui::icons::CIRCLE_X)]
     Rejected,
-    #[option(color = "info")]
+    #[option(color = "info", icon = icons::PLANE)]
     Taken,
-    #[option(color = "gray")]
+    #[option(color = "gray", icon = icons::BAN)]
     Cancelled,
+}
+
+/// The icons of the expense and leave statuses that have none in Tablo's own set.
+mod icons {
+    use topcoat::icon::{IconData, iconify::iconify_icon};
+
+    pub(super) const SEND: IconData = iconify_icon!("lucide:send");
+    pub(super) const BANKNOTE: IconData = iconify_icon!("lucide:banknote");
+    pub(super) const HOURGLASS: IconData = iconify_icon!("lucide:hourglass");
+    pub(super) const PLANE: IconData = iconify_icon!("lucide:plane");
+    pub(super) const BAN: IconData = iconify_icon!("lucide:ban");
 }
 
 /// What a leave request is for.

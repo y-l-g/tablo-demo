@@ -41,13 +41,13 @@ impl Resource for AuthorResource {
                 )),
             ))
             .form(Schema::new(
-                Section::new(tablo::text!("section-author")).schema((
+                Section::new(tablo::text!("section-author")).schema(Grid::new(2).schema((
                     c.name,
                     c.email.email().unique(),
-                    c.bio.multiline(5),
                     c.github_handle,
                     c.twitter_handle,
-                )),
+                    c.bio.multiline(5),
+                ))),
             ))
             .record_title(lens!(Author.name))
     }

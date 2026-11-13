@@ -52,6 +52,7 @@ impl Resource for ExpenseLineResource {
                 ))),
             ))
             .create_column(lens!(ExpenseLine.amount))
+            .record_title(lens!(ExpenseLine.description))
     }
 
     /// Stores the amount the quantity and the unit price come to.
