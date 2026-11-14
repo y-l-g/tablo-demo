@@ -1,6 +1,8 @@
 //! The `admin` panel: every resource of the demo, for staff alone.
 
-use tablo::{Auth, Panel, Theme, audit::PanelAuditExt, when};
+use std::time::Duration;
+
+use tablo::{Auth, Panel, Sessions, Theme, audit::PanelAuditExt, when};
 use topcoat::icon::iconify::iconify_icon;
 
 use crate::access;
@@ -14,7 +16,17 @@ use crate::{blog, hr, projects, shop};
 /// audit log, then each domain's resources.
 pub fn admin_panel(config: &Config) -> Panel {
     super::shared(Panel::new("admin"), Theme::Jade)
-        .auth(Auth::custom(accounts::password_auth()).impersonation(accounts::impersonation()))
+        .auth(
+            Auth::custom(accounts::password_auth())
+                .impersonation(accounts::impersonation())
+                // Staff reach every domain: a session ends with the working day, or after half
+                // an hour without a request.
+                .sessions(
+                    Sessions::new()
+                        .lifetime(Duration::from_hours(10))
+                        .idle_timeout(Duration::from_mins(30)),
+                ),
+        )
         // An address's "Show on map" lands on OpenStreetMap, which a form may follow only to an
         // origin the policy's `form-action` names.
         .content_security_policy_source("form-action", shop::MAP_ORIGIN)
