@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use tablo_demo::{config::Config, router, seed};
 use toasty::Db;
 use tracing_subscriber::EnvFilter;
@@ -21,7 +23,14 @@ async fn main() {
     seed::seed(&mut db, &config.upload_dir)
         .await
         .expect("seed the demo data");
-    topcoat::start(router::router(db, &config))
+    let router = router::router(db, &config);
+    topcoat::start(router.clone()).await.expect("serve");
+    // A sign-up's verification link and a reset link go out after the response, so a stop waits
+    // for the ones already promised, but not past what an orchestrator allows before it kills us.
+    if tokio::time::timeout(Duration::from_secs(10), tablo::settled(&router))
         .await
-        .expect("serve");
+        .is_err()
+    {
+        tracing::warn!("stopping with auth mail not yet sent");
+    }
 }

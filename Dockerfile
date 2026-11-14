@@ -4,7 +4,7 @@ FROM rust:1.100-bookworm AS builder
 
 # The CLI bundles the assets the panel loads at runtime. It must be the Topcoat
 # release Cargo.lock records, or the bundle it writes is unreadable.
-ARG TOPCOAT_VERSION=0.12.0
+ARG TOPCOAT_VERSION=0.12.1
 
 WORKDIR /src/tablo-demo
 COPY . .

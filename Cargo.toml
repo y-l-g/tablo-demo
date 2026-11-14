@@ -13,8 +13,9 @@ rust_decimal = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toasty = { version = "0.11", features = ["jiff", "serde", "sqlite"] }
-tokio = { version = "1", features = ["fs"] }
+tokio = { version = "1", features = ["fs", "time"] }
 topcoat = { version = "0.12", features = ["serve", "tailwind", "font", "font-fontsource", "asset", "runtime", "multipart", "mail", "mail-smtp"] }
+tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = "1.23"
 
