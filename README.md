@@ -47,7 +47,7 @@ The asset bundle has to come from the same Topcoat release, so install its CLI
 at that version:
 
 ```sh
-cargo install topcoat-cli --version 0.12.0 --locked
+cargo install topcoat-cli --version 0.12.1 --locked
 ```
 
 ```sh
@@ -142,7 +142,8 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   dashboards' percentages `12.5%` and `12,5 %`.
 - **An audit log**, Tablo's own, which administrators read at `/admin/audit-log`:
   every write of the `admin` panel, in the write's transaction, with the fields
-  it changed before and after.
+  it changed before and after, each CSV export with the rows it held, and each
+  sign-in, refused sign-in, sign-out and change of password or second factor.
 - **Acting as a colleague**: the administrator's Staff page, with Tablo's
   impersonation button per colleague, opens the `admin` panel as the shop
   manager, the HR manager or the viewer sees it, for half an hour or until Stop,
