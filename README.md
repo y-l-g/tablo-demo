@@ -13,10 +13,12 @@ Three panels are mounted:
 | `partners` | `/partners` | the blog's authors and categories, to read, behind the demo's own sign-in page, not a Tablo form |
 
 The page at `/` introduces them, with a button per demo account that signs in to
-the first two, a tour of what Tablo covers, and switches for the language and the theme that
-the panels share. It is
+the first two, a grid of what each staff role reaches drawn from `src/access.rs`, a tour of
+what Tablo covers, and switches for the language and the theme that the panels share. It is
 public, rendered in the admin panel's document and catalog through its
-`PanelHandle`, in [`src/welcome.rs`](src/welcome.rs).
+`PanelHandle`, in [`src/welcome.rs`](src/welcome.rs). It wears Ledger, the identity it shares
+with Tablo's site and the SaaS template: [`ledger.css`](ledger.css) is a copy of the one in
+Tablo's `site/assets/`, imported by `styles.css`.
 
 The seed creates one account per staff role, each signing in with `password`;
 the welcome page signs in as any of them in one click, through the panel's own
