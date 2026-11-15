@@ -1,4 +1,6 @@
+@import "./ledger.css";
 @source "./src/**/*.rs";
 
 /* No tokens of its own: each panel wears one of Tablo's themes (`src/panels/`), which this file
-   would override. */
+   would override. `ledger.css` styles the welcome page; it is a copy of the one in Tablo's
+   `site/assets/`, where it is edited. */

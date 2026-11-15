@@ -2,6 +2,7 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src");
     println!("cargo:rerun-if-changed=styles.css");
+    println!("cargo:rerun-if-changed=ledger.css");
     println!("cargo:rerun-if-changed=assets/iconify");
     // The sidebar's icons, from the Lucide set vendored beside the app so the
     // build needs no network.
