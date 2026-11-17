@@ -12,6 +12,7 @@ mod partners;
 
 pub use admin::admin_panel;
 pub use app::app_panel;
+pub use brand::LOGO_URL;
 pub use partners::{PartnerHome, partners_panel};
 
 use tablo::{Color, Environment, Panel, Theme};

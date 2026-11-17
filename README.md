@@ -1,3 +1,5 @@
+<img src="assets/brand/logo.svg" width="64" height="64" alt="Tablo's mark: a three-by-three grid whose ink header row and red middle column draw a T">
+
 # Tablo demo
 
 A demo of [Tablo](https://github.com/y-l-g/tablo): models, relations, resources,
