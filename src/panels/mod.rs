@@ -15,21 +15,18 @@ pub use app::app_panel;
 pub use brand::LOGO_URL;
 pub use partners::{PartnerHome, partners_panel};
 
-use tablo::{Color, Environment, Panel, Theme};
+use tablo::{Panel, Theme};
 use topcoat::l10n::locale;
 
 use crate::accounts::{ADMIN_EMAIL, ADMIN_PASSWORD};
 
 /// What every panel shares: the brand in Ledger, which the visitor may swap from the
-/// appearance drawer, the "Demo" ribbon, a login hint naming the demo administrator's account, and
-/// English and French, the browser's `Accept-Language` choosing, with the demo's own words from
-/// `locales/`.
+/// appearance drawer, a login hint naming the demo administrator's account, and English and
+/// French, the browser's `Accept-Language` choosing, with the demo's own words from `locales/`.
 fn shared(panel: Panel) -> Panel {
     panel
         .brand(brand::brand(Theme::Ledger).look(appearance::visitor_look))
         .banner::<appearance::Appearance>()
-        // Every page, sign-in included, says its data is the demo's, and so does the tab title.
-        .environment(Environment::new("Demo").color(Color::Info))
         .login_hint(format!("{ADMIN_EMAIL} / {ADMIN_PASSWORD}"))
         .locales([locale!("en"), locale!("fr")])
         .translations(locale!("en"), include_str!("../../locales/en.ftl"))

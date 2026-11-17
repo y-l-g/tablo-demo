@@ -143,8 +143,6 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   (Ledger, Jade, Amber, Graphite and Iris) and the sidebar's frame; the pick
   reaches all three panels through `Brand::look`, and a reset brings back
   Ledger.
-  Every page, sign-in included, wears a "Demo" ribbon, and its tab title starts
-  with `[Demo]`.
 - **Numbers in the reader's locale**: amounts and counts in the lists and on the
   dashboards read `$1,234.50` in English and `1 234,50 $` in French, and the
   dashboards' percentages `12.5%` and `12,5 %`.
