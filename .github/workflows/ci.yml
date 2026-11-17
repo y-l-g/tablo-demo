@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.99
+      - uses: dtolnay/rust-toolchain@1.100
         with:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.99
+      - uses: dtolnay/rust-toolchain@1.100
       - uses: Swatinem/rust-cache@v2
       - name: Fetch the Tailwind CLI
         run: .github/scripts/fetch-tailwind.sh linux-x64 target/topcoat/cache/tailwind

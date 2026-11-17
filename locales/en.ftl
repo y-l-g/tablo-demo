@@ -595,3 +595,18 @@ home-role-member = Member of two teams
 staff-name = Name
 staff-email = Email
 staff-role = Role
+
+## Appearance
+
+appearance-open = Customize the appearance
+appearance-title = Appearance
+appearance-description = Try Tablo's themes on this demo.
+appearance-close = Close
+appearance-mode = Mode
+appearance-theme = Theme
+appearance-sidebar = Sidebar
+appearance-sidebar-ruled = Ruled
+appearance-sidebar-inset = Inset
+appearance-sidebar-floating = Floating
+appearance-reset = Restore the panel's look
+appearance-note = Your picks apply to the three panels and stay in this browser. A theme brings its own sidebar.
