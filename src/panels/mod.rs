@@ -6,6 +6,7 @@
 
 mod admin;
 mod app;
+mod appearance;
 mod brand;
 mod partners;
 
@@ -18,12 +19,14 @@ use topcoat::l10n::locale;
 
 use crate::accounts::{ADMIN_EMAIL, ADMIN_PASSWORD};
 
-/// What every panel shares: the brand in the panel's `theme`, the "Demo" ribbon, a login hint
-/// naming the demo administrator's account, and English and French, the browser's
-/// `Accept-Language` choosing, with the demo's own words from `locales/`.
+/// What every panel shares: the brand in the panel's `theme`, which the visitor may swap from the
+/// appearance drawer, the "Demo" ribbon, a login hint naming the demo administrator's account, and
+/// English and French, the browser's `Accept-Language` choosing, with the demo's own words from
+/// `locales/`.
 fn shared(panel: Panel, theme: Theme) -> Panel {
     panel
-        .brand(brand::brand(theme))
+        .brand(brand::brand(theme).look(appearance::visitor_look))
+        .banner::<appearance::Appearance>()
         // Every page, sign-in included, says its data is the demo's, and so does the tab title.
         .environment(Environment::new("Demo").color(Color::Info))
         .login_hint(format!("{ADMIN_EMAIL} / {ADMIN_PASSWORD}"))

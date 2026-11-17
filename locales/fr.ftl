@@ -702,3 +702,18 @@ home-role-member = Membre de deux équipes
 staff-name = Nom
 staff-email = E-mail
 staff-role = Rôle
+
+## Appearance
+
+appearance-open = Personnaliser l'apparence
+appearance-title = Apparence
+appearance-description = Essayez les thèmes de Tablo sur cette démo.
+appearance-close = Fermer
+appearance-mode = Mode
+appearance-theme = Thème
+appearance-sidebar = Barre latérale
+appearance-sidebar-ruled = Bordée
+appearance-sidebar-inset = Encadrée
+appearance-sidebar-floating = Flottante
+appearance-reset = Rétablir l'apparence du panneau
+appearance-note = Vos choix valent pour les trois panneaux et restent dans ce navigateur. Un thème apporte sa propre barre latérale.
