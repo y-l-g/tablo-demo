@@ -23,6 +23,7 @@ use topcoat::{
 
 use crate::access::{Access, Domain};
 use crate::accounts::{self, StaffRole};
+use crate::panels::LOGO_URL;
 use crate::partners::PartnerPanel;
 
 /// The mounted admin panel, whose document, translations and URLs the page borrows.
@@ -185,7 +186,7 @@ async fn welcome(cx: &Cx) -> Result<impl View> {
             <div class="ld-sheet">
                 <header class="ld-mast">
                     <a class="ld-brand" href="/">
-                        mark()
+                        <img src=(LOGO_URL) width="32" height="32" alt="">
                         "Tablo"
                         <small>"demo"</small>
                     </a>
@@ -471,20 +472,6 @@ fn initials(name: &str) -> String {
         .filter_map(|word| word.chars().next())
         .take(2)
         .collect()
-}
-
-/// Tablo's mark: a three-by-three grid whose header row is ink and whose middle column is red,
-/// which draws a T.
-#[component]
-async fn mark(cx: &Cx) -> Result<impl View> {
-    Ok(view! {
-        <svg viewBox="0 0 32 32" aria-hidden="true">
-            <rect x="1" y="1" width="30" height="30" fill="var(--ld-sheet)" stroke="var(--ld-ink)" stroke-width="2"></rect>
-            <rect x="1" y="1" width="30" height="10" fill="var(--ld-ink)"></rect>
-            <rect x="11" y="11" width="10" height="20" fill="var(--ld-red)"></rect>
-            <path d="M11 11v20M21 11v20M1 21h10M21 21h10" fill="none" stroke="var(--ld-ink)" stroke-width="1.5"></path>
-        </svg>
-    })
 }
 
 /// An account's initials, role and name.
