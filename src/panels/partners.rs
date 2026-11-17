@@ -1,7 +1,7 @@
 //! The `partners` panel: the blog's authors and categories, to read, for an account the demo signs
 //! in on its own page.
 
-use tablo::{Auth, Page, PageDef, Panel, Theme, auth};
+use tablo::{Auth, Page, PageDef, Panel, auth};
 use topcoat::{
     Result,
     context::Cx,
@@ -16,8 +16,7 @@ use crate::partners::PartnerSignIn;
 /// The partner panel, whose users the host app names. The account it admits reads and changes
 /// nothing else: [`access`](crate::access) holds it to reading.
 pub fn partners_panel() -> Panel {
-    // Amber, so a partner never mistakes it for the staff's panel.
-    super::shared(Panel::new("partners"), Theme::Amber)
+    super::shared(Panel::new("partners"))
         .auth(Auth::external(PartnerSignIn))
         .home::<PartnerHome>()
         .resource::<blog::PostCategoryResource>()
