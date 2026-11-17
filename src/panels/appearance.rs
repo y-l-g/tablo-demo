@@ -39,7 +39,7 @@ const SCHEME_COOKIE: &str = "tablo_theme";
 const PALETTE: IconData = iconify_icon!("lucide:palette");
 
 /// A theme as the drawer offers it: its cookie value, the theme, and the colors its preview
-/// paints, copied from Tablo's `theme.css`.
+/// paints, copied from Tablo's theme files (`tablo-build/src/theme/`).
 struct ThemeChoice {
     name: &'static str,
     theme: Theme,
@@ -54,7 +54,21 @@ struct Swatch {
     primary: &'static str,
 }
 
-const THEMES: [ThemeChoice; 4] = [
+const THEMES: [ThemeChoice; 5] = [
+    ThemeChoice {
+        name: "ledger",
+        theme: Theme::Ledger,
+        light: Swatch {
+            page: "#eceee2",
+            sidebar: "#f7f8f1",
+            primary: "#d33c1c",
+        },
+        dark: Swatch {
+            page: "#0d120e",
+            sidebar: "#131913",
+            primary: "#ff6a45",
+        },
+    },
     ThemeChoice {
         name: "jade",
         theme: Theme::Jade,

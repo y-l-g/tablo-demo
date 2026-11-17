@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use tablo::{Auth, Panel, Sessions, Theme, audit::PanelAuditExt, when};
+use tablo::{Auth, Panel, Sessions, audit::PanelAuditExt, when};
 use topcoat::icon::iconify::iconify_icon;
 
 use crate::access;
@@ -15,7 +15,7 @@ use crate::{blog, hr, projects, shop};
 /// The admin panel: the home, the domains' dashboards, the staff an administrator acts as, the
 /// audit log, then each domain's resources.
 pub fn admin_panel(config: &Config) -> Panel {
-    super::shared(Panel::new("admin"), Theme::Jade)
+    super::shared(Panel::new("admin"))
         .auth(
             Auth::custom(accounts::password_auth())
                 .impersonation(accounts::impersonation())

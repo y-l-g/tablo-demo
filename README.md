@@ -136,13 +136,13 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   order pipeline, the leave requests by status, and the articles by publishing
   state, each counting the rows its list shows under the current tab, search and
   filters. The order and leave figures link to their list tabs.
-- **Themes**, one of Tablo's on each panel through `Brand::theme`: Jade on
-  `admin`, Iris on `app` and Amber, close to Filament's look, on `partners`,
-  each in light and dark, with a logo that turns light on a dark page. A
-  button in the corner of every panel page opens an appearance drawer, a
-  `Banner` of the demo's, to pick the scheme, another of the four themes and
-  the sidebar's frame; the pick reaches all three panels through
-  `Brand::look`, and a reset brings back each panel's own.
+- **Themes**: every panel wears Ledger, the theme of Tablo's site, through
+  `Brand::theme`, in light and dark, with a logo that turns light on a dark
+  page. A button in the corner of every panel page opens an appearance drawer,
+  a `Banner` of the demo's, to pick the scheme, one of Tablo's five themes
+  (Ledger, Jade, Amber, Graphite and Iris) and the sidebar's frame; the pick
+  reaches all three panels through `Brand::look`, and a reset brings back
+  Ledger.
   Every page, sign-in included, wears a "Demo" ribbon, and its tab title starts
   with `[Demo]`.
 - **Numbers in the reader's locale**: amounts and counts in the lists and on the
