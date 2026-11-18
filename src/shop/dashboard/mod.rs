@@ -16,7 +16,7 @@ use super::{
 };
 use crate::access::{self, Domain};
 use crate::shared::stats::{
-    dollars, float, money, percent, percent_change, points_change, record_tile, share, trended,
+    WEEKS, dollars, float, money, percent, percent_change, points_change, share, trended,
     week_labels,
 };
 
@@ -259,7 +259,8 @@ impl Widget for CustomersWidget {
         };
 
         let customer_tile =
-            record_tile::<CustomerResource>(cx, |customer: &Customer| customer.created_at).await?;
+            Stat::records_by_week::<CustomerResource>(cx, Customer::fields().created_at(), WEEKS)
+                .await?;
         Ok(tablo::stats(
             cx,
             customer_tile.into_iter().chain([

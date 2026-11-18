@@ -5,35 +5,15 @@ use std::cmp::Ordering;
 
 use jiff::{Timestamp, civil::Date};
 use rust_decimal::{Decimal, prelude::ToPrimitive};
+use tablo::Number;
 use tablo::prelude::*;
-use tablo::{Number, db::db};
-use topcoat::{Result, context::Cx};
+use topcoat::context::Cx;
 
 /// The window the tiles compare, a month of days, against the month before it.
 pub const MONTH: i64 = 30;
 /// The sparklines draw this many weeks, oldest first.
 pub const WEEK: i64 = 7;
 pub const WEEKS: usize = 12;
-
-/// The tile counting `R`'s records, with a sparkline of the weeks they were created in. Nothing
-/// when the request may not list `R`, and nothing is read then. `created` reads a record's
-/// creation time.
-pub async fn record_tile<R: Resource>(
-    cx: &Cx,
-    created: impl Fn(&R::Model) -> Timestamp,
-) -> Result<Option<Stat>> {
-    let Some(stat) = Stat::records::<R>(cx).await? else {
-        return Ok(None);
-    };
-    let now = Timestamp::now();
-    let records = scoped_query::<R>(cx)?.exec(&mut db(cx)?).await?;
-    let weeks = weekly_sums(
-        records
-            .iter()
-            .map(|record| (days_since(now, created(record)), 1.0)),
-    );
-    Ok(Some(stat.chart(weeks)))
-}
 
 /// Each of the last [`WEEKS`] weeks, oldest first, labelled with the day it began, spelled as the
 /// locale spells a day and a month.

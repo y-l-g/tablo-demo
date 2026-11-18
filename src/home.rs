@@ -6,7 +6,7 @@ use topcoat::{Result, context::Cx, icon::iconify::iconify_icon, view::View};
 
 use crate::blog::{Post, PostResource};
 use crate::hr::{Employee, EmployeeResource, HoursWidget};
-use crate::shared::stats::record_tile;
+use crate::shared::stats::WEEKS;
 use crate::shop::{Order, OrderResource, Product, ProductResource, RevenueWidget};
 
 /// The panel home: how many records of each resource the demo holds.
@@ -37,16 +37,16 @@ impl Widget for RecordsWidget {
 
     async fn render(cx: &Cx) -> Result<impl View> {
         let tiles = [
-            record_tile::<PostResource>(cx, |post: &Post| post.created_at)
+            Stat::records_by_week::<PostResource>(cx, Post::fields().created_at(), WEEKS)
                 .await?
                 .map(|stat| stat.detail(tablo::text!("stat-detail-posts"))),
-            record_tile::<ProductResource>(cx, |product: &Product| product.created_at)
+            Stat::records_by_week::<ProductResource>(cx, Product::fields().created_at(), WEEKS)
                 .await?
                 .map(|stat| stat.detail(tablo::text!("stat-detail-products"))),
-            record_tile::<OrderResource>(cx, |order: &Order| order.created_at)
+            Stat::records_by_week::<OrderResource>(cx, Order::fields().created_at(), WEEKS)
                 .await?
                 .map(|stat| stat.detail(tablo::text!("stat-detail-orders"))),
-            record_tile::<EmployeeResource>(cx, |employee: &Employee| employee.created_at)
+            Stat::records_by_week::<EmployeeResource>(cx, Employee::fields().created_at(), WEEKS)
                 .await?
                 .map(|stat| stat.detail(tablo::text!("stat-detail-employees"))),
         ];

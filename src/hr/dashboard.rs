@@ -13,7 +13,7 @@ use super::{
 use crate::access::{self, Domain};
 use crate::projects::{ProjectResource, Timesheet, TimesheetResource};
 use crate::shared::stats::{
-    MONTH, alert, days_before, dollars, float, linked, percent, percent_change, record_tile, share,
+    MONTH, WEEKS, alert, days_before, dollars, float, linked, percent, percent_change, share,
     trended, week_labels, weekly_sums,
 };
 
@@ -77,7 +77,7 @@ impl Widget for WorkforceWidget {
         let open_capacity = (capacity - active.len() as i64).max(0);
 
         let tiles = [
-            record_tile::<EmployeeResource>(cx, |employee: &Employee| employee.created_at)
+            Stat::records_by_week::<EmployeeResource>(cx, Employee::fields().created_at(), WEEKS)
                 .await?
                 .map(|stat| {
                     stat.detail(tablo::text!(
@@ -171,9 +171,10 @@ impl Widget for TimeWidget {
             "stat-detail-billable",
             hours = Number::format_in(cx, billable, 1)
         ));
-        let timesheets = record_tile::<TimesheetResource>(cx, |sheet: &Timesheet| sheet.created_at)
-            .await?
-            .map(|stat| stat.detail(tablo::text!("stat-detail-timesheets")));
+        let timesheets =
+            Stat::records_by_week::<TimesheetResource>(cx, Timesheet::fields().created_at(), WEEKS)
+                .await?
+                .map(|stat| stat.detail(tablo::text!("stat-detail-timesheets")));
 
         let projects = scoped_query::<ProjectResource>(cx)?
             .exec(&mut db(cx)?)
