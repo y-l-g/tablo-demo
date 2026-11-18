@@ -7,6 +7,9 @@
 //! | HR manager    | none | read | full | full     | yes | no          |
 //! | Viewer        | read | read | read | read     | no  | no          |
 //!
+//! Read access browses a domain's lists and records but downloads none of them: the CSV export is
+//! `Ability::Export`, which only full access allows.
+//!
 //! The welcome page draws this table from the same functions.
 
 use tablo::{Ability, Policy, auth};
@@ -79,7 +82,8 @@ pub fn role(cx: &Cx) -> Option<StaffRole> {
 }
 
 /// The policy of a resource in `domain`: every ability under full access, the reads under read
-/// access, and nothing otherwise, the sidebar entry included.
+/// access, and nothing otherwise, the sidebar entry included. The CSV export is not a read, so read
+/// access hides the list's Export button and the export route answers 403.
 pub fn policy<M: 'static>(domain: Domain) -> impl Policy<M> {
     move |cx: &Cx, ability: Ability<'_, M>| match role(cx).map(|role| role.access(domain)) {
         Some(Access::Full) => true,
