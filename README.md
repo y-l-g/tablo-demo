@@ -33,7 +33,7 @@ audit log gated to the roles that read them.
 | `admin@example.com`  | Administrator | everything, the audit log and acting as a colleague included |
 | `shop@example.com`   | Shop manager  | the shop and the blog; the projects read-only; no HR         |
 | `hr@example.com`     | HR manager    | HR and the projects, pay included; the blog read-only; no shop |
-| `viewer@example.com` | Viewer        | every domain read-only, without pay                          |
+| `viewer@example.com` | Viewer        | every domain read-only, without pay or CSV export            |
 
 An account that signs up on `/app` holds no role: it verifies its address,
 registers a team of its own, and `/admin` refuses it.
@@ -148,7 +148,8 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   dashboards' percentages `12.5%` and `12,5 %`.
 - **An audit log**, Tablo's own, which administrators read at `/admin/audit-log`:
   every write of the `admin` panel, in the write's transaction, with the fields
-  it changed before and after, each CSV export with the rows it held, and each
+  it changed before and after, custom actions such as Adjust price included,
+  each CSV export with the rows it held, and each
   sign-in, refused sign-in, sign-out and change of password or second factor.
 - **Acting as a colleague**: the administrator's Staff page, with Tablo's
   impersonation button per colleague, opens the `admin` panel as the shop
