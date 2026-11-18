@@ -153,8 +153,10 @@ Failed sends are logged to stdout. `RUST_LOG` sets the level, `info` by default.
   sign-in, refused sign-in, sign-out and change of password or second factor.
 - **Acting as a colleague**: the administrator's Staff page, with Tablo's
   impersonation button per colleague, opens the `admin` panel as the shop
-  manager, the HR manager or the viewer sees it, for half an hour or until Stop,
-  and the audit log names the administrator on every change made meanwhile.
+  manager, the HR manager or the viewer sees it, for half an hour or until Stop.
+  Tablo's impersonation is read-only unless the app calls `writable()`; the demo
+  does, so the administrator can try the role's buttons, and the audit log names
+  the administrator on every change made meanwhile.
 - **Navigation** that swaps the page in place, and an icon of its own for every
   sidebar entry, from a Lucide subset the build stages.
 - **Areas**: the `app` panel's settings live under `/app/settings`, one sidebar

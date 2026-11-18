@@ -3748,7 +3748,7 @@ dependencies = [
 [[package]]
 name = "tablo"
 version = "0.11.1"
-source = "git+https://github.com/y-l-g/tablo.git#654787da37f15d6ede694eb158b459474fe16a07"
+source = "git+https://github.com/y-l-g/tablo.git#4c5a7a7232d7c78e47787b3af4891ce80c32b38d"
 dependencies = [
  "tablo-audit",
  "tablo-core",
@@ -3760,7 +3760,7 @@ dependencies = [
 [[package]]
 name = "tablo-audit"
 version = "0.11.1"
-source = "git+https://github.com/y-l-g/tablo.git#654787da37f15d6ede694eb158b459474fe16a07"
+source = "git+https://github.com/y-l-g/tablo.git#4c5a7a7232d7c78e47787b3af4891ce80c32b38d"
 dependencies = [
  "jiff",
  "serde",
@@ -3773,7 +3773,7 @@ dependencies = [
 [[package]]
 name = "tablo-build"
 version = "0.11.1"
-source = "git+https://github.com/y-l-g/tablo.git#654787da37f15d6ede694eb158b459474fe16a07"
+source = "git+https://github.com/y-l-g/tablo.git#4c5a7a7232d7c78e47787b3af4891ce80c32b38d"
 dependencies = [
  "topcoat",
 ]
@@ -3781,7 +3781,7 @@ dependencies = [
 [[package]]
 name = "tablo-core"
 version = "0.11.1"
-source = "git+https://github.com/y-l-g/tablo.git#654787da37f15d6ede694eb158b459474fe16a07"
+source = "git+https://github.com/y-l-g/tablo.git#4c5a7a7232d7c78e47787b3af4891ce80c32b38d"
 dependencies = [
  "aes-gcm 0.11.1",
  "ammonia",
@@ -3845,7 +3845,7 @@ dependencies = [
 [[package]]
 name = "tablo-macros"
 version = "0.11.1"
-source = "git+https://github.com/y-l-g/tablo.git#654787da37f15d6ede694eb158b459474fe16a07"
+source = "git+https://github.com/y-l-g/tablo.git#4c5a7a7232d7c78e47787b3af4891ce80c32b38d"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -3856,7 +3856,7 @@ dependencies = [
 [[package]]
 name = "tablo-ui"
 version = "0.11.1"
-source = "git+https://github.com/y-l-g/tablo.git#654787da37f15d6ede694eb158b459474fe16a07"
+source = "git+https://github.com/y-l-g/tablo.git#4c5a7a7232d7c78e47787b3af4891ce80c32b38d"
 dependencies = [
  "topcoat",
 ]
