@@ -224,7 +224,7 @@ impl Banner for Appearance {
                     action="/appearance"
                     class="relative ml-auto flex h-full w-full max-w-sm translate-x-full flex-col gap-6 overflow-y-auto border-l border-border bg-card p-6 text-card-foreground shadow-xl [transition:translate_200ms_ease-out] in-[[open]]:translate-x-0 starting:in-[[open]]:translate-x-full motion-reduce:transition-none"
                 >
-                    <input type="hidden" name=(tablo::csrf::FIELD_NAME) value=(csrf)>
+                    <input type="hidden" name=(tablo::csrf::FIELD_NAME) value=(tablo::csrf::mask(&csrf))>
                     <input type="hidden" name="back" value=(back)>
                     <div class="flex items-start justify-between gap-4">
                         <div class="grid gap-1">
