@@ -107,7 +107,7 @@ async fn sign_in_page(cx: &Cx) -> Result<impl View> {
             <h1 class="text-2xl font-semibold tracking-tight">(heading)</h1>
             <p class="text-sm text-muted-foreground text-pretty">(body)</p>
             <form method="post" action=(SIGN_IN)>
-                <input type="hidden" name=(tablo::csrf::FIELD_NAME) value=(csrf)>
+                <input type="hidden" name=(tablo::csrf::FIELD_NAME) value=(tablo::csrf::mask(&csrf))>
                 <input type="hidden" name="return_to" value=(return_to.unwrap_or_default())>
                 <button type="submit" class="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
                     (submit)

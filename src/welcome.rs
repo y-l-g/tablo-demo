@@ -196,7 +196,7 @@ async fn welcome(cx: &Cx) -> Result<impl View> {
                         <div class="ld-seg" role="group" aria-label=(t("tablo-shell-language"))>
                             for (tag, name, current) in languages {
                                 <form method="post" action="/locale">
-                                    <input type="hidden" name=(tablo::csrf::FIELD_NAME) value=(csrf.clone())>
+                                    <input type="hidden" name=(tablo::csrf::FIELD_NAME) value=(tablo::csrf::mask(&csrf))>
                                     <input type="hidden" name="locale" value=(tag)>
                                     <button type="submit" title=(name) lang=(tag) aria-current=(current.then_some("true"))>
                                         (tag)
@@ -504,7 +504,7 @@ async fn sign_in(
 ) -> Result<impl View> {
     Ok(view! {
         <form method="post" action=(action)>
-            <input type="hidden" name=(tablo::csrf::FIELD_NAME) value=(csrf)>
+            <input type="hidden" name=(tablo::csrf::FIELD_NAME) value=(tablo::csrf::mask(&csrf))>
             <input type="hidden" name=(tablo::auth::LOGIN_FIELD) value=(email)>
             <input type="hidden" name=(tablo::auth::PASSWORD_FIELD) value=(accounts::ADMIN_PASSWORD)>
             <button type="submit" class=(class)>
