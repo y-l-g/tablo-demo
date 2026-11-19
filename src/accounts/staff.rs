@@ -19,6 +19,9 @@ use crate::access;
 
 /// Who may act as whom on the `admin` panel: an administrator as any other member of staff, for
 /// half an hour. Another administrator reaches nothing more, so acting as one shows nothing new.
+///
+/// Writable, unlike Tablo's default: checking what a role reaches means seeing its buttons and
+/// trying them, and the audit log names the administrator on every change made meanwhile.
 pub fn impersonation() -> Impersonation<SignedIn> {
     Impersonation::new(|_cx, actor: &SignedIn, target: &SignedIn| {
         actor.user.role == Some(StaffRole::Administrator)
@@ -28,6 +31,7 @@ pub fn impersonation() -> Impersonation<SignedIn> {
                 .is_some_and(|role| role != StaffRole::Administrator)
     })
     .lifetime(Duration::from_secs(30 * 60))
+    .writable()
 }
 
 /// The staff an administrator may act as, each with a button that does.
