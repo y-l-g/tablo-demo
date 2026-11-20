@@ -29,6 +29,8 @@ pub fn router(db: Db, config: &Config) -> Router {
         .discover()
         .with(db)
         .with(config.cookie_key.clone())
+        // Before the panels mount, so each panel's handle carries it too.
+        .with(config.base_url.clone())
         // The partner sign-in's sessions ride in these cookies, at Topcoat's default lifetime; the
         // panels keep theirs in a cookie of their own.
         .layer(CookieLayer::new())

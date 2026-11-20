@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use topcoat::{cookie::Key, mail::Mailbox as Sender};
+use topcoat::{context::BaseUrl, cookie::Key, mail::Mailbox as Sender};
 
 /// The demo's settings, from the environment.
 pub struct Config {
@@ -13,8 +13,9 @@ pub struct Config {
     pub upload_dir: PathBuf,
     /// The address the app panel's mail comes from.
     pub sender: Sender,
-    /// The URL the app answers on, which every mailed link starts with.
-    pub base_url: String,
+    /// The URL the app answers on, which every mailed link starts with. The router carries it, so
+    /// a page or a panel handle's context reads it with `topcoat::context::base_url`.
+    pub base_url: BaseUrl,
     /// The SMTP server the app panel's mail goes through, `None` when no mail goes out.
     pub smtp: Option<Smtp>,
 }
@@ -35,8 +36,10 @@ impl Config {
             upload_dir: var("TABLO_DEMO_UPLOAD_DIR")
                 .map_or_else(|| PathBuf::from("target/demo-uploads"), PathBuf::from),
             sender: sender(),
-            base_url: var("TABLO_DEMO_BASE_URL")
-                .unwrap_or_else(|| "http://127.0.0.1:3000".to_string()),
+            base_url: BaseUrl::new(
+                var("TABLO_DEMO_BASE_URL").unwrap_or_else(|| "http://127.0.0.1:3000".to_string()),
+            )
+            .expect("TABLO_DEMO_BASE_URL is an absolute http or https URL"),
             smtp: smtp(),
         }
     }
