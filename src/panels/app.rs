@@ -42,7 +42,7 @@ fn app_auth(config: &Config) -> Auth<SignedIn> {
         .registration(DemoSignUp)
         .mail(AuthMail::new(
             config.sender.clone(),
-            config.base_url.clone(),
+            config.base_url.as_str(),
         ))
         .password_reset(PasswordReset::new(password_auth()))
         .email_verification(EmailVerification::new(password_auth()))
