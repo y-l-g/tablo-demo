@@ -556,6 +556,7 @@ flash-email-sent =
     }
 flash-order-processing = La commande est en cours de traitement
 flash-order-shipped = Commande expédiée
+flash-order-shipped-notified = Commande expédiée, client prévenu
 flash-order-delivered = Commande marquée comme livrée
 flash-order-replicated = Commande dupliquée
 flash-order-cancelled = Commande annulée
@@ -616,6 +617,7 @@ action-move-up = Monter
 action-move-down = Descendre
 action-add-metadata = Ajouter une entrée
 action-ship = Expédier
+action-ship-and-notify = Expédier et prévenir
 action-show-on-map = Voir sur la carte
 action-start = Démarrer
 action-submit = Soumettre

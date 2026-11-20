@@ -449,6 +449,7 @@ flash-email-sent =
     }
 flash-order-processing = Order is now processing
 flash-order-shipped = Order shipped
+flash-order-shipped-notified = Order shipped, customer notified
 flash-order-delivered = Order marked as delivered
 flash-order-replicated = Order replicated
 flash-order-cancelled = Order cancelled
@@ -509,6 +510,7 @@ action-move-up = Move up
 action-move-down = Move down
 action-add-metadata = Add entry
 action-ship = Ship
+action-ship-and-notify = Ship and notify
 action-show-on-map = Show on map
 action-start = Start
 action-submit = Submit

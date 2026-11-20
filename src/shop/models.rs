@@ -191,6 +191,8 @@ pub struct Customer {
     pub comments: Deferred<Vec<Comment>>,
     #[has_many]
     pub orders: Deferred<Vec<Order>>,
+    #[has_many(via = orders.payments)]
+    pub payments: Deferred<Vec<Payment>>,
 }
 
 /// A postal address, owned by the customer or the brand whose column names it.
