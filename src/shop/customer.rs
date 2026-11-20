@@ -7,7 +7,7 @@ use tablo::prelude::*;
 use tablo::{ColumnToggle, IntoColumns};
 use topcoat::{Result, context::Cx, icon::iconify::iconify_icon};
 
-use super::{Address, AddressResource, CountryCode, Customer};
+use super::{Address, AddressResource, CountryCode, Customer, PaymentResource};
 use crate::access::{self, Domain};
 
 /// Customers.
@@ -69,6 +69,7 @@ impl Resource for CustomerResource {
                     .detail(tablo::text!("label-phone"), lens!(Customer.phone)),
             )
             .relation(Relation::has_many::<AddressResource>(Address::fields().customer_id()).tab())
+            .relation(Relation::through::<PaymentResource>(Customer::fields().payments()).tab())
             .action::<SendCustomerEmail>()
             .soft_delete(lens!(Customer.deleted_at))
     }

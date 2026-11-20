@@ -31,11 +31,12 @@ impl Action<OrderResource> for ProcessOrder {
     }
 }
 
-/// What `ShipOrder` asks for.
+/// What `ShipOrder` asks for, and whether to tell the customer, which Ship and notify posts.
 #[derive(FormInput)]
 pub struct ShippingNotes {
     #[form(multiline = 3)]
     pub shipping_notes: Option<String>,
+    pub notify_customer: bool,
 }
 
 /// Ships a processing order.
@@ -52,8 +53,15 @@ impl Action<OrderResource> for ShipOrder {
             .success(|_| tablo::text!("flash-order-shipped"))
     }
 
+    fn submits(submits: Submits<ShippingNotes>) -> Submits<ShippingNotes> {
+        submits.add(tablo::text!("action-ship-and-notify"), |f| {
+            f.notify_customer
+        })
+    }
+
+    /// Ships the orders. Telling the customer is reported, as the demo sends no mail to customers.
     async fn run(
-        _cx: &Cx,
+        cx: &Cx,
         orders: &[Order],
         shipping: ShippingNotes,
         ex: &mut dyn toasty::Executor,
@@ -65,6 +73,10 @@ impl Action<OrderResource> for ShipOrder {
             .exec(ex)
             .await?;
         count_sold(orders, ex).await?;
+        if shipping.notify_customer {
+            let notified = tablo::t!(cx, "flash-order-shipped-notified");
+            return Ok(Outcome::done().notify(tablo::Notification::success(notified)));
+        }
         Ok(Outcome::done())
     }
 }
